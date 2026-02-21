@@ -25,9 +25,6 @@ class TransactionCategoriesTable
                     ->searchable(),
                 TextColumn::make('icon')
                     ->searchable(),
-                TextColumn::make('budget_monthly')
-                    ->numeric()
-                    ->sortable(),
                 IconColumn::make('is_active')
                     ->boolean(),
                 TextColumn::make('created_at')

@@ -17,7 +17,6 @@ class TransactionCategory extends Model
         'name',
         'color',
         'icon',
-        'budget_monthly',
         'is_active'
     ];
 

@@ -22,9 +22,6 @@ class TransactionCategoryInfolist
                     ->placeholder('-'),
                 TextEntry::make('icon')
                     ->placeholder('-'),
-                TextEntry::make('budget_monthly')
-                    ->numeric()
-                    ->placeholder('-'),
                 IconEntry::make('is_active')
                     ->boolean(),
                 TextEntry::make('created_at')
