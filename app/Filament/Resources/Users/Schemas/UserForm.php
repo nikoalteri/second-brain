@@ -40,24 +40,12 @@ class UserForm
                             ->relationship('roles', 'name')
                             ->preload()
                             ->searchable(),
-
-                        CheckboxList::make('enabled_modules')
-                            ->label('Moduli abilitati')
-                            ->options([
-                                'module.finance' => 'Finanza',
-                                'module.health' => 'Salute',
-                                'module.productivity' => 'Produttività',
-                                'module.relations' => 'Relazioni',
-                                'module.home' => 'Casa',
-                                'module.cooking' => 'Cucina',
-                                'module.travel' => 'Viaggi',
-                            ])
-                            ->columns(2),
-
-                        Toggle::make('is_active')
-                            ->label('Attivo')
-                            ->default(true),
                     ])
+                    ->columns(2),
+
+                Toggle::make('is_active')
+                    ->label('Attivo')
+                    ->default(true),
             ]);
     }
 }

@@ -16,7 +16,6 @@ class SuperAdminSeeder extends Seeder
                 'name' => 'Super Admin',
                 'password' => Hash::make('password'),
                 'is_active' => true,
-                'enabled_modules' => null,
             ]
         );
 
