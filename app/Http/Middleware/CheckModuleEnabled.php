@@ -13,8 +13,23 @@ class CheckModuleEnabled
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $module): Response
     {
+        $user = auth()->user();
+
+        // Se non autenticato, lascia passare (ci pensa Filament auth dopo)
+        if (!$user) {
+            return $next($request);
+        }
+
+        if ($user->hasRole('superadmin')) {
+            return $next($request);
+        }
+
+        if (!$user->can("module.{$module}")) {
+            abort(403, 'Modulo non abilitato');
+        }
+
         return $next($request);
     }
 }
