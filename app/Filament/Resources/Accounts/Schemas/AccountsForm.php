@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\App\Resources\Accounts\Schemas;
+namespace App\Filament\Resources\Accounts\Schemas;
 
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Select;
@@ -10,14 +10,15 @@ use Filament\Forms\Form;
 use Filament\Forms\Components\Builder;
 use Filament\Schemas\Schema;
 
-class AccountForm
+class AccountsForm
 {
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->components([
-                // TextInput::make('user_id')
-                //     ->relationship('user', 'name')
+                TextInput::make('user_id')
+                    ->required()
+                    ->numeric(),
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
@@ -40,8 +41,7 @@ class AccountForm
                     ->default('EUR'),
                 ColorPicker::make('color')
                     ->default('#000000'),
-                TextInput::make('icon')
-                    ->placeholder('heroicon-o-banknotes'),
+                TextInput::make('icon'),
                 Toggle::make('is_active')
                     ->required(),
                 Toggle::make('is_debt')

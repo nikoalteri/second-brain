@@ -4,38 +4,31 @@ namespace App\Policies;
 
 use App\Models\Account;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class AccountPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->hasPermissionTo('finance.accounts.viewAny');
+        return true;
     }
 
-    public function view(User $user, Account $account): Response
+    public function view(User $user, Account $account): bool
     {
-        return $user->id === $account->user_id
-            ? Response::allow()
-            : Response::deny('Not your account.');
+        return $user->id === $account->user_id;
     }
 
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('finance.accounts.create');
+        return true;
     }
 
-    public function update(User $user, Account $account): Response
+    public function update(User $user, Account $account): bool
     {
-        return $user->id === $account->user_id
-            ? Response::allow()
-            : Response::deny('Not your account.');
+        return $user->id === $account->user_id;
     }
 
-    public function delete(User $user, Account $account): Response
+    public function delete(User $user, Account $account): bool
     {
-        return $user->id === $account->user_id && !$account->transactions()->exists()
-            ? Response::allow()
-            : Response::deny('You have transactions on this account.');
+        return $user->id === $account->user_id;
     }
 }

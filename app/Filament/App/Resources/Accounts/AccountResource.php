@@ -11,6 +11,7 @@ use App\Filament\App\Resources\Accounts\Schemas\AccountInfolist;
 use App\Filament\App\Resources\Accounts\Tables\AccountsTable;
 use App\Models\Account;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -21,6 +22,8 @@ class AccountResource extends Resource
     protected static ?string $model = Account::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Finance';
 
     protected static ?string $recordTitleAttribute = 'Account';
 

@@ -2,8 +2,8 @@
 
 namespace App\Filament\App\Resources\Accounts\Schemas;
 
-use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\IconEntry;
 use Filament\Schemas\Schema;
 
 class AccountInfolist
@@ -12,28 +12,47 @@ class AccountInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('user_id')
-                    ->numeric(),
-                TextEntry::make('name'),
+                IconEntry::make('icon')
+                    ->label('')
+                    ->color('info'),
+
+                TextEntry::make('name')
+                    ->weight('medium')
+                    ->size('xl'),
+
                 TextEntry::make('type')
-                    ->badge(),
-                TextEntry::make('balance')
-                    ->numeric(),
-                TextEntry::make('currency'),
-                TextEntry::make('color')
-                    ->placeholder('-'),
-                TextEntry::make('icon')
-                    ->placeholder('-'),
+                    ->badge()
+                    ->color(fn(string $state): string =>
+                    match ($state) {
+                        'bank' => 'primary',
+                        'cash' => 'warning',
+                        'investment' => 'success',
+                        'debt' => 'danger',
+                        default => 'gray',
+                    }),
+
+                TextEntry::make('signed_balance')
+                    ->money('EUR')
+                    ->color(
+                        fn(string|int|float $state): string =>
+                        (float) $state >= 0 ? 'success' : 'danger'
+                    )
+                    ->weight('medium'),
+
                 IconEntry::make('is_active')
+                    ->color(
+                        fn(bool $state): string =>
+                        $state ? 'success' : 'danger'
+                    )
                     ->boolean(),
-                IconEntry::make('is_debt')
-                    ->boolean(),
+
+                TextEntry::make('user.name')
+                    ->badge(),
+
                 TextEntry::make('created_at')
-                    ->dateTime()
-                    ->placeholder('-'),
-                TextEntry::make('updated_at')
-                    ->dateTime()
-                    ->placeholder('-'),
+                    ->dateTime('d/m/Y H:i')
+                    ->badge()
+                    ->color('gray'),
             ]);
     }
 }

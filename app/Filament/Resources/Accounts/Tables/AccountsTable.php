@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filament\App\Resources\Accounts\Tables;
+namespace App\Filament\Resources\Accounts\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -80,7 +80,6 @@ class AccountsTable
             ])
             ->recordActions([
                 EditAction::make(),
-                ViewAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
