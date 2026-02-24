@@ -33,7 +33,7 @@ class AccountsTable
                         'gray' => 'emergency_fund',
                     ]),
                 TextColumn::make('signed_balance')
-                    ->money('EUR')
+                    ->money('EUR', locale: 'it')
                     ->sortable()
                     ->color(fn($state): string => $state >= 0 ? 'success' : 'danger'),
                 TextColumn::make('currency')

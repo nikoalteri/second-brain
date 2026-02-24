@@ -32,7 +32,7 @@ class AccountInfolist
                     }),
 
                 TextEntry::make('signed_balance')
-                    ->money('EUR')
+                    ->money('EUR', locale: 'it')
                     ->color(
                         fn(string|int|float $state): string =>
                         (float) $state >= 0 ? 'success' : 'danger'

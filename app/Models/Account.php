@@ -41,7 +41,9 @@ class Account extends Model
 
     public function getNetBalanceAttribute(): float
     {
-        return $this->is_debt ? 0 : $this->balance;
+        $balance = (float) ($this->balance ?? 0);
+
+        return $this->is_debt ? 0.0 : $balance;
     }
 
     public function scopeActive($query)
@@ -51,6 +53,15 @@ class Account extends Model
 
     public function getSignedBalanceAttribute(): float
     {
-        return $this->is_debt ? -$this->balance : $this->balance;
+        $balance = (float) ($this->balance ?? 0);
+
+        return $this->is_debt ? -$balance : $balance;
+    }
+
+    public function getLiquidityAttribute(): float
+    {
+        $balance = (float) ($this->balance ?? 0);
+
+        return $this->is_debt ? 0.0 : $balance;
     }
 }

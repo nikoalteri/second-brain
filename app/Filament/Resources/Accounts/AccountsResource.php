@@ -44,6 +44,11 @@ class AccountsResource extends Resource
         return AccountsTable::configure($table);
     }
 
+    public function scopeLiquidity($query)
+    {
+        return $query->where('is_debt', false);
+    }
+
     public static function getRelations(): array
     {
         return [
