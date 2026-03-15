@@ -3,8 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Account extends Model
@@ -16,6 +14,7 @@ class Account extends Model
         'name',
         'type',
         'balance',
+        'opening_balance',
         'currency',
         'color',
         'icon',
@@ -24,44 +23,40 @@ class Account extends Model
     ];
 
     protected $casts = [
-        'balance' => 'decimal:2',
-        'is_active' => 'boolean',
-        'is_debt' => 'boolean',
+        'opening_balance' => 'float', // ✅ float supporta negativi
+        'balance'         => 'float',
+        'is_active'       => 'boolean',
+        'is_debt'         => 'boolean',
     ];
 
-    public function user(): BelongsTo
+    // ✅ ACCESSOR: calcolato da transazioni
+    public function getBalanceAttribute(): float
     {
-        return $this->belongsTo(User::class);
+        return (float) $this->opening_balance + $this->transactions()->sum('amount');
     }
 
-    public function transactions(): HasMany
+
+    // ✅ ACCESSOR: negativo se debito
+    public function getSignedBalanceAttribute(): float
+    {
+        $balance = $this->getBalanceAttribute();
+        return $this->is_debt ? -abs($balance) : $balance;
+    }
+
+    // ✅ RELAZIONE
+    public function transactions()
     {
         return $this->hasMany(Transaction::class);
     }
 
-    public function getNetBalanceAttribute(): float
+    public function user()
     {
-        $balance = (float) ($this->balance ?? 0);
-
-        return $this->is_debt ? 0.0 : $balance;
+        return $this->belongsTo(User::class);
     }
 
+    // ✅ SCOPE
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
-    }
-
-    public function getSignedBalanceAttribute(): float
-    {
-        $balance = (float) ($this->balance ?? 0);
-
-        return $this->is_debt ? -$balance : $balance;
-    }
-
-    public function getLiquidityAttribute(): float
-    {
-        $balance = (float) ($this->balance ?? 0);
-
-        return $this->is_debt ? 0.0 : $balance;
     }
 }

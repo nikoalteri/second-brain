@@ -12,6 +12,7 @@ use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use App\Filament\Widgets\AccountsListWidget;
 use App\Filament\Widgets\StatsOverview;
+use App\Filament\Widgets\CashflowReport;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -20,6 +21,7 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -45,6 +47,7 @@ class AdminPanelProvider extends PanelProvider
                 // FilamentInfoWidget::class,
                 StatsOverview::class,
                 AccountsListWidget::class,
+                CashflowReport::class,
             ])
             ->middleware([
                 EncryptCookies::class,

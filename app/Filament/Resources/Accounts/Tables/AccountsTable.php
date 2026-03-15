@@ -5,12 +5,11 @@ namespace App\Filament\Resources\Accounts\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Number;
 
 class AccountsTable
 {
@@ -18,64 +17,93 @@ class AccountsTable
     {
         return $table
             ->columns([
-                TextColumn::make('user.name')
-                    ->numeric()
-                    ->sortable(),
                 TextColumn::make('name')
+                    ->label('Nome')
                     ->searchable()
                     ->weight('medium'),
-                BadgeColumn::make('type')
-                    ->colors([
-                        'primary' => 'bank',
-                        'warning' => 'cash',
-                        'success' => 'investment',
-                        'danger' => 'debt',
-                        'gray' => 'emergency_fund',
-                    ]),
-                TextColumn::make('signed_balance')
-                    ->money('EUR', locale: 'it')
-                    ->sortable()
-                    ->color(fn($state): string => $state >= 0 ? 'success' : 'danger'),
-                TextColumn::make('currency')
-                    ->searchable(),
-                TextColumn::make('color')
-                    ->searchable(),
-                TextColumn::make('icon')
-                    ->searchable(),
+
+                TextColumn::make('type')
+                    ->label('Tipo')
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'bank'           => 'primary',
+                        'cash'           => 'warning',
+                        'investment'     => 'success',
+                        'debt'           => 'danger',
+                        'emergency_fund' => 'gray',
+                        default          => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => match ($state) {
+                        'bank'           => 'Bancario',
+                        'cash'           => 'Contanti',
+                        'investment'     => 'Investimento',
+                        'debt'           => 'Debito',
+                        'emergency_fund' => 'Fondo Emergenza',
+                        default          => $state,
+                    }),
+
+                TextColumn::make('opening_balance')
+                    ->label('Saldo Iniziale')
+                    ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
+                    ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
+                    ->sortable(),
+
+                TextColumn::make('balance')
+                    ->label('Saldo Attuale')
+                    ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
+                    ->color(fn($state) => $state >= 0 ? 'success' : 'danger'),
+                // ✅ NO sortable → è accessor
+
                 IconColumn::make('is_active')
+                    ->label('Attivo')
                     ->boolean()
                     ->trueColor('success')
                     ->falseColor('danger'),
+
                 IconColumn::make('is_debt')
-                    ->boolean(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
+                    ->label('Debito')
+                    ->boolean()
+                    ->trueColor('danger')
+                    ->falseColor('success'),
+
+                TextColumn::make('color')
+                    ->label('Colore')
                     ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
+
+                TextColumn::make('currency')
+                    ->label('Valuta')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                TextColumn::make('created_at')
+                    ->label('Creato')
+                    ->dateTime('d/m/Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('type')
+                    ->label('Tipo')
                     ->options([
-                        'bank' => 'Bank',
-                        'cash' => 'Cash',
-                        'investment' => 'Investment',
-                        'emergency_fund' => 'Emergency fund',
-                        'debt' => 'Debt',
+                        'bank'           => 'Bancario',
+                        'cash'           => 'Contanti',
+                        'investment'     => 'Investimento',
+                        'emergency_fund' => 'Fondo Emergenza',
+                        'debt'           => 'Debito',
                     ])
                     ->multiple(),
+
                 SelectFilter::make('is_active')
+                    ->label('Stato')
                     ->options([
-                        1 => 'Active',
-                        0 => 'Inactive',
+                        1 => 'Attivo',
+                        0 => 'Non attivo',
                     ]),
+
                 SelectFilter::make('is_debt')
+                    ->label('Tipo conto')
                     ->options([
-                        1 => 'Debt',
-                        0 => 'Non-debt',
+                        1 => 'Debito',
+                        0 => 'Non debito',
                     ]),
             ])
             ->recordActions([

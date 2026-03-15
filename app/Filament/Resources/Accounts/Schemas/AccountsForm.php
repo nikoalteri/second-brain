@@ -36,6 +36,14 @@ class AccountsForm
                     ->numeric()
                     ->default(0.0)
                     ->prefix('€'),
+                TextInput::make('opening_balance')
+                    ->label('Saldo iniziale')
+                    ->numeric()
+                    ->prefix('€')
+                    ->default(0)
+                    ->minValue(null)  // ✅ rimuove validazione min=0
+                    ->rules(['nullable', 'numeric']) // ✅ permette negativi
+                    ->helperText('Saldo al momento dell\'adozione del sistema'),
                 TextInput::make('currency')
                     ->required()
                     ->default('EUR'),
