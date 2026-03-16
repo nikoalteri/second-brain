@@ -9,6 +9,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Components\Builder;
 use Filament\Schemas\Schema;
+use App\Models\User;
 
 class AccountsForm
 {
@@ -16,9 +17,10 @@ class AccountsForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
+                Select::make('user_name')
+                    ->label('Utente')
+                    ->options(fn() => User::pluck('name', 'name')->toArray())
+                    ->required(),
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
@@ -51,8 +53,6 @@ class AccountsForm
                     ->default('#000000'),
                 TextInput::make('icon'),
                 Toggle::make('is_active')
-                    ->required(),
-                Toggle::make('is_debt')
                     ->required(),
             ]);
     }

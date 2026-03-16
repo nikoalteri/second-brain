@@ -15,11 +15,10 @@ class StatsOverview extends BaseWidget
     protected function getStats(): array
     {
         $liquidity = (float) Account::query()
-            ->where('is_debt', false)
+            ->where('is_active', true)
             ->sum('balance');
 
-        $net = (float) Account::query()
-            ->sum(DB::raw('CASE WHEN is_debt = 1 THEN -ABS(balance) ELSE balance END'));
+        $net = $liquidity;
 
         return [
             Stat::make('Liquidità', $this->formatCurrency($liquidity))

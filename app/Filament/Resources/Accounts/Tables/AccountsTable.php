@@ -46,14 +46,12 @@ class AccountsTable
                     ->label('Saldo Iniziale')
                     ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
-                    ->sortable(),
-
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('balance')
                     ->label('Saldo Attuale')
                     ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger'),
-                // ✅ NO sortable → è accessor
-
                 IconColumn::make('is_active')
                     ->label('Attivo')
                     ->boolean()

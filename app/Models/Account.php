@@ -19,28 +19,34 @@ class Account extends Model
         'color',
         'icon',
         'is_active',
-        'is_debt',
     ];
 
     protected $casts = [
-        'opening_balance' => 'float', // ✅ float supporta negativi
+        'opening_balance' => 'float',
         'balance'         => 'float',
         'is_active'       => 'boolean',
-        'is_debt'         => 'boolean',
     ];
 
-    // ✅ ACCESSOR: calcolato da transazioni
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($account) {
+            if (auth()->check()) {
+                $account->user_id = auth()->id();
+            }
+        });
+    }
+
     public function getBalanceAttribute(): float
     {
         return (float) $this->opening_balance + $this->transactions()->sum('amount');
     }
 
-
-    // ✅ ACCESSOR: negativo se debito
     public function getSignedBalanceAttribute(): float
     {
         $balance = $this->getBalanceAttribute();
-        return $this->is_debt ? -abs($balance) : $balance;
+        return $balance;
     }
 
     // ✅ RELAZIONE
