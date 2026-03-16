@@ -11,6 +11,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Forms\Components\DatePicker;
+use Filament\Actions\Action;
 use Illuminate\Support\Number;
 
 class TransactionsTable
@@ -41,11 +42,13 @@ class TransactionsTable
                         default    => 'gray',
                     })
                     ->sortable(),
+
                 TextColumn::make('toAccount.name')
                     ->label('Conto Destinazione')
                     ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('category.name')
                     ->label('Categoria')
                     ->formatStateUsing(
@@ -99,6 +102,13 @@ class TransactionsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
+            ])
+            ->headerActions([
+                Action::make('report')
+                    ->label('Report Finance')
+                    ->icon('heroicon-o-chart-bar')
+                    ->color('primary')
+                    ->url('/admin/finance-report'),
             ]);
     }
 }

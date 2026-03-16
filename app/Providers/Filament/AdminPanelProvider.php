@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->middleware(['module:adminpanel'])
             ->login()
+            ->renderHook('panels::body.end', fn() => '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>')
             ->colors([
                 'primary' => Color::Amber,
             ])
