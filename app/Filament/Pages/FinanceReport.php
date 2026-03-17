@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 class FinanceReport extends Page
 {
     protected string $view = 'filament.pages.finance-report';
-    protected static ?string $navigationLabel = 'Report Finance';
+    protected static bool $shouldRegisterNavigation = false;
 
     public int $selectedYear = 2026;
     public array $years = [];
