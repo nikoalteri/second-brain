@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Enums\LoanStatus;
 
 class Loan extends Model
 {
@@ -25,12 +26,13 @@ class Loan extends Model
     ];
 
     protected $casts = [
-        'totsl_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
         'monthly_payment' => 'decimal:2',
         'remaining_amount' => 'decimal:2',
         'skip_weekends' => 'boolean',
         'start_date' => 'date',
         'end_date' => 'date',
+        'status' => LoanStatus::class,
     ];
 
     public function user(): BelongsTo
