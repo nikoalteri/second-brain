@@ -3,12 +3,14 @@
 namespace App\Providers;
 
 use App\Models\Account;
+use App\Models\Loan;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use App\Models\TransactionType;
 use App\Models\User;
 use App\Policies\AccountPolicy;
+use App\Policies\LoanPolicy;
 use App\Policies\TransactionCategoryPolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\TransactionTypePolicy;
@@ -24,6 +26,7 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         // User::class => UserPolicy::class,
         Account::class => AccountPolicy::class,
+        Loan::class => LoanPolicy::class,
         Transaction::class => TransactionPolicy::class,
         TransactionCategory::class => TransactionCategoryPolicy::class,
         TransactionType::class => TransactionTypePolicy::class,
@@ -40,7 +43,7 @@ class AuthServiceProvider extends ServiceProvider
             return $user->hasRole('superadmin') ? true : null;
         });
 
-        // ADMIN può gestire tutto del suo tenant (SaaS future)
+        // ADMIN can manage everything in their tenant (future SaaS)
         Gate::before(function (User $user, string $ability) {
             if ($user->hasRole('admin')) {
                 return true;  // TODO: limitare per tenant

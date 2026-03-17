@@ -26,6 +26,9 @@ class AccountsResource extends Resource
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static string|UnitEnum|null $navigationGroup = 'Finance';
+    protected static ?string $navigationLabel = 'Account';
+    protected static ?string $singularLabel = 'Account';
+    protected static ?int $navigationOrder = 1;
 
     protected static ?string $recordTitleAttribute = 'Account';
 

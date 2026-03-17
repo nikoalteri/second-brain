@@ -83,10 +83,10 @@
         </div>
     </div>
 
-    {{-- LAYOUT: tabella sinistra, torta destra --}}
+    {{-- LAYOUT: left table, right pie --}}
     <div style="display: grid; grid-template-columns: 1fr 380px; gap: 1.5rem; align-items: start;">
 
-        {{-- TABELLA PIVOT --}}
+        {{-- PIVOT TABLE --}}
         @php
             $pivot = $this->getPivotData();
             $months = range(1, 12);
@@ -309,12 +309,11 @@
         document.addEventListener('livewire:updated', renderPie);
     </script>
 
-    {{-- MODAL DETTAGLIO TRANSAZIONI --}}
+    {{-- TRANSACTIONS DETAIL MODAL --}}
     @if ($showDetailModal && $detailMonth && $detailCategoryKey)
         <div style="position: fixed; inset: 0; z-index: 9999;">
             <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.5);" wire:click="closeDetail"></div>
-            <div
-                style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 0.5rem; max-width: 800px; width: calc(100vw - 2rem); max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);"
+            <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border-radius: 0.5rem; max-width: 800px; width: calc(100vw - 2rem); max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);"
                 @click.stop>
                 <div
                     style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
@@ -333,14 +332,14 @@
                 <div style="overflow: auto; flex: 1; padding: 1rem 1.5rem;">
                     @php $transactions = $this->getDetailTransactions(); @endphp
                     @if ($transactions->isEmpty())
-                        <p style="color: #6b7280; font-size: 0.875rem;">Nessuna transazione trovata.</p>
+                        <p style="color: #6b7280; font-size: 0.875rem;">No transaction found.</p>
                     @else
                         <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
                             <thead>
                                 <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
-                                    <th style="padding: 0.5rem 0.75rem; text-align: left;">Data</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: left;">Descrizione</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: left;">Conto</th>
+                                    <th style="padding: 0.5rem 0.75rem; text-align: left;">Date</th>
+                                    <th style="padding: 0.5rem 0.75rem; text-align: left;">Description</th>
+                                    <th style="padding: 0.5rem 0.75rem; text-align: left;">Account</th>
                                     <th style="padding: 0.5rem 0.75rem; text-align: right;">Importo</th>
                                     <th style="padding: 0.5rem 0.75rem; text-align: center;"></th>
                                 </tr>

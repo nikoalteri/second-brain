@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\LoanPaymentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Services\LoanScheduleService;
 
 class LoanPayment extends Model
 {
@@ -20,7 +22,27 @@ class LoanPayment extends Model
         'due_date' => 'date',
         'actual_date' => 'date',
         'amount' => 'decimal:2',
+        'status' => LoanPaymentStatus::class,
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(function (LoanPayment $payment) {
+            $loan = $payment->loan()->first();
+
+            if ($loan) {
+                app(LoanScheduleService::class)->syncLoan($loan);
+            }
+        });
+
+        static::deleted(function (LoanPayment $payment) {
+            $loan = $payment->loan()->first();
+
+            if ($loan) {
+                app(LoanScheduleService::class)->syncLoan($loan);
+            }
+        });
+    }
 
     public function loan(): BelongsTo
     {

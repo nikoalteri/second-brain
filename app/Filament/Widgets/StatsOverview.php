@@ -21,14 +21,14 @@ class StatsOverview extends BaseWidget
         $net = $liquidity;
 
         return [
-            Stat::make('Liquidità', $this->formatCurrency($liquidity))
+            Stat::make('Liquidity', $this->formatCurrency($liquidity))
                 ->icon('heroicon-m-wallet')
-                ->description('Disponibilità immediata')
+                ->description('Immediate availability')
                 ->descriptionColor('success')
                 ->color('success'),
-            Stat::make('Patrimonio', $this->formatCurrency($net))
+            Stat::make('Net Worth', $this->formatCurrency($net))
                 ->icon('heroicon-m-scale')
-                ->description('Liquidità meno debiti')
+                ->description('Liquidity minus debts')
                 ->descriptionColor($net >= 0 ? 'success' : 'danger')
                 ->color($net >= 0 ? 'success' : 'danger'),
         ];

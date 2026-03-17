@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class Account extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -32,21 +34,15 @@ class Account extends Model
         parent::boot();
 
         static::creating(function ($account) {
-            if (auth()->check()) {
-                $account->user_id = auth()->id();
+            if (Auth::user() !== null) {
+                $account->user_id = Auth::user()?->id;
             }
         });
     }
 
-    public function getBalanceAttribute(): float
-    {
-        return (float) $this->opening_balance + $this->transactions()->sum('amount');
-    }
-
     public function getSignedBalanceAttribute(): float
     {
-        $balance = $this->getBalanceAttribute();
-        return $balance;
+        return (float) $this->balance;
     }
 
     // ✅ RELAZIONE

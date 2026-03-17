@@ -13,6 +13,23 @@ class EditAccounts extends EditRecord
 {
     protected static string $resource = AccountsResource::class;
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $openingBalance = (float) ($data['opening_balance'] ?? 0);
+        $previousOpeningBalance = (float) ($this->record->opening_balance ?? 0);
+        $currentBalance = (float) ($this->record->balance ?? 0);
+
+        $data['opening_balance'] = $openingBalance;
+        $data['balance'] = $currentBalance + ($openingBalance - $previousOpeningBalance);
+
+        return $data;
+    }
+
+    protected function authorizeAccess(): void
+    {
+        $this->authorize('update', $this->record);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

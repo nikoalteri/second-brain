@@ -9,8 +9,22 @@ class CreateLoan extends CreateRecord
 {
     protected static string $resource = LoanResource::class;
 
+    protected function authorizeAccess(): void
+    {
+        $this->authorize('create', static::$resource::getModel());
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        // Validazione avanzata tramite FormRequest
+        $request = app(\App\Http\Requests\StoreLoanRequest::class);
+        $request->merge($data);
+        $validated = app('validator')->make(
+            $request->all(),
+            (new \App\Http\Requests\StoreLoanRequest())->rules()
+        )->validate();
+        $data = array_merge($data, $validated);
+
         $data['user_id'] = auth()->id();
 
         if (blank($data['paid_installments'] ?? null)) {

@@ -32,7 +32,7 @@
                 @empty
                     <tr>
                         <td colspan="4" class="text-center py-6 text-gray-400">
-                            Nessun dato disponibile
+                            No data available
                         </td>
                     </tr>
                 @endforelse

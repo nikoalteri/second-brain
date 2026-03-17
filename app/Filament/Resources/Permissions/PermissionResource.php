@@ -12,6 +12,7 @@ use App\Filament\Resources\Permissions\Schemas\PermissionForm;
 use App\Filament\Resources\Permissions\Schemas\PermissionInfolist;
 use App\Filament\Resources\Permissions\Tables\PermissionsTable;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -22,9 +23,11 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class PermissionResource extends Resource
 {
     protected static ?string $model = Permission::class;
-
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
+    protected static ?string $navigationLabel = 'Permission';
+    protected static ?string $singularLabel = 'Permission';
+    protected static ?int $navigationOrder = 2;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
     protected static ?string $recordTitleAttribute = 'Permission';
 
     public static function form(Schema $schema): Schema

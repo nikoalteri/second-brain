@@ -42,6 +42,38 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 - **[Redberry](https://redberry.international/laravel-development)**
 - **[Active Logic](https://activelogic.com)**
 
+## Second Brain
+
+Second Brain è una piattaforma Laravel modulare per la gestione di finanze, salute, produttività e altre aree personali.
+
+## Struttura e Architettura
+
+- Controller snelli, logica delegata a service.
+- Service e repository separati per business e accesso dati.
+- Componenti UI (Livewire/Filament) solo per presentazione.
+- Policy, observer, enum e test dedicati per ogni area.
+- Modularizzazione pronta per progetti di grandi dimensioni.
+
+Consulta [ARCHITECTURE.md](ARCHITECTURE.md) per dettagli su convenzioni, permessi, best practice e onboarding.
+
+## Onboarding rapido
+
+1. Installa le dipendenze:
+    - `composer install`
+    - `npm install`
+2. Copia `.env.example` in `.env` e configura le variabili.
+3. Esegui le migrazioni e i seeders:
+    - `php artisan migrate --seed`
+4. Avvia il server:
+    - `php artisan serve`
+    - `npm run dev`
+
+## Contributi
+
+Segui le convenzioni architetturali e aggiorna la documentazione ad ogni modifica strutturale.
+
+---
+
 ## Contributing
 
 Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Loans\RelationManagers;
 
+use App\Enums\LoanPaymentStatus;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -13,6 +14,9 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Services\LoanScheduleService;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 
 class PaymentsRelationManager extends RelationManager
 {
@@ -38,12 +42,9 @@ class PaymentsRelationManager extends RelationManager
                     ->required(),
 
                 Select::make('status')
-                    ->label('Stato')
-                    ->options([
-                        'pagato' => 'Pagato',
-                        'dapagare' => 'Da pagare',
-                    ])
-                    ->default('dapagare')
+                    ->label('Status')
+                    ->options(LoanPaymentStatus::class)
+                    ->default(LoanPaymentStatus::PENDING->value)
                     ->required(),
 
                 TextInput::make('notes')
@@ -68,28 +69,33 @@ class PaymentsRelationManager extends RelationManager
                     ->date('d/m/Y')
                     ->placeholder('-')
                     ->sortable(),
-
                 TextColumn::make('amount')
                     ->label('Importo')
                     ->money('EUR')
                     ->sortable(),
-
                 TextColumn::make('status')
-                    ->label('Stato')
-                    ->badge()
-                    ->color(fn(string $state): string => match ($state) {
-                        'pagato' => 'success',
-                        'dapagare' => 'warning',
-                        default => 'gray',
-                    }),
-
+                    ->label('Status')
+                    ->badge(),
                 TextColumn::make('notes')
                     ->label('Note')
                     ->limit(30)
                     ->toggleable(),
             ])
             ->headerActions([
-                CreateAction::make(),
+                Action::make('generateSchedule')
+                    ->label('Generate schedule')
+                    ->icon('heroicon-o-calendar-days')
+                    ->requiresConfirmation()
+                    ->action(function () {
+                        $loan = $this->getOwnerRecord();
+
+                        app(LoanScheduleService::class)->generate($loan, onlyMissing: true);
+
+                        Notification::make()
+                            ->title('Payment schedule generated')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->actions([
                 EditAction::make(),

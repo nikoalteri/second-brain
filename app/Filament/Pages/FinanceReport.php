@@ -10,6 +10,7 @@ use Filament\Pages\Page;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class FinanceReport extends Page
 {
@@ -36,7 +37,8 @@ class FinanceReport extends Page
 
     public function mount(): void
     {
-        $this->loadYears();
+        $this->years = app(\App\Services\FinanceReportService::class)
+            ->loadYears(Auth::id());
         $this->selectedYear = $this->years[0] ?? now()->year;
     }
 
@@ -52,41 +54,31 @@ class FinanceReport extends Page
 
     public function loadData(): void
     {
-        $this->loadYears();
+        $this->years = app(\App\Services\FinanceReportService::class)
+            ->loadYears(Auth::id());
     }
 
     private function loadYears(): void
     {
-        $q = DB::table('transactions')
-            ->selectRaw('YEAR(date) as year')
-            ->whereNull('deleted_at')
-            ->when(auth()->id(), fn($query) => $query->where('user_id', auth()->id()));
-        $this->years = $q->groupBy('year')->orderByDesc('year')->pluck('year')->toArray();
+        // Metodo non più usato: delegato al service
     }
 
     /** Query base con filtri applicati */
     private function baseTransactionsQuery(): Builder
     {
-        $q = DB::table('transactions')
-            ->where('transactions.is_transfer', false)
-            ->whereNull('transactions.deleted_at')
-            ->whereYear('transactions.date', $this->selectedYear)
-            ->when(auth()->id(), fn($query) => $query->where('transactions.user_id', auth()->id()));
-
-        if (!empty($this->selectedTypes)) {
-            $q->whereIn('transactions.transaction_type_id', $this->selectedTypes);
-        }
-
-        if ($this->selectedNote !== null && $this->selectedNote !== '') {
-            $q->where('transactions.notes', $this->selectedNote);
-        }
-
-        return $q;
+        return app(\App\Services\FinanceReportService::class)
+            ->baseTransactionsQuery(
+                $this->selectedYear,
+                $this->selectedTypes,
+                $this->selectedNote,
+                Auth::id()
+            );
     }
 
     public function getTypeOptions(): array
     {
-        return TransactionType::orderBy('name')->pluck('name', 'id')->toArray();
+        return app(\App\Services\FinanceReportService::class)
+            ->getTypeOptions();
     }
 
     public function toggleExpand(string $category): void
@@ -124,7 +116,7 @@ class FinanceReport extends Page
             ->whereNull('deleted_at')
             ->whereYear('date', $this->selectedYear)
             ->whereMonth('date', $this->detailMonth)
-            ->when(auth()->id(), fn($q) => $q->where('user_id', auth()->id()));
+            ->when(Auth::id(), fn($q) => $q->where('user_id', Auth::id()));
 
         if (!empty($this->selectedTypes)) {
             $query->whereIn('transaction_type_id', $this->selectedTypes);
@@ -160,55 +152,16 @@ class FinanceReport extends Page
             ->whereNotNull('notes')
             ->where('notes', '!=', '')
             ->whereYear('date', $this->selectedYear)
-            ->when(auth()->id(), fn($query) => $query->where('user_id', auth()->id()));
+            ->when(Auth::id(), fn($query) => $query->where('user_id', Auth::id()));
 
         return $q->distinct()->orderBy('notes')->limit(100)->pluck('notes', 'notes')->toArray();
     }
 
-    // ─── Tabella semplice (Cashflow) ────────────────────────────────────────
+    // ─── Simple table (Cashflow) ────────────────────────────────────────────
     public function getTable(): array
     {
-        $rows = DB::table('transactions')
-            ->leftJoin('transaction_types as tt', 'transactions.transaction_type_id', '=', 'tt.id')
-            ->selectRaw('
-                MONTH(transactions.date) as month,
-                SUM(CASE WHEN tt.name IN ("Earnings", "Cashback") THEN transactions.amount ELSE 0 END) as earnings,
-                SUM(CASE WHEN tt.name = "Expenses" THEN ABS(transactions.amount) ELSE 0 END) as expenses,
-                SUM(CASE WHEN tt.name IN ("Earnings", "Cashback", "Expenses") THEN transactions.amount ELSE 0 END) as net
-            ')
-            ->where('transactions.is_transfer', false)
-            ->whereNull('transactions.deleted_at')
-            ->whereYear('transactions.date', $this->selectedYear)
-            ->groupByRaw('MONTH(transactions.date)')
-            ->orderByRaw('MONTH(transactions.date)')
-            ->get()
-            ->keyBy('month')
-            ->toArray();
-
-        $result = [];
-        $totals = ['earnings' => 0, 'expenses' => 0, 'net' => 0];
-
-        for ($m = 1; $m <= 12; $m++) {
-            $row = $rows[$m] ?? (object)['earnings' => 0, 'expenses' => 0, 'net' => 0];
-            $result[] = (object)[
-                'month_name' => Carbon::create($this->selectedYear, $m)->translatedFormat('F'),
-                'earnings'   => $row->earnings,
-                'expenses'   => $row->expenses,
-                'net'        => $row->net,
-            ];
-            $totals['earnings'] += $row->earnings;
-            $totals['expenses'] += $row->expenses;
-            $totals['net']      += $row->net;
-        }
-
-        $result[] = (object)[
-            'month_name' => 'TOTALE',
-            'earnings'   => $totals['earnings'],
-            'expenses'   => $totals['expenses'],
-            'net'        => $totals['net'],
-        ];
-
-        return $result;
+        return app(\App\Services\FinanceReportService::class)
+            ->getTable($this->selectedYear, Auth::id());
     }
 
     // ─── Pivot per categoria × mese (gerarchia parent/children) ───────────

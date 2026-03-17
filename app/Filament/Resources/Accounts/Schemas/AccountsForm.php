@@ -6,8 +6,6 @@ use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
-use Filament\Forms\Components\Builder;
 use Filament\Schemas\Schema;
 use App\Models\User;
 
@@ -17,9 +15,9 @@ class AccountsForm
     {
         return $schema
             ->components([
-                Select::make('user_name')
+                Select::make('user_id')
                     ->label('Utente')
-                    ->options(fn() => User::pluck('name', 'name')->toArray())
+                    ->options(fn() => User::pluck('name', 'id')->toArray())
                     ->required(),
                 TextInput::make('name')
                     ->required()
@@ -34,10 +32,12 @@ class AccountsForm
                     ])
                     ->required(),
                 TextInput::make('balance')
-                    ->required()
+                    ->label('Saldo attuale')
                     ->numeric()
-                    ->default(0.0)
-                    ->prefix('€'),
+                    ->prefix('€')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->helperText('Calcolato automaticamente dal sistema'),
                 TextInput::make('opening_balance')
                     ->label('Saldo iniziale')
                     ->numeric()
@@ -53,7 +53,7 @@ class AccountsForm
                     ->default('#000000'),
                 TextInput::make('icon'),
                 Toggle::make('is_active')
-                    ->required(),
+                    ->default(true),
             ]);
     }
 }

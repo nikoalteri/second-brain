@@ -58,12 +58,6 @@ class AccountsTable
                     ->trueColor('success')
                     ->falseColor('danger'),
 
-                IconColumn::make('is_debt')
-                    ->label('Debito')
-                    ->boolean()
-                    ->trueColor('danger')
-                    ->falseColor('success'),
-
                 TextColumn::make('color')
                     ->label('Colore')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -97,12 +91,6 @@ class AccountsTable
                         0 => 'Non attivo',
                     ]),
 
-                SelectFilter::make('is_debt')
-                    ->label('Tipo conto')
-                    ->options([
-                        1 => 'Debito',
-                        0 => 'Non debito',
-                    ]),
             ])
             ->recordActions([
                 EditAction::make(),

@@ -37,19 +37,18 @@ class LoanForm
                             ->required(),
                         TextInput::make('total_amount')
                             ->label('Importo totale')
-                            ->numeric()
+                            ->prefix('€')
+                            ->step(0.01)
                             ->required()
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn($state, callable $set) => $set('remaining_amount', $state)),
                         TextInput::make('monthly_payment')
                             ->label('Monthly Payment')
-                            ->numeric()
                             ->prefix('€')
                             ->step(0.01)
                             ->required(),
                         TextInput::make('remaining_amount')
                             ->label('Remaining Amount')
-                            ->numeric()
                             ->prefix('€')
                             ->step(0.01),
                     ])

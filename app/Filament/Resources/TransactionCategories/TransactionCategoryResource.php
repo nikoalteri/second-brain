@@ -11,6 +11,7 @@ use App\Filament\Resources\TransactionCategories\Schemas\TransactionCategoryInfo
 use App\Filament\Resources\TransactionCategories\Tables\TransactionCategoriesTable;
 use App\Models\TransactionCategory;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -19,14 +20,17 @@ use Filament\Tables\Table;
 class TransactionCategoryResource extends Resource
 {
     protected static ?string $model = TransactionCategory::class;
+    protected static string|UnitEnum|null $navigationGroup = 'Finance';
+    protected static ?string $navigationLabel = 'Transaction Category';
+    protected static ?string $singularLabel = 'Transaction Category';
+    protected static ?int $navigationOrder = 1;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static ?string $recordTitleAttribute = 'transaction Categories';
+
     public static function canViewAny(): bool
     {
         return true;
     }
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static ?string $recordTitleAttribute = 'transaction Categories';
 
     public static function form(Schema $schema): Schema
     {

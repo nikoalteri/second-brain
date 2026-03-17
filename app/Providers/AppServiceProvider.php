@@ -29,5 +29,8 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Transaction::observe(TransactionObserver::class);
+
+        // Registra il middleware rate limit API
+        $this->app['router']->aliasMiddleware('api_rate_limit', \App\Http\Middleware\ApiRateLimitMiddleware::class);
     }
 }

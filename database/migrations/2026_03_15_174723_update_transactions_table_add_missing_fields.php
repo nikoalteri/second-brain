@@ -17,7 +17,7 @@ return new class extends Migration
             $table->uuid('transfer_pair_id')->nullable()->after('is_transfer');
             $table->enum('transfer_direction', ['in', 'out'])->nullable()->after('transfer_pair_id');
             $table->softDeletes();
-            $table->dropColumn('currency');
+            // Removed dropColumn('currency') because the column no longer exists
         });
     }
 

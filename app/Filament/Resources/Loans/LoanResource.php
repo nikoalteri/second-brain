@@ -11,6 +11,7 @@ use App\Filament\Resources\Loans\Schemas\LoanInfolist;
 use App\Filament\Resources\Loans\Tables\LoansTable;
 use App\Models\Loan;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -23,9 +24,10 @@ class LoanResource extends Resource
     protected static ?string $model = Loan::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static ?string $navigationLabel = 'Loans';
-    protected static ?string $modelLabel = 'Loan';
-    protected static ?string $pluralModelLabel = 'Loans';
+    protected static string|UnitEnum|null $navigationGroup = 'Finance';
+    protected static ?string $navigationLabel = 'Loan';
+    protected static ?string $singularLabel = 'Loan';
+    protected static ?int $navigationOrder = 1;
 
     protected static ?string $recordTitleAttribute = 'Loans';
 

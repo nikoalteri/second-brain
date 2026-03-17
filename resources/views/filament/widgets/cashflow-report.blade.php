@@ -40,7 +40,7 @@
                     @empty
                         <tr>
                             <td colspan="4" style="text-align:center; padding:2rem; color:#9ca3af;">
-                                Nessun dato disponibile
+                                No data available
                             </td>
                         </tr>
                     @endforelse
