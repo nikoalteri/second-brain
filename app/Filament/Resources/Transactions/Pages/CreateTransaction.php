@@ -17,27 +17,17 @@ class CreateTransaction extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // Validazione avanzata tramite FormRequest
-        $request = app(\App\Http\Requests\StoreTransactionRequest::class);
-        $request->merge($data);
-        $validated = app('validator')->make(
-            $request->all(),
-            (new \App\Http\Requests\StoreTransactionRequest())->rules()
-        )->validate();
-        $data = array_merge($data, $validated);
-
         $data['user_id'] = auth()->id();
         $data['competence_month'] = \Carbon\Carbon::parse($data['date'])->format('Y-m');
 
         $type = \App\Models\TransactionType::find($data['transaction_type_id']);
+        $isTransfer = strcasecmp((string) ($type?->name ?? ''), 'Transfer') === 0;
+        $isIncome = (bool) ($type?->is_income ?? false);
 
-        $data['amount'] = match ($type?->name) {
-            'Expenses'  => -abs($data['amount']),
-            'Earnings'  => abs($data['amount']),
-            'Cashback'  => abs($data['amount']),
-            'Transfer'  => -abs($data['amount']),
-            default     => $data['amount'],
-        };
+        // Non-income types are always stored as negative amounts, except explicit incomes.
+        $data['amount'] = ($isTransfer || ! $isIncome)
+            ? -abs((float) $data['amount'])
+            : abs((float) $data['amount']);
 
         return $data;
     }
@@ -47,7 +37,7 @@ class CreateTransaction extends CreateRecord
     {
         $record = $this->record;
 
-        if ($record->type->name === 'Transfer' && $record->to_account_id) {
+        if (strcasecmp((string) ($record->type?->name ?? ''), 'Transfer') === 0 && $record->to_account_id) {
             $inData = $record->toArray();
             $inData['account_id'] = $record->to_account_id;
             $inData['amount'] = abs($record->amount);

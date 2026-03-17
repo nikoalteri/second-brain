@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Filament\Widgets\Widget;
 
 class CashflowReport extends Widget
@@ -13,17 +14,20 @@ class CashflowReport extends Widget
 
     protected function getViewData(): array
     {
+        $userId = Auth::id();
+
         $rows = DB::table('transactions')
             ->leftJoin('transaction_types as tt', 'transactions.transaction_type_id', '=', 'tt.id')
             ->selectRaw('
                 YEAR(transactions.date) as year,
                 MONTH(transactions.date) as month,
-                SUM(CASE WHEN tt.name IN ("Earnings", "Cashback") THEN transactions.amount ELSE 0 END) as earnings,
-                SUM(CASE WHEN tt.name = "Expenses" THEN ABS(transactions.amount) ELSE 0 END) as expenses,
-                SUM(CASE WHEN tt.name IN ("Earnings", "Cashback", "Expenses") THEN transactions.amount ELSE 0 END) as net
+                SUM(CASE WHEN tt.is_income = 1 THEN ABS(transactions.amount) ELSE 0 END) as earnings,
+                SUM(CASE WHEN tt.is_income = 0 THEN ABS(transactions.amount) ELSE 0 END) as expenses,
+                SUM(transactions.amount) as net
             ')
             ->where('transactions.is_transfer', false)
             ->whereNull('transactions.deleted_at')
+            ->when($userId, fn ($query) => $query->where('transactions.user_id', $userId))
             ->groupByRaw('YEAR(transactions.date), MONTH(transactions.date)')
             ->orderByRaw('YEAR(transactions.date) DESC, MONTH(transactions.date) DESC')
             ->limit(12)

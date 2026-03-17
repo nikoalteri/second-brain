@@ -16,15 +16,6 @@ class EditLoan extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        // Validazione avanzata tramite FormRequest
-        $request = app(\App\Http\Requests\StoreLoanRequest::class);
-        $request->merge($data);
-        $validated = app('validator')->make(
-            $request->all(),
-            (new \App\Http\Requests\StoreLoanRequest())->rules()
-        )->validate();
-        $data = array_merge($data, $validated);
-
         $data['user_id'] = $this->record->user_id ?? auth()->id();
 
         if (blank($data['paid_installments'] ?? null)) {

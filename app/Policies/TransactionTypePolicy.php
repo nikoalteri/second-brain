@@ -12,12 +12,12 @@ class TransactionTypePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole('superadmin');
+        return true;
     }
 
     public function view(User $user, TransactionType $model): bool
     {
-        return $user->hasRole('superadmin');
+        return true;
     }
 
     public function create(User $user): bool

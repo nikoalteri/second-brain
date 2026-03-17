@@ -14,10 +14,8 @@ class TransactionTypeForm
             ->components([
                 TextInput::make('name')
                     ->required(),
-                TextInput::make('color')
-                    ->required(),
-                TextInput::make('icon')
-                    ->required(),
+                TextInput::make('color'),
+                TextInput::make('icon'),
                 Toggle::make('is_income')
                     ->required(),
             ]);

@@ -20,19 +20,19 @@ class TransactionForm
         return $schema
             ->components([
                 Select::make('account_id')
-                    ->label('Conto')
+                    ->label('Account')
                     ->options(Account::where('is_active', true)->pluck('name', 'id'))
                     ->searchable()
                     ->required(),
 
                 Select::make('transaction_type_id')  // ✅ PRIMA
-                    ->label('Tipo')
+                    ->label('Type')
                     ->relationship('type', 'name')
                     ->required()
                     ->live(),
 
                 Select::make('to_account_id')        // ✅ DOPO
-                    ->label('Conto destinazione')
+                    ->label('Destination account')
                     ->options(Account::where('is_active', true)->pluck('name', 'id'))
                     ->visible(
                         fn(Get $get) =>
@@ -43,7 +43,7 @@ class TransactionForm
                         TransactionType::find($get('transaction_type_id'))?->name === 'Transfer'
                     ),
                 Select::make('transaction_category_id')
-                    ->label('Categoria')
+                    ->label('Category')
                     ->options(function () {
                         return TransactionCategory::whereNotNull('parent_id')
                             ->where(function ($query) {
@@ -61,23 +61,23 @@ class TransactionForm
 
 
                 TextInput::make('amount')
-                    ->label('Importo')
+                    ->label('Amount')
                     ->numeric()
                     ->prefix('€')
                     ->minValue(0.01)
                     ->required(),
 
                 DatePicker::make('date')
-                    ->label('Data')
+                    ->label('Date')
                     ->default(now())
                     ->required(),
 
                 TextInput::make('description')
-                    ->label('Descrizione')
-                    ->placeholder('Es. McDonald\'s'),
-
+                    ->label('Description')
+                    ->placeholder('Es. McDonald\'s')
+                    ->required(),
                 Textarea::make('notes')
-                    ->label('Note')
+                    ->label('Notes')
                     ->columnSpanFull(),
             ]);
     }
