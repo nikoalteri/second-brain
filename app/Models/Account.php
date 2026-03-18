@@ -18,8 +18,6 @@ class Account extends Model
         'balance',
         'opening_balance',
         'currency',
-        'color',
-        'icon',
         'is_active',
     ];
 

@@ -16,8 +16,6 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('parent_id')->nullable()->constrained('transaction_categories')->onDelete('cascade');
             $table->string('name');
-            $table->string('color')->nullable();
-            $table->string('icon')->nullable();
             $table->decimal('budget_monthly', 8, 2)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();

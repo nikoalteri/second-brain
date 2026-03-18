@@ -15,8 +15,6 @@ class TransactionCategory extends Model
         'user_id',
         'parent_id',
         'name',
-        'color',
-        'icon',
         'is_active'
     ];
 

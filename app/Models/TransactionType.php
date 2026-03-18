@@ -8,8 +8,6 @@ class TransactionType extends Model
 {
     protected $fillable = [
         'name',
-        'color',
-        'icon',
         'is_income',
     ];
 

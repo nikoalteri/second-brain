@@ -20,7 +20,7 @@ use Filament\Tables\Table;
 class TransactionCategoryResource extends Resource
 {
     protected static ?string $model = TransactionCategory::class;
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
     protected static ?string $navigationLabel = 'Transaction Category';
     protected static ?string $singularLabel = 'Transaction Category';
     protected static ?int $navigationOrder = 1;

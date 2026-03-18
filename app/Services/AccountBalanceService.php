@@ -15,16 +15,10 @@ class AccountBalanceService
     {
         $diff = $transaction->amount - $transaction->getOriginal('amount');
         $transaction->account->increment('balance', $diff);
-        if ($transaction->to_account_id) {
-            $transaction->toAccount->increment('balance', abs($diff));
-        }
     }
 
     public function handleDeleted(Transaction $transaction): void
     {
         $transaction->account->decrement('balance', $transaction->amount);
-        if ($transaction->to_account_id) {
-            $transaction->toAccount->decrement('balance', abs($transaction->amount));
-        }
     }
 }

@@ -20,7 +20,7 @@ use Filament\Tables\Table;
 class TransactionTypeResource extends Resource
 {
     protected static ?string $model = TransactionType::class;
-    protected static string|UnitEnum|null $navigationGroup = 'Finance';
+    protected static string|UnitEnum|null $navigationGroup = 'Settings';
     protected static ?string $navigationLabel = 'Transaction Type';
     protected static ?string $singularLabel = 'Transaction Type';
     protected static ?int $navigationOrder = 1;

@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('transaction_types', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('color')->nullable();
-            $table->string('icon')->nullable();
             $table->boolean('is_income')->default(false);
             $table->timestamps();
         });

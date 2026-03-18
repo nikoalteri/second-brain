@@ -13,8 +13,6 @@ class TransactionTypeInfolist
         return $schema
             ->components([
                 TextEntry::make('name'),
-                TextEntry::make('color'),
-                TextEntry::make('icon'),
                 IconEntry::make('is_income')
                     ->boolean(),
                 TextEntry::make('created_at')

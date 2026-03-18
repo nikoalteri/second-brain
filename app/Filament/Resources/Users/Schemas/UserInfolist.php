@@ -12,20 +12,34 @@ class UserInfolist
     {
         return $schema
             ->components([
-                TextEntry::make('name'),
+                TextEntry::make('name')
+                    ->label('Name'),
+
                 TextEntry::make('email')
-                    ->label('Email address'),
-                TextEntry::make('email_verified_at')
-                    ->dateTime()
-                    ->placeholder('-'),
+                    ->label('Email'),
+
+                TextEntry::make('roles.name')
+                    ->label('Roles')
+                    ->badge()
+                    ->separator(', ')
+                    ->placeholder('No roles'),
+
                 IconEntry::make('is_active')
+                    ->label('Active account')
                     ->boolean(),
+
+                TextEntry::make('email_verified_at')
+                    ->label('Email verified at')
+                    ->dateTime('d/m/Y H:i')
+                    ->placeholder('Not verified'),
+
                 TextEntry::make('created_at')
-                    ->dateTime()
-                    ->placeholder('-'),
+                    ->label('Created at')
+                    ->dateTime('d/m/Y H:i'),
+
                 TextEntry::make('updated_at')
-                    ->dateTime()
-                    ->placeholder('-'),
+                    ->label('Updated at')
+                    ->dateTime('d/m/Y H:i'),
             ]);
     }
 }

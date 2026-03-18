@@ -11,9 +11,13 @@ class LoanRepository
         return Loan::find($id);
     }
 
-    public function all()
+    public function all(?int $userId = null)
     {
-        return Loan::all();
+        $query = Loan::query();
+        if ($userId !== null) {
+            $query->where('user_id', $userId);
+        }
+        return $query->get();
     }
 
     public function create(array $data): Loan

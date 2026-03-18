@@ -32,19 +32,38 @@ class CreateTransaction extends CreateRecord
         return $data;
     }
 
-    // ✅ QUI sotto mutateFormDataBeforeCreate
     protected function afterCreate(): void
     {
         $record = $this->record;
 
-        if (strcasecmp((string) ($record->type?->name ?? ''), 'Transfer') === 0 && $record->to_account_id) {
-            $inData = $record->toArray();
-            $inData['account_id'] = $record->to_account_id;
-            $inData['amount'] = abs($record->amount);
-            $inData['description'] .= ' (IN)';
-            $inData['is_transfer'] = true;
-
-            \App\Models\Transaction::create($inData);
+        if (strcasecmp((string) ($record->type?->name ?? ''), 'Transfer') !== 0 || ! $record->to_account_id) {
+            return;
         }
+
+        $pairId = (string) \Illuminate\Support\Str::uuid();
+
+        // Marca il record OUT (senza triggerare l'observer sui saldi, l'importo non cambia)
+        $record->updateQuietly([
+            'is_transfer'        => true,
+            'transfer_pair_id'   => $pairId,
+            'transfer_direction' => 'out',
+        ]);
+
+        // Crea la transazione IN paired
+        \App\Models\Transaction::create([
+            'user_id'               => $record->user_id,
+            'account_id'            => $record->to_account_id,
+            'transaction_type_id'   => $record->transaction_type_id,
+            'transaction_category_id' => $record->transaction_category_id,
+            'amount'                => abs((float) $record->amount),
+            'date'                  => $record->date,
+            'competence_month'      => $record->competence_month,
+            'description'           => $record->description . ' (IN)',
+            'notes'                 => $record->notes,
+            'is_transfer'           => true,
+            'transfer_pair_id'      => $pairId,
+            'transfer_direction'    => 'in',
+            'to_account_id'         => null,
+        ]);
     }
 }

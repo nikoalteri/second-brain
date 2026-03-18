@@ -21,10 +21,6 @@ class TransactionCategoriesTable
                     ->searchable(),
                 TextColumn::make('name')
                     ->searchable(),
-                TextColumn::make('color')
-                    ->searchable(),
-                TextColumn::make('icon')
-                    ->searchable(),
                 IconColumn::make('is_active')
                     ->boolean(),
                 TextColumn::make('created_at')

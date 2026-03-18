@@ -24,7 +24,7 @@ class AuthServiceProvider extends ServiceProvider
      * The model to policy mappings for the application.
      */
     protected $policies = [
-        // User::class => UserPolicy::class,
+        User::class => UserPolicy::class,
         Account::class => AccountPolicy::class,
         Loan::class => LoanPolicy::class,
         Transaction::class => TransactionPolicy::class,
@@ -38,17 +38,9 @@ class AuthServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // 🔐 SUPERADMIN BYPASS TUTTO
+        // Superadmin bypassa tutte le policy
         Gate::before(function (User $user, string $ability) {
             return $user->hasRole('superadmin') ? true : null;
-        });
-
-        // ADMIN can manage everything in their tenant (future SaaS)
-        Gate::before(function (User $user, string $ability) {
-            if ($user->hasRole('admin')) {
-                return true;  // TODO: limitare per tenant
-            }
-            return null;
         });
 
         $this->registerPolicies();

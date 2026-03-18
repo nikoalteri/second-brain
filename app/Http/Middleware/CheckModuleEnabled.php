@@ -17,9 +17,8 @@ class CheckModuleEnabled
     {
         $user = auth()->user();
 
-        // Se non autenticato, lascia passare (ci pensa Filament auth dopo)
         if (!$user) {
-            return $next($request);
+            abort(401);
         }
 
         if ($user->hasRole('superadmin')) {

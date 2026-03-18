@@ -18,10 +18,6 @@ class TransactionCategoryInfolist
                     ->label('Parent')
                     ->placeholder('-'),
                 TextEntry::make('name'),
-                TextEntry::make('color')
-                    ->placeholder('-'),
-                TextEntry::make('icon')
-                    ->placeholder('-'),
                 IconEntry::make('is_active')
                     ->boolean(),
                 TextEntry::make('created_at')

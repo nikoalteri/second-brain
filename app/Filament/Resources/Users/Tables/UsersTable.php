@@ -24,17 +24,14 @@ class UsersTable
                     ->searchable()
                     ->sortable(),
                 IconColumn::make('is_active')
-                    ->label('Attivo')
+                    ->label('Active')
                     ->boolean(),
                 TextColumn::make('roles.name')
+                    ->label('Roles')
                     ->badge()
                     ->separator(', ')
                     ->toggleable()
                     ->sortable(),
-                TextColumn::make('enabled_modules')
-                    ->badge()
-                    ->formatStateUsing(fn(array $state) => count($state))
-                    ->label('Moduli'),
             ])
 
             ->filters([

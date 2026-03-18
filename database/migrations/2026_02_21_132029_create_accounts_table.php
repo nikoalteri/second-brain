@@ -18,8 +18,6 @@ return new class extends Migration
             $table->enum('type', ['bank', 'cash', 'investment', 'emergency_fund', 'debt']);
             $table->decimal('balance', 15, 2)->default(0);
             $table->string('currency')->default('EUR');
-            $table->string('color')->nullable();
-            $table->string('icon')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_debt')->default(false);
             $table->timestamps();

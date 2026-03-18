@@ -18,12 +18,12 @@ class AccountsTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->label('Nome')
+                    ->label('Name')
                     ->searchable()
                     ->weight('medium'),
 
                 TextColumn::make('type')
-                    ->label('Tipo')
+                    ->label('Type')
                     ->badge()
                     ->color(fn($state) => match ($state) {
                         'bank'           => 'primary',
@@ -34,61 +34,57 @@ class AccountsTable
                         default          => 'gray',
                     })
                     ->formatStateUsing(fn($state) => match ($state) {
-                        'bank'           => 'Bancario',
-                        'cash'           => 'Contanti',
-                        'investment'     => 'Investimento',
-                        'debt'           => 'Debito',
-                        'emergency_fund' => 'Fondo Emergenza',
+                        'bank' => 'Bank',
+                        'cash' => 'Cash',
+                        'investment' => 'Investment',
+                        'debt' => 'Debt',
+                        'emergency_fund' => 'Emergency Fund',
                         default          => $state,
                     }),
 
                 TextColumn::make('opening_balance')
-                    ->label('Saldo Iniziale')
+                    ->label('Opening Balance')
                     ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('balance')
-                    ->label('Saldo Attuale')
+                    ->label('Current Balance')
                     ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger'),
                 IconColumn::make('is_active')
-                    ->label('Attivo')
+                    ->label('Active')
                     ->boolean()
                     ->trueColor('success')
                     ->falseColor('danger'),
 
-                TextColumn::make('color')
-                    ->label('Colore')
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 TextColumn::make('currency')
-                    ->label('Valuta')
+                    ->label('Currency')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
-                    ->label('Creato')
+                    ->label('Created At')
                     ->dateTime('d/m/Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('type')
-                    ->label('Tipo')
+                    ->label('Type')
                     ->options([
-                        'bank'           => 'Bancario',
-                        'cash'           => 'Contanti',
-                        'investment'     => 'Investimento',
-                        'emergency_fund' => 'Fondo Emergenza',
-                        'debt'           => 'Debito',
+                        'bank'           => 'Bank',
+                        'cash'           => 'Cash',
+                        'investment'     => 'Investment',
+                        'emergency_fund' => 'Emergency Fund',
+                        'debt'           => 'Debt',
                     ])
                     ->multiple(),
 
                 SelectFilter::make('is_active')
-                    ->label('Stato')
+                    ->label('Status')
                     ->options([
-                        1 => 'Attivo',
-                        0 => 'Non attivo',
+                        1 => 'Active',
+                        0 => 'Inactive',
                     ]),
 
             ])

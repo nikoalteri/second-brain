@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Accounts\Schemas;
 
-use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -16,43 +15,44 @@ class AccountsForm
         return $schema
             ->components([
                 Select::make('user_id')
-                    ->label('Utente')
+                    ->label('ID')
                     ->options(fn() => User::pluck('name', 'id')->toArray())
                     ->required(),
                 TextInput::make('name')
+                    ->label('Name')
                     ->required()
                     ->maxLength(255),
                 Select::make('type')
+                    ->label('Type')
                     ->options([
                         'bank' => 'Bank',
                         'cash' => 'Cash',
                         'investment' => 'Investment',
-                        'emergency_fund' => 'Emergency fund',
+                        'emergency_fund' => 'Emergency Fund',
                         'debt' => 'Debt',
                     ])
                     ->required(),
                 TextInput::make('balance')
-                    ->label('Saldo attuale')
+                    ->label('Current Balance')
                     ->numeric()
                     ->prefix('€')
                     ->disabled()
                     ->dehydrated(false)
-                    ->helperText('Calcolato automaticamente dal sistema'),
+                    ->helperText('Calculated automatically by the system'),
                 TextInput::make('opening_balance')
-                    ->label('Saldo iniziale')
+                    ->label('Opening Balance')
                     ->numeric()
                     ->prefix('€')
                     ->default(0)
-                    ->minValue(null)  // ✅ rimuove validazione min=0
-                    ->rules(['nullable', 'numeric']) // ✅ permette negativi
-                    ->helperText('Saldo al momento dell\'adozione del sistema'),
+                    ->minValue(null)
+                    ->rules(['nullable', 'numeric'])
+                    ->helperText('Balance at the time of system adoption'),
                 TextInput::make('currency')
+                    ->label('Currency')
                     ->required()
                     ->default('EUR'),
-                ColorPicker::make('color')
-                    ->default('#000000'),
-                TextInput::make('icon'),
                 Toggle::make('is_active')
+                    ->label('Active')
                     ->default(true),
             ]);
     }

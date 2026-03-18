@@ -7,6 +7,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class AccountsListWidget extends TableWidget
 {
@@ -46,6 +47,6 @@ class AccountsListWidget extends TableWidget
 
     protected function getAccountsQuery(): Builder
     {
-        return Account::query();
+        return Account::query()->where('user_id', Auth::id());
     }
 }
