@@ -4,7 +4,6 @@ namespace App\Filament\Resources\TransactionCategories\Pages;
 
 use App\Filament\Resources\TransactionCategories\TransactionCategoryResource;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditTransactionCategory extends EditRecord
@@ -14,7 +13,6 @@ class EditTransactionCategory extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make(),
             DeleteAction::make(),
         ];
     }

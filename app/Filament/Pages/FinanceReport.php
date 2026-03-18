@@ -46,7 +46,7 @@ class FinanceReport extends Page
     {
         return [
             Action::make('refresh')
-                ->label('Aggiorna')
+                ->label('Refresh')
                 ->icon('heroicon-o-arrow-path')
                 ->action('loadData'),
         ];

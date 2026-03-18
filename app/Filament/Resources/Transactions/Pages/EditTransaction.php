@@ -87,7 +87,7 @@ class EditTransaction extends EditRecord
                 // Account destinazione cambiato: ripristina il vecchio, incrementa il nuovo
                 \App\Models\Account::find($oldDestId)?->decrement('balance', $oldAmount);
                 \App\Models\Account::find($newDestId)?->increment('balance', $newAmount);
-            } elseif ($oldAmount !== $newAmount) {
+            } elseif (round($oldAmount, 2) !== round($newAmount, 2)) {
                 \App\Models\Account::find($newDestId)?->increment('balance', $newAmount - $oldAmount);
             }
         } else {

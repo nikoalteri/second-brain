@@ -18,6 +18,8 @@ class Loan extends Model
         'name',
         'total_amount',
         'monthly_payment',
+        'interest_rate',
+        'is_variable_rate',
         'withdrawal_day',
         'skip_weekends',
         'start_date',
@@ -31,6 +33,8 @@ class Loan extends Model
     protected $casts = [
         'total_amount' => 'decimal:2',
         'monthly_payment' => 'decimal:2',
+        'interest_rate' => 'decimal:2',
+        'is_variable_rate' => 'boolean',
         'remaining_amount' => 'decimal:2',
         'skip_weekends' => 'boolean',
         'start_date' => 'date',

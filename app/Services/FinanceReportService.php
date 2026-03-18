@@ -50,9 +50,9 @@ class FinanceReportService
             ->leftJoin('transaction_types as tt', 'transactions.transaction_type_id', '=', 'tt.id')
             ->selectRaw('
                 MONTH(transactions.date) as month,
-                SUM(CASE WHEN tt.name IN ("Earnings", "Cashback") THEN transactions.amount ELSE 0 END) as earnings,
-                SUM(CASE WHEN tt.name = "Expenses" THEN ABS(transactions.amount) ELSE 0 END) as expenses,
-                SUM(CASE WHEN tt.name IN ("Earnings", "Cashback", "Expenses") THEN transactions.amount ELSE 0 END) as net
+                SUM(CASE WHEN tt.is_income = 1 THEN transactions.amount ELSE 0 END) as earnings,
+                SUM(CASE WHEN tt.is_income = 0 THEN ABS(transactions.amount) ELSE 0 END) as expenses,
+                SUM(transactions.amount) as net
             ')
             ->where('transactions.is_transfer', false)
             ->whereNull('transactions.deleted_at')

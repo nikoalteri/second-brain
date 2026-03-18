@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Loans\Pages;
 
 use App\Filament\Resources\Loans\LoanResource;
+use App\Filament\Resources\Loans\Schemas\LoanForm;
 use Filament\Resources\Pages\EditRecord;
 
 class EditLoan extends EditRecord
@@ -26,12 +27,17 @@ class EditLoan extends EditRecord
             $data['total_installments'] = $this->record->total_installments ?? 1;
         }
 
-        if (blank($data['remaining_amount'] ?? null)) {
-            $data['remaining_amount'] = $this->record->remaining_amount ?? $this->record->total_amount ?? 0;
-        }
-
         if (blank($data['status'] ?? null)) {
             $data['status'] = $this->record->status ?? 'active';
+        }
+
+        $data['monthly_payment'] = LoanForm::computeMonthlyPayment($data);
+
+        if ($data['is_variable_rate'] ?? false) {
+            // Variable rate: remaining_amount is maintained by syncLoan() when payments change
+            $data['remaining_amount'] = $this->record->remaining_amount;
+        } else {
+            $data['remaining_amount'] = LoanForm::computeRemainingAmount($data);
         }
 
         return $data;

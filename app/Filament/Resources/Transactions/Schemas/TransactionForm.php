@@ -21,7 +21,13 @@ class TransactionForm
             ->components([
                 Select::make('account_id')
                     ->label('Account')
-                    ->options(Account::where('is_active', true)->pluck('name', 'id'))
+                    ->options(function () {
+                        $query = Account::where('is_active', true);
+                        if (! auth()->user()?->hasRole('superadmin')) {
+                            $query->where('user_id', auth()->id());
+                        }
+                        return $query->pluck('name', 'id');
+                    })
                     ->searchable()
                     ->required(),
 
@@ -33,7 +39,13 @@ class TransactionForm
 
                 Select::make('to_account_id')        // ✅ DOPO
                     ->label('Destination account')
-                    ->options(Account::where('is_active', true)->pluck('name', 'id'))
+                    ->options(function () {
+                        $query = Account::where('is_active', true);
+                        if (! auth()->user()?->hasRole('superadmin')) {
+                            $query->where('user_id', auth()->id());
+                        }
+                        return $query->pluck('name', 'id');
+                    })
                     ->visible(
                         fn(Get $get) =>
                         TransactionType::find($get('transaction_type_id'))?->name === 'Transfer'
@@ -74,8 +86,7 @@ class TransactionForm
 
                 TextInput::make('description')
                     ->label('Description')
-                    ->placeholder('Es. McDonald\'s')
-                    ->required(),
+                    ->placeholder('e.g. McDonald\'s'),
                 Textarea::make('notes')
                     ->label('Notes')
                     ->columnSpanFull(),

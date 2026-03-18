@@ -14,6 +14,7 @@ class LoanPayment extends Model
         'due_date',
         'actual_date',
         'amount',
+        'interest_rate',
         'status',
         'notes',
     ];
@@ -22,6 +23,7 @@ class LoanPayment extends Model
         'due_date' => 'date',
         'actual_date' => 'date',
         'amount' => 'decimal:2',
+        'interest_rate' => 'decimal:2',
         'status' => LoanPaymentStatus::class,
     ];
 

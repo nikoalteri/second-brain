@@ -4,12 +4,14 @@ namespace App\Providers;
 
 use App\Models\Account;
 use App\Models\Loan;
+use App\Models\LoanPayment;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use App\Models\TransactionType;
 use App\Models\User;
 use App\Policies\AccountPolicy;
+use App\Policies\LoanPaymentPolicy;
 use App\Policies\LoanPolicy;
 use App\Policies\TransactionCategoryPolicy;
 use App\Policies\TransactionPolicy;
@@ -27,6 +29,7 @@ class AuthServiceProvider extends ServiceProvider
         User::class => UserPolicy::class,
         Account::class => AccountPolicy::class,
         Loan::class => LoanPolicy::class,
+        LoanPayment::class => LoanPaymentPolicy::class,
         Transaction::class => TransactionPolicy::class,
         TransactionCategory::class => TransactionCategoryPolicy::class,
         TransactionType::class => TransactionTypePolicy::class,

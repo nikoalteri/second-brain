@@ -17,26 +17,27 @@ use Filament\Tables\Table;
 use App\Services\LoanScheduleService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\Placeholder;
 
 class PaymentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'payments';
 
-    protected static ?string $title = 'Rate';
+    protected static ?string $title = 'Installments';
 
     public function form(Schema $schema): Schema
     {
         return $schema
             ->components([
                 DatePicker::make('due_date')
-                    ->label('Scadenza prevista')
+                    ->label('Due Date')
                     ->required(),
 
                 DatePicker::make('actual_date')
-                    ->label('Data pagamento'),
+                    ->label('Payment Date'),
 
                 TextInput::make('amount')
-                    ->label('Importo')
+                    ->label('Amount')
                     ->numeric()
                     ->prefix('€')
                     ->required(),
@@ -47,8 +48,16 @@ class PaymentsRelationManager extends RelationManager
                     ->default(LoanPaymentStatus::PENDING->value)
                     ->required(),
 
+                TextInput::make('interest_rate')
+                    ->label('Interest Rate (%)')
+                    ->numeric()
+                    ->step(0.01)
+                    ->suffix('%')
+                    ->nullable()
+                    ->visible(fn() => $this->getOwnerRecord()->is_variable_rate),
+
                 TextInput::make('notes')
-                    ->label('Note')
+                    ->label('Notes')
                     ->maxLength(255),
             ])
             ->columns(2);
@@ -60,28 +69,68 @@ class PaymentsRelationManager extends RelationManager
             ->recordTitleAttribute('amount')
             ->columns([
                 TextColumn::make('due_date')
-                    ->label('Scadenza')
+                    ->label('Due Date')
                     ->date('d/m/Y')
                     ->sortable(),
 
                 TextColumn::make('actual_date')
-                    ->label('Pagata il')
+                    ->label('Paid On')
                     ->date('d/m/Y')
                     ->placeholder('-')
                     ->sortable(),
                 TextColumn::make('amount')
-                    ->label('Importo')
+                    ->label('Amount')
                     ->money('EUR')
                     ->sortable(),
+                TextColumn::make('interest_rate')
+                    ->label('Rate')
+                    ->formatStateUsing(fn($state) => $state !== null ? number_format((float) $state, 2) . '%' : '-')
+                    ->toggleable()
+                    ->visible(fn() => $this->getOwnerRecord()->is_variable_rate),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
                 TextColumn::make('notes')
-                    ->label('Note')
+                    ->label('Notes')
                     ->limit(30)
                     ->toggleable(),
             ])
             ->headerActions([
+                Action::make('recalculatePayments')
+                    ->label('Recalculate future payments')
+                    ->icon('heroicon-o-calculator')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->form([
+                        TextInput::make('new_rate')
+                            ->label('New Interest Rate (%)')
+                            ->numeric()
+                            ->suffix('%')
+                            ->required()
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->step(0.01),
+                        Placeholder::make('info')
+                            ->content(fn() => 'Pending installments: '
+                                . $this->getOwnerRecord()->payments()->where('status', 'pending')->count()
+                                . ' — Remaining capital: €'
+                                . number_format(
+                                    max(0, (float) $this->getOwnerRecord()->total_amount - (float) $this->getOwnerRecord()->payments()->where('status', 'paid')->sum('amount')),
+                                    2,
+                                    ',',
+                                    '.'
+                                )),
+                    ])
+                    ->action(function (array $data) {
+                        $loan = $this->getOwnerRecord();
+                        app(LoanScheduleService::class)->recalculateFuturePayments($loan, (float) $data['new_rate']);
+
+                        Notification::make()
+                            ->title('Future payments recalculated')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn() => $this->getOwnerRecord()->is_variable_rate),
                 Action::make('generateSchedule')
                     ->label('Generate schedule')
                     ->icon('heroicon-o-calendar-days')

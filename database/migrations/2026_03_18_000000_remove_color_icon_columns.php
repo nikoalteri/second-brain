@@ -9,15 +9,30 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('accounts', function (Blueprint $table) {
-            $table->dropColumn(['color', 'icon']);
+            $cols = collect(['color', 'icon'])->filter(
+                fn($c) => Schema::hasColumn('accounts', $c)
+            )->toArray();
+            if ($cols) {
+                $table->dropColumn($cols);
+            }
         });
 
         Schema::table('transaction_types', function (Blueprint $table) {
-            $table->dropColumn(['color', 'icon']);
+            $cols = collect(['color', 'icon'])->filter(
+                fn($c) => Schema::hasColumn('transaction_types', $c)
+            )->toArray();
+            if ($cols) {
+                $table->dropColumn($cols);
+            }
         });
 
         Schema::table('transaction_categories', function (Blueprint $table) {
-            $table->dropColumn(['color', 'icon']);
+            $cols = collect(['color', 'icon'])->filter(
+                fn($c) => Schema::hasColumn('transaction_categories', $c)
+            )->toArray();
+            if ($cols) {
+                $table->dropColumn($cols);
+            }
         });
     }
 

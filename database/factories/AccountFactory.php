@@ -19,8 +19,6 @@ class AccountFactory extends Factory
             'balance' => $this->faker->randomFloat(2, 0, 10000),
             'opening_balance' => 0,
             'currency' => 'EUR',
-            'color' => null,
-            'icon' => null,
             'is_active' => true,
         ];
     }
@@ -31,5 +29,4 @@ class AccountFactory extends Factory
             'is_active' => true,
         ]);
     }
-
 }

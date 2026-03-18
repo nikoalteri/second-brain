@@ -27,7 +27,7 @@ class AccountsListWidget extends TableWidget
                     ->searchable()
                     ->weight('medium'),
                 TextColumn::make('type')
-                    ->label('Tipo')
+                    ->label('Type')
                     ->badge()
                     ->color(fn(string $state): string => match ($state) {
                         'bank' => 'primary',
@@ -37,7 +37,7 @@ class AccountsListWidget extends TableWidget
                         default => 'gray',
                     }),
                 TextColumn::make('signed_balance')
-                    ->label('Saldo')
+                    ->label('Balance')
                     ->money('EUR', locale: 'it')
                     ->alignEnd()
                     ->sortable()

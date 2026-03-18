@@ -8,16 +8,16 @@
                     <tr style="border-bottom: 2px solid #e5e7eb;">
                         <th
                             style="text-align:left; padding:10px 16px; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#6b7280;">
-                            Periodo</th>
+                            Period</th>
                         <th
                             style="text-align:right; padding:10px 16px; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#16a34a;">
-                            Entrate</th>
+                            Income</th>
                         <th
                             style="text-align:right; padding:10px 16px; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#ef4444;">
-                            Uscite</th>
+                            Expenses</th>
                         <th
                             style="text-align:right; padding:10px 16px; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.05em; color:#6b7280;">
-                            Netto</th>
+                            Net</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -49,7 +49,7 @@
                     <tr style="border-top: 2px solid #d1d5db; background:#f9fafb;">
                         <td
                             style="padding:10px 16px; font-weight:700; font-size:0.75rem; text-transform:uppercase; color:#374151;">
-                            Totale (12 mesi)</td>
+                            Total (12 months)</td>
                         <td
                             style="padding:10px 16px; text-align:right; font-weight:700; color:#16a34a; font-family:monospace;">
                             € {{ number_format($totalEarnings, 2, ',', '.') }}

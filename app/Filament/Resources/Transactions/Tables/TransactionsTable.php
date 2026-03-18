@@ -22,35 +22,35 @@ class TransactionsTable
             ->defaultSort('date', 'desc')
             ->columns([
                 TextColumn::make('date')
-                    ->label('Data')
+                    ->label('Date')
                     ->date('d/m/Y')
                     ->sortable(),
 
                 TextColumn::make('account.name')
-                    ->label('Conto')
+                    ->label('Account')
                     ->sortable()
                     ->searchable(),
 
                 TextColumn::make('type.name')
-                    ->label('Tipo')
+                    ->label('Type')
                     ->badge()
                     ->color(fn($record) => match ($record->type?->name) {
-                        'Entrate'  => 'success',
-                        'Uscite'   => 'danger',
-                        'Trasferimento' => 'info',
+                        'Earnings' => 'success',
+                        'Expenses' => 'danger',
+                        'Transfer' => 'info',
                         'Cashback' => 'warning',
                         default    => 'gray',
                     })
                     ->sortable(),
 
                 TextColumn::make('toAccount.name')
-                    ->label('Conto Destinazione')
+                    ->label('Destination Account')
                     ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('category.name')
-                    ->label('Categoria')
+                    ->label('Category')
                     ->formatStateUsing(
                         fn($record) =>
                         $record->category?->parent
@@ -60,25 +60,25 @@ class TransactionsTable
                     ->searchable(),
 
                 TextColumn::make('description')
-                    ->label('Descrizione')
+                    ->label('Description')
                     ->searchable()
                     ->limit(30),
 
                 TextColumn::make('amount')
-                    ->label('Importo')
+                    ->label('Amount')
                     ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
                     ->sortable(),
 
                 TextColumn::make('competence_month')
-                    ->label('Competenza')
+                    ->label('Competence Month')
                     ->sortable(),
             ])
             ->filters([
                 Filter::make('date')
                     ->form([
-                        DatePicker::make('from')->label('Da'),
-                        DatePicker::make('to')->label('A'),
+                        DatePicker::make('from')->label('From'),
+                        DatePicker::make('to')->label('To'),
                     ])
                     ->query(function ($query, array $data) {
                         $query
@@ -87,11 +87,11 @@ class TransactionsTable
                     }),
 
                 SelectFilter::make('transaction_type_id')
-                    ->label('Tipo')
+                    ->label('Type')
                     ->relationship('type', 'name'),
 
                 SelectFilter::make('account_id')
-                    ->label('Conto')
+                    ->label('Account')
                     ->relationship('account', 'name'),
             ])
             ->recordActions([

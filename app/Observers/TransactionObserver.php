@@ -7,9 +7,6 @@ use Illuminate\Support\Facades\Log;
 
 class TransactionObserver
 {
-    // Previene il loop infinito durante la cancellazione della transazione paired
-    private static bool $isDeletingPair = false;
-
     public function created(Transaction $transaction): void
     {
         Log::info('Transaction created', ['transaction_id' => $transaction->id]);
@@ -28,27 +25,24 @@ class TransactionObserver
         app(\App\Services\AccountBalanceService::class)
             ->handleDeleted($transaction);
 
-        // Se è un trasferimento OUT, soft-delete anche la transazione IN paired
+        // Se è un trasferimento OUT, soft-delete anche la transazione IN paired.
+        // La condizione transfer_direction !== 'in' previene la ricorsione senza flag statici.
         if (
-            ! self::$isDeletingPair
-            && $transaction->transfer_pair_id
+            $transaction->transfer_pair_id
             && $transaction->transfer_direction !== 'in'
         ) {
             $pair = Transaction::where('transfer_pair_id', $transaction->transfer_pair_id)
                 ->where('id', '!=', $transaction->id)
                 ->first();
 
-            if ($pair) {
-                self::$isDeletingPair = true;
-                $pair->delete();
-                self::$isDeletingPair = false;
-            }
+            $pair?->delete();
         }
     }
 
     public function restored(Transaction $transaction): void
     {
-        //
+        app(\App\Services\AccountBalanceService::class)
+            ->handleCreated($transaction);
     }
 
     public function forceDeleted(Transaction $transaction): void

@@ -32,9 +32,7 @@ class Account extends Model
         parent::boot();
 
         static::creating(function ($account) {
-            if (Auth::user() !== null) {
-                $account->user_id = Auth::user()?->id;
-            }
+            $account->user_id ??= Auth::id();
         });
     }
 

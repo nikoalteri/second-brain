@@ -5,9 +5,7 @@ namespace App\Filament\Resources\TransactionTypes;
 use App\Filament\Resources\TransactionTypes\Pages\CreateTransactionType;
 use App\Filament\Resources\TransactionTypes\Pages\EditTransactionType;
 use App\Filament\Resources\TransactionTypes\Pages\ListTransactionTypes;
-use App\Filament\Resources\TransactionTypes\Pages\ViewTransactionType;
 use App\Filament\Resources\TransactionTypes\Schemas\TransactionTypeForm;
-use App\Filament\Resources\TransactionTypes\Schemas\TransactionTypeInfolist;
 use App\Filament\Resources\TransactionTypes\Tables\TransactionTypesTable;
 use App\Models\TransactionType;
 use BackedEnum;
@@ -32,11 +30,6 @@ class TransactionTypeResource extends Resource
         return TransactionTypeForm::configure($schema);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return TransactionTypeInfolist::configure($schema);
-    }
-
     public static function table(Table $table): Table
     {
         return TransactionTypesTable::configure($table);
@@ -54,7 +47,6 @@ class TransactionTypeResource extends Resource
         return [
             'index' => ListTransactionTypes::route('/'),
             'create' => CreateTransactionType::route('/create'),
-            'view' => ViewTransactionType::route('/{record}'),
             'edit' => EditTransactionType::route('/{record}/edit'),
         ];
     }

@@ -15,12 +15,12 @@
     {{-- FILTRI (come Excel) --}}
     <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; align-items: center;">
         <div style="display: flex; align-items: center; gap: 0.5rem;" x-data="{ open: false }" @click.away="open = false">
-            <label style="font-size: 0.875rem; font-weight: 500; color: #374151;">Tipologia</label>
+            <label style="font-size: 0.875rem; font-weight: 500; color: #374151;">Type</label>
             <div style="position: relative;">
                 <button type="button" @click="open = !open"
                     style="border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; padding: 0.375rem 0.75rem; font-size: 0.875rem; min-width: 180px; text-align: left; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
                     <span
-                        style="color: #374151;">{{ count($selectedTypes) > 0 ? count($selectedTypes) . ' elementi' : 'Tutti' }}</span>
+                        style="color: #374151;">{{ count($selectedTypes) > 0 ? count($selectedTypes) . ' selected' : 'All' }}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20"
                         fill="currentColor" style="flex-shrink: 0;">
                         <path fill-rule="evenodd"
@@ -42,11 +42,11 @@
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <label style="font-size: 0.875rem; font-weight: 500; color: #374151;">Note</label>
+            <label style="font-size: 0.875rem; font-weight: 500; color: #374151;">Notes</label>
             <div style="border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; min-width: 180px;">
                 <select wire:model.live="selectedNote"
                     style="border: none; font-size: 0.875rem; outline: none; padding: 0.375rem 0.5rem; width: 100%;">
-                    <option value="">(Tutto)</option>
+                    <option value="">(All)</option>
                     @foreach ($this->getNoteOptions() as $note => $label)
                         <option value="{{ $note }}">{{ Str::limit($note, 40) }}</option>
                     @endforeach
@@ -55,7 +55,7 @@
         </div>
     </div>
 
-    {{-- TOTALI COMPLESSIVI --}}
+    {{-- GRAND TOTAL --}}
     @php
         $pivotForTotals = $this->getPivotData();
         $gt = $pivotForTotals['grandTotal'];
@@ -65,7 +65,7 @@
             style="flex: 1; min-width: 220px; background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
             <div
                 style="font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
-                Totale complessivo {{ $selectedYear }}</div>
+                Grand Total {{ $selectedYear }}</div>
             <div
                 style="font-size: 1.5rem; font-weight: 700; font-family: monospace; color: {{ $gt >= 0 ? '#16a34a' : '#ef4444' }};">
                 €{{ number_format($gt, 2, ',', '.') }}</div>
@@ -103,7 +103,7 @@
                     <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
                         <th
                             style="padding: 0.6rem 1rem; text-align: left; font-weight: 700; color: #374151; white-space: nowrap;">
-                            Categoria</th>
+                            Category</th>
                         @foreach ($monthNames as $m => $name)
                             <th
                                 style="padding: 0.6rem 0.5rem; text-align: right; font-weight: 600; color: #6b7280; white-space: nowrap;">
@@ -111,7 +111,7 @@
                         @endforeach
                         <th
                             style="padding: 0.6rem 1rem; text-align: right; font-weight: 700; color: #374151; white-space: nowrap;">
-                            Totale</th>
+                            Total</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -156,7 +156,7 @@
                                 @php $val = $catData[$m] ?? 0; @endphp
                                 <td @dblclick="$wire.openDetail({{ $m }}, @js($catKey), @js($node['label']))"
                                     style="padding: 0.6rem 0.5rem; text-align: right; font-family: monospace; color: {{ $val >= 0 ? '#16a34a' : '#ef4444' }}; white-space: nowrap; cursor: pointer;"
-                                    title="Doppio click per dettaglio">
+                                    title="Double click for detail">
                                     {{ $val != 0 ? number_format($val, 2, ',', '.') : '-' }}
                                 </td>
                             @endforeach
@@ -177,7 +177,7 @@
                                         @php $val = $childData[$m] ?? 0; @endphp
                                         <td @dblclick="$wire.openDetail({{ $m }}, @js($child['key']), @js(str_replace('|', ' › ', $child['key'])))"
                                             style="padding: 0.5rem 0.5rem; text-align: right; font-family: monospace; font-size: 0.75rem; color: {{ $val >= 0 ? '#16a34a' : '#ef4444' }}; white-space: nowrap; cursor: pointer;"
-                                            title="Doppio click per dettaglio">
+                                            title="Double click for detail">
                                             {{ $val != 0 ? number_format($val, 2, ',', '.') : '-' }}
                                         </td>
                                     @endforeach
@@ -193,7 +193,7 @@
                 </tbody>
                 <tfoot>
                     <tr style="background: #f9fafb; border-top: 2px solid #d1d5db; font-weight: 700;">
-                        <td style="padding: 0.7rem 1rem; color: #374151;">TOTALE</td>
+                        <td style="padding: 0.7rem 1rem; color: #374151;">GRAND TOTAL</td>
                         @foreach ($months as $m)
                             @php $mt = $pivot['monthTotals'][$m] ?? 0; @endphp
                             <td
@@ -230,11 +230,11 @@
 
         <div
             style="background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-            <h3 style="font-size: 1rem; font-weight: 700; margin: 0 0 1rem 0; color: #374151;">Distribuzione
+            <h3 style="font-size: 1rem; font-weight: 700; margin: 0 0 1rem 0; color: #374151;">Distribution
                 {{ $selectedYear }}</h3>
             <canvas id="pieChart" style="max-height: 280px;"></canvas>
 
-            {{-- Legenda --}}
+            {{-- Legend --}}
             <div style="margin-top: 1rem;">
                 @foreach ($pieData as $i => $item)
                     <div
@@ -340,7 +340,7 @@
                                     <th style="padding: 0.5rem 0.75rem; text-align: left;">Date</th>
                                     <th style="padding: 0.5rem 0.75rem; text-align: left;">Description</th>
                                     <th style="padding: 0.5rem 0.75rem; text-align: left;">Account</th>
-                                    <th style="padding: 0.5rem 0.75rem; text-align: right;">Importo</th>
+                                    <th style="padding: 0.5rem 0.75rem; text-align: right;">Amount</th>
                                     <th style="padding: 0.5rem 0.75rem; text-align: center;"></th>
                                 </tr>
                             </thead>
@@ -356,14 +356,14 @@
                                         </td>
                                         <td style="padding: 0.5rem 0.75rem; text-align: center;">
                                             <a href="{{ route('filament.admin.resources.transactions.edit', ['record' => $tx]) }}"
-                                                style="color: #3b82f6; font-size: 0.75rem;">Modifica</a>
+                                                style="color: #3b82f6; font-size: 0.75rem;">Edit</a>
                                         </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                             <tfoot>
                                 <tr style="background: #f9fafb; font-weight: 700; border-top: 2px solid #e5e7eb;">
-                                    <td colspan="3" style="padding: 0.75rem;">Totale</td>
+                                    <td colspan="3" style="padding: 0.75rem;">Total</td>
                                     <td
                                         style="padding: 0.75rem; text-align: right; font-family: monospace; color: {{ $transactions->sum('amount') >= 0 ? '#16a34a' : '#ef4444' }};">
                                         €{{ number_format($transactions->sum('amount'), 2, ',', '.') }}

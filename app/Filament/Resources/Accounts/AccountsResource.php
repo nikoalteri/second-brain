@@ -5,9 +5,7 @@ namespace App\Filament\Resources\Accounts;
 use App\Filament\Resources\Accounts\Pages\CreateAccounts;
 use App\Filament\Resources\Accounts\Pages\EditAccounts;
 use App\Filament\Resources\Accounts\Pages\ListAccounts;
-use App\Filament\Resources\Accounts\Pages\ViewAccounts;
 use App\Filament\Resources\Accounts\Schemas\AccountsForm;
-use App\Filament\Resources\Accounts\Schemas\AccountsInfolist;
 use App\Filament\Resources\Accounts\Tables\AccountsTable;
 use App\Models\Account;
 use BackedEnum;
@@ -37,11 +35,6 @@ class AccountsResource extends Resource
         return AccountsForm::configure($schema);
     }
 
-    public static function infolist(Schema $schema): Schema
-    {
-        return AccountsInfolist::configure($schema);
-    }
-
     public static function table(Table $table): Table
     {
         return AccountsTable::configure($table);
@@ -59,9 +52,19 @@ class AccountsResource extends Resource
         return [
             'index' => ListAccounts::route('/'),
             'create' => CreateAccounts::route('/create'),
-            'view' => ViewAccounts::route('/{record}'),
             'edit' => EditAccounts::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()?->hasRole('superadmin')) {
+            return $query;
+        }
+
+        return $query->where('user_id', auth()->id());
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder

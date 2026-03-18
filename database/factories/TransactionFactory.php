@@ -19,11 +19,11 @@ class TransactionFactory extends Factory
         $account = Account::factory()->create(['user_id' => $user->id]);
         $type = TransactionType::query()->firstOrCreate(
             ['name' => 'Expenses'],
-            ['color' => '#ef4444', 'icon' => 'heroicon-o-arrow-down', 'is_income' => false]
+            ['is_income' => false]
         );
         $category = TransactionCategory::query()->firstOrCreate(
             ['user_id' => $user->id, 'name' => 'General', 'parent_id' => null],
-            ['color' => null, 'icon' => null, 'is_active' => true]
+            ['is_active' => true]
         );
 
         return [
@@ -44,7 +44,7 @@ class TransactionFactory extends Factory
             'amount' => $this->faker->randomFloat(2, -1000, 1000),
             'transaction_type_id' => TransactionType::query()->firstOrCreate(
                 ['name' => 'Transfer'],
-                ['color' => '#6366f1', 'icon' => 'heroicon-o-arrows-right-left', 'is_income' => false]
+                ['is_income' => false]
             )->id,
         ]);
     }
@@ -55,7 +55,7 @@ class TransactionFactory extends Factory
             'amount' => $this->faker->randomFloat(2, -1000, -1),
             'transaction_type_id' => TransactionType::query()->firstOrCreate(
                 ['name' => 'Expenses'],
-                ['color' => '#ef4444', 'icon' => 'heroicon-o-arrow-down', 'is_income' => false]
+                ['is_income' => false]
             )->id,
         ]);
     }
@@ -66,7 +66,7 @@ class TransactionFactory extends Factory
             'amount' => $this->faker->randomFloat(2, 1, 1000),
             'transaction_type_id' => TransactionType::query()->firstOrCreate(
                 ['name' => 'Earnings'],
-                ['color' => '#22c55e', 'icon' => 'heroicon-o-arrow-up', 'is_income' => true]
+                ['is_income' => true]
             )->id,
         ]);
     }
