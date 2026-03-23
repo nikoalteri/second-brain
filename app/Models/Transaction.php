@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\CreditCardPayment;
+use App\Models\LoanPayment;
 
 class Transaction extends Model
 {
@@ -17,6 +19,8 @@ class Transaction extends Model
         'account_id',
         'transaction_type_id',
         'to_account_id',
+        'loan_payment_id',
+        'credit_card_payment_id',
         'transaction_category_id',
         'amount',
         'date',
@@ -58,5 +62,15 @@ class Transaction extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function loanPayment(): BelongsTo
+    {
+        return $this->belongsTo(LoanPayment::class);
+    }
+
+    public function creditCardPayment(): BelongsTo
+    {
+        return $this->belongsTo(CreditCardPayment::class);
     }
 }

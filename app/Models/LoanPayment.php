@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\LoanPaymentStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Services\LoanScheduleService;
 
 class LoanPayment extends Model
@@ -49,5 +50,10 @@ class LoanPayment extends Model
     public function loan(): BelongsTo
     {
         return $this->belongsTo(Loan::class);
+    }
+
+    public function postingTransaction(): HasOne
+    {
+        return $this->hasOne(Transaction::class);
     }
 }

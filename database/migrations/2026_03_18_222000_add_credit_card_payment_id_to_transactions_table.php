@@ -1,0 +1,29 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->foreignId('credit_card_payment_id')
+                ->nullable()
+                ->after('loan_payment_id')
+                ->constrained('credit_card_payments')
+                ->nullOnDelete();
+
+            $table->unique('credit_card_payment_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->dropUnique(['credit_card_payment_id']);
+            $table->dropConstrainedForeignId('credit_card_payment_id');
+        });
+    }
+};

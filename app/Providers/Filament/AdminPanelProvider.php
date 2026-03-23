@@ -11,6 +11,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use App\Filament\Widgets\AccountsListWidget;
+use App\Filament\Widgets\CreditCardsKpiOverview;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\CashflowReport;
 use Filament\Widgets\AccountWidget;
@@ -47,6 +48,7 @@ class AdminPanelProvider extends PanelProvider
                 // AccountWidget::class,
                 // FilamentInfoWidget::class,
                 StatsOverview::class,
+                CreditCardsKpiOverview::class,
                 AccountsListWidget::class,
                 CashflowReport::class,
             ])

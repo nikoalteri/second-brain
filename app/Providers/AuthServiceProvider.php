@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Models\Account;
+use App\Models\CreditCard;
+use App\Models\CreditCardCycle;
+use App\Models\CreditCardPayment;
 use App\Models\Loan;
 use App\Models\LoanPayment;
 use App\Models\Subscription;
@@ -11,6 +14,9 @@ use App\Models\TransactionCategory;
 use App\Models\TransactionType;
 use App\Models\User;
 use App\Policies\AccountPolicy;
+use App\Policies\CreditCardCyclePolicy;
+use App\Policies\CreditCardPaymentPolicy;
+use App\Policies\CreditCardPolicy;
 use App\Policies\LoanPaymentPolicy;
 use App\Policies\LoanPolicy;
 use App\Policies\TransactionCategoryPolicy;
@@ -28,6 +34,9 @@ class AuthServiceProvider extends ServiceProvider
     protected $policies = [
         User::class => UserPolicy::class,
         Account::class => AccountPolicy::class,
+        CreditCard::class => CreditCardPolicy::class,
+        CreditCardCycle::class => CreditCardCyclePolicy::class,
+        CreditCardPayment::class => CreditCardPaymentPolicy::class,
         Loan::class => LoanPolicy::class,
         LoanPayment::class => LoanPaymentPolicy::class,
         Transaction::class => TransactionPolicy::class,
