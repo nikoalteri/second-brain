@@ -14,7 +14,6 @@ use App\Filament\Widgets\AccountsListWidget;
 use App\Filament\Widgets\CreditCardsKpiOverview;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\CashflowReport;
-use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -40,9 +39,6 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->resources([
-                SubscriptionResource::class,
-            ])
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
