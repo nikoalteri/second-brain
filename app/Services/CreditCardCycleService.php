@@ -16,77 +16,17 @@ class CreditCardCycleService
 {
     use HasWorkdayCalculation;
 
-    public function calculateDailyBalances(CreditCardCycle $cycle): array
+    private RevolvingCreditCalculator $calculator;
+
+    public function __construct(?RevolvingCreditCalculator $calculator = null)
     {
-        $cycle->loadMissing(['creditCard', 'expenses']);
-        $card = $cycle->creditCard;
-        
-        if (!$card) {
-            return [];
-        }
-
-        $startDate = $cycle->period_start_date;
-        $endDate = $cycle->statement_date;
-        $dailyBalances = [];
-        
-        // Get starting balance (debt from previous cycles)
-        $currentBalance = max(0.0, (float) $card->current_balance);
-        
-        // Get all expenses for this cycle, indexed by date
-        $expensesByDate = $cycle->expenses()
-            ->orderBy('spent_at')
-            ->get()
-            ->groupBy(fn($e) => $e->spent_at->toDateString())
-            ->toArray();
-        
-        // Calculate balance for each day in the cycle
-        $date = $startDate->copy();
-        while ($date->lte($endDate)) {
-            $dateStr = $date->toDateString();
-            
-            // Add expenses posted on this date
-            if (isset($expensesByDate[$dateStr])) {
-                foreach ($expensesByDate[$dateStr] as $expense) {
-                    $currentBalance += (float) $expense['amount'];
-                }
-            }
-            
-            // Store daily balance
-            $dailyBalances[$dateStr] = round($currentBalance, 2);
-            $date->addDay();
-        }
-        
-        return $dailyBalances;
+        $this->calculator = $calculator ?? app(RevolvingCreditCalculator::class);
     }
 
-    public function calculateCycleInterestFromDailyBalances(
-        array $dailyBalances,
-        float $annualRate
-    ): float {
-        if (empty($dailyBalances)) {
-            return 0.0;
-        }
-
-        $dailyRate = $annualRate / 100 / 365;
-        $totalInterest = 0.0;
-
-        foreach ($dailyBalances as $balance) {
-            $totalInterest += (float) $balance * $dailyRate;
-        }
-
-        return round($totalInterest, 2);
-    }
-
-    public function calculateChargeCycleDue(float $totalSpent): array
-    {
-        return [
-            'interest_amount' => 0.0,
-            'principal_amount' => round(max(0.0, $totalSpent), 2),
-            'stamp_duty_amount' => 0.0,
-            'total_due' => round(max(0.0, $totalSpent), 2),
-        ];
-    }
-
+    /**
+     * @deprecated Use RevolvingCreditCalculator directly
+     * Kept for backward compatibility with existing tests
+     */
     public function calculateRevolvingPaymentBreakdown(CreditCard $card, float $currentBalance): array
     {
         $maxInstallment = (float) ($card->fixed_payment ?? 0);
@@ -127,7 +67,7 @@ class CreditCardCycleService
             ];
         }
 
-        // Apply annual rate directly as monthly rate (e.g., 14% annual = 14% monthly per user's requirement)
+        // Direct monthly application: 14% annual = 14% monthly per user's requirement
         $monthlyRate = $rate / 100;
         $interestAmount = $monthlyRate > 0 ? round($currentBalance * $monthlyRate, 2) : 0.0;
         $effectiveInstallment = min($maxInstallment, $currentBalance + $interestAmount);
@@ -145,59 +85,6 @@ class CreditCardCycleService
         ];
     }
 
-    public function calculateRevolvingPaymentBreakdownFromCycle(
-        CreditCardCycle $cycle
-    ): array {
-        $cycle->loadMissing('creditCard');
-        $card = $cycle->creditCard;
-
-        if (!$card || $card->type !== CreditCardType::REVOLVING) {
-            return [];
-        }
-
-        $maxInstallment = (float) ($card->fixed_payment ?? 0);
-        $rate = (float) ($card->interest_rate ?? 0);
-        $stampDuty = (float) ($card->stamp_duty_amount ?? 0);
-
-        if ($maxInstallment <= 0 || $rate <= 0) {
-            return [];
-        }
-
-        // Calculate daily balances for the cycle
-        $dailyBalances = $this->calculateDailyBalances($cycle);
-        
-        if (empty($dailyBalances)) {
-            return [];
-        }
-
-        // Calculate total interest from daily balances
-        $interestAmount = $this->calculateCycleInterestFromDailyBalances($dailyBalances, $rate);
-        
-        // Get starting balance from cycle's previous payment history
-        $startingBalance = max(0.0, (float) $card->current_balance);
-        $totalExposed = $startingBalance + (float) $cycle->total_spent;
-
-        if ($totalExposed <= 0) {
-            return [];
-        }
-
-        // Calculate principal: fixed payment minus interest
-        $effectiveInstallment = min($maxInstallment, $totalExposed);
-        $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount), 2);
-        $nextBalance = round(max(0.0, $totalExposed - $principalAmount), 2);
-
-        return [
-            'interest_amount' => $interestAmount,
-            'principal_amount' => $principalAmount,
-            'stamp_duty_amount' => round($stampDuty, 2),
-            'installment_amount' => round($effectiveInstallment, 2),
-            'total_due' => round($effectiveInstallment + $stampDuty, 2),
-            'next_balance' => $nextBalance,
-            'invalid_installment' => $principalAmount <= 0,
-            'daily_balances_count' => count($dailyBalances),
-        ];
-    }
-
     public function issueCycle(CreditCardCycle $cycle): bool
     {
         $cycle->loadMissing('creditCard');
@@ -210,27 +97,22 @@ class CreditCardCycleService
             $card = $cycle->creditCard;
 
             if ($card->type === CreditCardType::CHARGE) {
-                $breakdown = $this->calculateChargeCycleDue((float) $cycle->total_spent);
-
-                $installment = $breakdown['total_due'];
-                $totalDue = $breakdown['total_due'];
+                // CHARGE card: no interest, full amount due
+                $breakdown = $this->calculator->calculateChargePaymentBreakdown($cycle);
             } else {
-                $baseBalance = max(0.0, (float) $card->current_balance);
-                $breakdown = $this->calculateRevolvingPaymentBreakdown($card, $baseBalance);
+                // REVOLVING card: interest + principal, fixed payment
+                $breakdown = $this->calculator->calculatePaymentBreakdown($cycle);
 
-                if (($breakdown['invalid_installment'] ?? false) === true) {
+                if (empty($breakdown)) {
                     return false;
                 }
-
-                $installment = $breakdown['installment_amount'];
-                $totalDue = $breakdown['total_due'];
             }
 
             $cycle->update([
                 'interest_amount' => $breakdown['interest_amount'],
                 'principal_amount' => $breakdown['principal_amount'],
                 'stamp_duty_amount' => $breakdown['stamp_duty_amount'],
-                'total_due' => $totalDue,
+                'total_due' => $breakdown['total_due'],
                 'status' => CreditCardCycleStatus::ISSUED,
             ]);
 
@@ -238,16 +120,11 @@ class CreditCardCycleService
                 'credit_card_id' => $card->id,
                 'credit_card_cycle_id' => $cycle->id,
                 'due_date' => $cycle->due_date,
-                'installment_amount' => $installment,
+                'installment_amount' => $breakdown['installment_amount'],
                 'interest_amount' => $breakdown['interest_amount'],
                 'principal_amount' => $breakdown['principal_amount'],
                 'stamp_duty_amount' => $breakdown['stamp_duty_amount'],
-                'total_amount' => round(
-                    (float) $breakdown['principal_amount']
-                        + (float) $breakdown['interest_amount']
-                        + (float) $breakdown['stamp_duty_amount'],
-                    2
-                ),
+                'total_amount' => $breakdown['total_due'],
                 'status' => CreditCardPaymentStatus::PENDING,
             ]);
 
