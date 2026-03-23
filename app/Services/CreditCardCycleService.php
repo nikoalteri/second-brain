@@ -17,10 +17,14 @@ class CreditCardCycleService
     use HasWorkdayCalculation;
 
     private RevolvingCreditCalculator $calculator;
+    private CreditCardBalanceService $balanceService;
 
-    public function __construct(?RevolvingCreditCalculator $calculator = null)
-    {
+    public function __construct(
+        ?RevolvingCreditCalculator $calculator = null,
+        ?CreditCardBalanceService $balanceService = null
+    ) {
         $this->calculator = $calculator ?? app(RevolvingCreditCalculator::class);
+        $this->balanceService = $balanceService ?? app(CreditCardBalanceService::class);
     }
 
     /**
@@ -215,13 +219,11 @@ class CreditCardCycleService
             $principal = (float) $payment->principal_amount;
 
             if (! $fromPaid && $toPaid) {
-                $card->update([
-                    'current_balance' => round(max(0.0, (float) $card->current_balance - $principal), 2),
-                ]);
+                // Payment marked as PAID: reduce debt by principal
+                $this->balanceService->applyPrincipalPayment($card, $principal);
             } elseif ($fromPaid && ! $toPaid) {
-                $card->update([
-                    'current_balance' => round(max(0.0, (float) $card->current_balance + $principal), 2),
-                ]);
+                // Payment unmarked: restore debt
+                $this->balanceService->reversePrincipalPayment($card, $principal);
             }
 
             $this->syncCardBalance($card->fresh());
@@ -278,9 +280,8 @@ class CreditCardCycleService
             }
 
             if ($payment->status === CreditCardPaymentStatus::PAID) {
-                $card->update([
-                    'current_balance' => round(max(0.0, (float) $card->current_balance + (float) $payment->principal_amount), 2),
-                ]);
+                // Payment was marked PAID: restore debt on deletion
+                $this->balanceService->reversePrincipalPayment($card, (float) $payment->principal_amount);
             }
 
             $this->syncCardBalance($card->fresh());
