@@ -31,14 +31,12 @@ class CyclesRelationManager extends RelationManager
             ->components([
                 DatePicker::make('period_start_date')
                     ->label('Period start')
-                    ->helperText('Select the cycle start date.')
-                    ->rules(['before_or_equal:statement_date'])
+                    ->helperText('First day of the billing cycle.')
                     ->required()
                     ->native(false),
                 DatePicker::make('statement_date')
                     ->label('Statement date')
-                    ->helperText('Date when statement is issued.')
-                    ->rules(['after_or_equal:period_start_date'])
+                    ->helperText('Date when statement is issued (end of cycle).')
                     ->required()
                     ->native(false),
                 DatePicker::make('due_date')
@@ -154,6 +152,11 @@ class CyclesRelationManager extends RelationManager
     {
         $periodStart = Carbon::parse($data['period_start_date']);
         $statementDate = Carbon::parse($data['statement_date']);
+
+        // Validate that period_start_date is before or equal to statement_date
+        if ($periodStart->isAfter($statementDate)) {
+            throw new \Exception('Period start date must be before or equal to statement date.');
+        }
 
         $data['period_start_date'] = $periodStart->toDateString();
         $data['period_month'] = $periodStart->format('Y-m');
