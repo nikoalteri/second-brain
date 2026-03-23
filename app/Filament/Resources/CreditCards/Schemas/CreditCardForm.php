@@ -48,7 +48,8 @@ class CreditCardForm
                             ->helperText('Charge: full statement payment. Revolving: fixed monthly installment with interest.')
                             ->required()
                             ->default(CreditCardType::CHARGE->value)
-                            ->live(),
+                            ->live()
+                            ->afterStateUpdated(fn(\Filament\Forms\Set $set) => $set('fixed_payment', null)),
                         Select::make('status')
                             ->label('Status')
                             ->options(CreditCardStatus::class)
