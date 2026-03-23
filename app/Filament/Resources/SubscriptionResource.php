@@ -29,7 +29,7 @@ class SubscriptionResource extends Resource
     protected static string|UnitEnum|null $navigationGroup = 'Finance';
     protected static ?string $navigationLabel = 'Subscription';
     protected static ?string $singularLabel = 'Subscription';
-    protected static ?int $navigationOrder = 5;
+    protected static ?int $navigationOrder = 3;
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema
