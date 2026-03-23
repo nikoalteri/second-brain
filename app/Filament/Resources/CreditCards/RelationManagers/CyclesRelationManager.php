@@ -32,17 +32,19 @@ class CyclesRelationManager extends RelationManager
                 DatePicker::make('period_start_date')
                     ->label('Period start')
                     ->helperText('Select the cycle start date.')
-                    ->rule('before_or_equal:period_end_date')
+                    ->rules(['before_or_equal:statement_date'])
                     ->required()
                     ->native(false),
-                DatePicker::make('period_end_date')
-                    ->label('Period end')
-                    ->helperText('Select the cycle end date.')
-                    ->rule('after_or_equal:period_start_date')
-                    ->required(),
+                DatePicker::make('statement_date')
+                    ->label('Statement date')
+                    ->helperText('Date when statement is issued.')
+                    ->rules(['after_or_equal:period_start_date'])
+                    ->required()
+                    ->native(false),
                 DatePicker::make('due_date')
                     ->label('Due date')
-                    ->helperText('Billing date.'),
+                    ->helperText('Payment deadline.')
+                    ->native(false),
                 TextInput::make('total_spent')
                     ->label('Total spent')
                     ->numeric()
@@ -137,7 +139,6 @@ class CyclesRelationManager extends RelationManager
                             : Carbon::parse($data['period_month'] . '-01');
 
                         $data['period_start_date'] = $periodStart->toDateString();
-                        $data['period_end_date'] = Carbon::parse($data['statement_date'])->toDateString();
 
                         return $data;
                     })
@@ -152,23 +153,21 @@ class CyclesRelationManager extends RelationManager
     private function normalizeCycleData(array $data): array
     {
         $periodStart = Carbon::parse($data['period_start_date']);
-        $periodEnd = Carbon::parse($data['period_end_date']);
+        $statementDate = Carbon::parse($data['statement_date']);
 
         $data['period_start_date'] = $periodStart->toDateString();
         $data['period_month'] = $periodStart->format('Y-m');
-        $data['statement_date'] = $periodEnd->toDateString();
+        $data['statement_date'] = $statementDate->toDateString();
 
         if (empty($data['due_date'])) {
-            $dueDate = $periodEnd->copy()->day(19);
+            $dueDate = $statementDate->copy()->day(19);
 
-            if ($dueDate->lessThanOrEqualTo($periodEnd)) {
+            if ($dueDate->lessThanOrEqualTo($statementDate)) {
                 $dueDate = $dueDate->addMonthNoOverflow()->day(19);
             }
 
             $data['due_date'] = $dueDate->toDateString();
         }
-
-        unset($data['period_start_date'], $data['period_end_date']);
 
         return $data;
     }
