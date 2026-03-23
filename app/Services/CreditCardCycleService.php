@@ -66,7 +66,8 @@ class CreditCardCycleService
             ];
         }
 
-        $monthlyRate = ($rate / 100) / 12;
+        // Apply annual rate directly as monthly rate (e.g., 14% annual = 14% monthly per user's requirement)
+        $monthlyRate = $rate / 100;
         $interestAmount = $monthlyRate > 0 ? round($currentBalance * $monthlyRate, 2) : 0.0;
         $effectiveInstallment = min($maxInstallment, $currentBalance + $interestAmount);
         $principalAmount = round(min($currentBalance, max(0.0, $effectiveInstallment - $interestAmount)), 2);

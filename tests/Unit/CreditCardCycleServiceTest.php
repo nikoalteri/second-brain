@@ -10,7 +10,7 @@ use Tests\TestCase;
 class CreditCardCycleServiceTest extends TestCase
 {
     /** @test */
-    public function revolving_breakdown_includes_stamp_duty_and_reduces_balance(): void
+    public function revolving_breakdown_with_12_percent_rate(): void
     {
         $service = new CreditCardCycleService();
 
@@ -23,10 +23,36 @@ class CreditCardCycleServiceTest extends TestCase
 
         $result = $service->calculateRevolvingPaymentBreakdown($card, 1000);
 
-        $this->assertSame(10.0, $result['interest_amount']);
-        $this->assertSame(240.0, $result['principal_amount']);
+        // 12% of 1000 = 120, principal = 250 - 120 = 130
+        $this->assertSame(120.0, $result['interest_amount']);
+        $this->assertSame(130.0, $result['principal_amount']);
+        $this->assertSame(250.0, $result['installment_amount']);
         $this->assertSame(252.0, $result['total_due']);
-        $this->assertSame(760.0, $result['next_balance']);
+        $this->assertSame(870.0, $result['next_balance']);
+        $this->assertFalse($result['invalid_installment']);
+    }
+
+    /** @test */
+    public function revolving_breakdown_with_14_percent_rate_matches_bank_statement(): void
+    {
+        $service = new CreditCardCycleService();
+
+        $card = new CreditCard([
+            'type' => CreditCardType::REVOLVING,
+            'fixed_payment' => 250,
+            'interest_rate' => 14,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        // Real bank data: debt €542, rate 14%, should yield interest €75.88
+        $result = $service->calculateRevolvingPaymentBreakdown($card, 542);
+
+        // 14% of 542 = 75.88, principal = 250 - 75.88 = 174.12
+        $this->assertSame(75.88, $result['interest_amount']);
+        $this->assertSame(174.12, $result['principal_amount']);
+        $this->assertSame(250.0, $result['installment_amount']);
+        $this->assertSame(252.0, $result['total_due']);
+        $this->assertSame(367.88, $result['next_balance']);
         $this->assertFalse($result['invalid_installment']);
     }
 
@@ -42,9 +68,12 @@ class CreditCardCycleServiceTest extends TestCase
             'stamp_duty_amount' => 2,
         ]);
 
+        // 24% of 5000 = 1200, interest exceeds installment
         $result = $service->calculateRevolvingPaymentBreakdown($card, 5000);
 
         $this->assertTrue($result['invalid_installment']);
+        $this->assertSame(1200.0, $result['interest_amount']);
+        $this->assertSame(2.0, $result['stamp_duty_amount']);
         $this->assertSame(7.0, $result['total_due']);
     }
 
@@ -78,13 +107,35 @@ class CreditCardCycleServiceTest extends TestCase
             'stamp_duty_amount' => 2,
         ]);
 
+        // 12% of 100 = 12, principal = min(100, 250 - 12) = 100
         $result = $service->calculateRevolvingPaymentBreakdown($card, 100);
 
-        $this->assertSame(1.0, $result['interest_amount']);
+        $this->assertSame(12.0, $result['interest_amount']);
         $this->assertSame(100.0, $result['principal_amount']);
-        $this->assertSame(101.0, $result['installment_amount']);
-        $this->assertSame(103.0, $result['total_due']);
+        $this->assertSame(112.0, $result['installment_amount']);
+        $this->assertSame(114.0, $result['total_due']);
         $this->assertSame(0.0, $result['next_balance']);
         $this->assertFalse($result['invalid_installment']);
+    }
+
+    /** @test */
+    public function charge_card_breakdown_has_no_interest(): void
+    {
+        $service = new CreditCardCycleService();
+
+        $card = new CreditCard([
+            'type' => CreditCardType::CHARGE,
+            'fixed_payment' => 250,
+            'interest_rate' => 14,
+            'stamp_duty_amount' => 0,
+        ]);
+
+        $result = $service->calculateRevolvingPaymentBreakdown($card, 500);
+
+        $this->assertSame(0.0, $result['interest_amount']);
+        $this->assertSame(0.0, $result['principal_amount']);
+        $this->assertSame(250.0, $result['installment_amount']);
+        $this->assertSame(250.0, $result['total_due']);
+        $this->assertSame(500.0, $result['next_balance']);
     }
 }
