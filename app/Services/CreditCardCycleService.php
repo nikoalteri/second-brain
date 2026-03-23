@@ -16,6 +16,67 @@ class CreditCardCycleService
 {
     use HasWorkdayCalculation;
 
+    public function calculateDailyBalances(CreditCardCycle $cycle): array
+    {
+        $cycle->loadMissing(['creditCard', 'expenses']);
+        $card = $cycle->creditCard;
+        
+        if (!$card) {
+            return [];
+        }
+
+        $startDate = $cycle->period_start_date;
+        $endDate = $cycle->statement_date;
+        $dailyBalances = [];
+        
+        // Get starting balance (debt from previous cycles)
+        $currentBalance = max(0.0, (float) $card->current_balance);
+        
+        // Get all expenses for this cycle, indexed by date
+        $expensesByDate = $cycle->expenses()
+            ->orderBy('spent_at')
+            ->get()
+            ->groupBy(fn($e) => $e->spent_at->toDateString())
+            ->toArray();
+        
+        // Calculate balance for each day in the cycle
+        $date = $startDate->copy();
+        while ($date->lte($endDate)) {
+            $dateStr = $date->toDateString();
+            
+            // Add expenses posted on this date
+            if (isset($expensesByDate[$dateStr])) {
+                foreach ($expensesByDate[$dateStr] as $expense) {
+                    $currentBalance += (float) $expense['amount'];
+                }
+            }
+            
+            // Store daily balance
+            $dailyBalances[$dateStr] = round($currentBalance, 2);
+            $date->addDay();
+        }
+        
+        return $dailyBalances;
+    }
+
+    public function calculateCycleInterestFromDailyBalances(
+        array $dailyBalances,
+        float $annualRate
+    ): float {
+        if (empty($dailyBalances)) {
+            return 0.0;
+        }
+
+        $dailyRate = $annualRate / 100 / 365;
+        $totalInterest = 0.0;
+
+        foreach ($dailyBalances as $balance) {
+            $totalInterest += (float) $balance * $dailyRate;
+        }
+
+        return round($totalInterest, 2);
+    }
+
     public function calculateChargeCycleDue(float $totalSpent): array
     {
         return [
@@ -81,6 +142,59 @@ class CreditCardCycleService
             'total_due' => round($effectiveInstallment + $stampDuty, 2),
             'next_balance' => $nextBalance,
             'invalid_installment' => $principalAmount <= 0,
+        ];
+    }
+
+    public function calculateRevolvingPaymentBreakdownFromCycle(
+        CreditCardCycle $cycle
+    ): array {
+        $cycle->loadMissing('creditCard');
+        $card = $cycle->creditCard;
+
+        if (!$card || $card->type !== CreditCardType::REVOLVING) {
+            return [];
+        }
+
+        $maxInstallment = (float) ($card->fixed_payment ?? 0);
+        $rate = (float) ($card->interest_rate ?? 0);
+        $stampDuty = (float) ($card->stamp_duty_amount ?? 0);
+
+        if ($maxInstallment <= 0 || $rate <= 0) {
+            return [];
+        }
+
+        // Calculate daily balances for the cycle
+        $dailyBalances = $this->calculateDailyBalances($cycle);
+        
+        if (empty($dailyBalances)) {
+            return [];
+        }
+
+        // Calculate total interest from daily balances
+        $interestAmount = $this->calculateCycleInterestFromDailyBalances($dailyBalances, $rate);
+        
+        // Get starting balance from cycle's previous payment history
+        $startingBalance = max(0.0, (float) $card->current_balance);
+        $totalExposed = $startingBalance + (float) $cycle->total_spent;
+
+        if ($totalExposed <= 0) {
+            return [];
+        }
+
+        // Calculate principal: fixed payment minus interest
+        $effectiveInstallment = min($maxInstallment, $totalExposed);
+        $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount), 2);
+        $nextBalance = round(max(0.0, $totalExposed - $principalAmount), 2);
+
+        return [
+            'interest_amount' => $interestAmount,
+            'principal_amount' => $principalAmount,
+            'stamp_duty_amount' => round($stampDuty, 2),
+            'installment_amount' => round($effectiveInstallment, 2),
+            'total_due' => round($effectiveInstallment + $stampDuty, 2),
+            'next_balance' => $nextBalance,
+            'invalid_installment' => $principalAmount <= 0,
+            'daily_balances_count' => count($dailyBalances),
         ];
     }
 
