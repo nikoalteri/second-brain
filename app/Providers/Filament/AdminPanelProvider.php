@@ -14,6 +14,7 @@ use App\Filament\Widgets\AccountsListWidget;
 use App\Filament\Widgets\CreditCardsKpiOverview;
 use App\Filament\Widgets\StatsOverview;
 use App\Filament\Widgets\CashflowReport;
+use App\Filament\Widgets\SubscriptionsStatsWidget;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
@@ -52,6 +53,7 @@ class AdminPanelProvider extends PanelProvider
                 // AccountWidget::class,
                 // FilamentInfoWidget::class,
                 StatsOverview::class,
+                SubscriptionsStatsWidget::class,
                 CreditCardsKpiOverview::class,
                 AccountsListWidget::class,
                 CashflowReport::class,
