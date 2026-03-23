@@ -77,7 +77,6 @@ class CreditCardForm
                             ->step(0.01)
                             ->helperText('Maximum monthly amount for revolving cards. If residual balance is lower, the generated installment is reduced automatically.')
                             ->nullable()
-                            ->visible(fn(callable $get) => $get('type') === CreditCardType::REVOLVING->value)
                             ->live(),
                         TextInput::make('interest_rate')
                             ->label('Interest rate (%)')
@@ -86,7 +85,6 @@ class CreditCardForm
                             ->step(0.01)
                             ->helperText('Nominal monthly interest rate applied to revolving residual balance.')
                             ->nullable()
-                            ->visible(fn(callable $get) => $get('type') === CreditCardType::REVOLVING->value)
                             ->live(),
                         TextInput::make('stamp_duty_amount')
                             ->label('Stamp duty')
