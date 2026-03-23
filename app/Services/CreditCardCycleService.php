@@ -228,15 +228,6 @@ class CreditCardCycleService
         });
     }
 
-    public function syncCardById(int $cardId): void
-    {
-        $card = CreditCard::query()->with(['cycles.payments', 'payments'])->find($cardId);
-
-        if (! $card) {
-            return;
-        }
-    }
-
     public function handleDeletedPayment(CreditCardPayment $payment): void
     {
         $card = CreditCard::query()->with(['cycles.payments', 'payments'])->find((int) $payment->credit_card_id);

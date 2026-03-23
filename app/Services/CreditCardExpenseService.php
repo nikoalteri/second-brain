@@ -107,12 +107,6 @@ class CreditCardExpenseService
                     $this->recomputeCycleTotal($oldCycle);
                 }
             }
-
-            if ($originalCardId && $originalCardId !== (int) $expense->credit_card_id) {
-                $this->cycleService->syncCardById($originalCardId);
-            }
-
-            $this->cycleService->syncCardById((int) $currentCard->id);
         });
     }
 
@@ -133,12 +127,8 @@ class CreditCardExpenseService
                     $this->recomputeCycleTotal($cycle);
                 }
             }
-
-             if ($expense->credit_card_id) {
-                 $this->cycleService->syncCardById((int) $expense->credit_card_id);
-             }
-         });
-     }
+        });
+    }
 
     private function resolveCycle(CreditCard $card, Carbon|string $spentAt): CreditCardCycle
     {
