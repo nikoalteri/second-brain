@@ -7,11 +7,13 @@ use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class CreditCardExpenseService
 {
-    public function __construct(private readonly CreditCardCycleService $cycleService) {}
+    public function __construct(
+        private readonly CreditCardCycleService $cycleService,
+        private readonly CreditCardBalanceService $balanceService
+    ) {}
 
     public function validateExpenseChange(
         CreditCardExpense $expense,
@@ -28,15 +30,29 @@ class CreditCardExpenseService
             $newAmount = (float) $expense->amount;
 
             if ($originalCardId && $originalCardId !== (int) $currentCard->id) {
-                $this->assertLimitNotExceeded($currentCard, $newAmount);
+                // Moving to a different card: validate new card can accept this amount
+                try {
+                    $this->balanceService->addExpense($currentCard, $newAmount);
+                    // Revert the test addition
+                    $this->balanceService->removeExpense($currentCard, $newAmount);
+                } catch (\Exception $e) {
+                    throw $e;
+                }
                 return;
             }
 
+            // Same card: calculate delta and validate
             $oldAmount = $originalAmount ?? 0.0;
             $delta = $originalAmount === null ? $newAmount : ($newAmount - $oldAmount);
 
             if ($delta > 0) {
-                $this->assertLimitNotExceeded($currentCard, $delta);
+                try {
+                    $this->balanceService->addExpense($currentCard, $delta);
+                    // Revert the test addition
+                    $this->balanceService->removeExpense($currentCard, $delta);
+                } catch (\Exception $e) {
+                    throw $e;
+                }
             }
         });
     }
@@ -58,18 +74,23 @@ class CreditCardExpenseService
             $newAmount = (float) $expense->amount;
 
             if ($originalCardId && $originalCardId !== (int) $currentCard->id) {
+                // Moved to different card
                 $oldCard = CreditCard::query()->lockForUpdate()->find($originalCardId);
-
                 if ($oldCard) {
-                    $this->applyBalanceDelta($oldCard, -$oldAmount);
+                    $this->balanceService->removeExpense($oldCard, $oldAmount);
                 }
-
-                $this->applyBalanceDelta($currentCard, $newAmount);
+                $this->balanceService->addExpense($currentCard, $newAmount);
             } else {
+                // Same card: apply delta
                 $delta = $originalAmount === null ? $newAmount : ($newAmount - $oldAmount);
-                $this->applyBalanceDelta($currentCard, $delta);
+                if ($delta > 0) {
+                    $this->balanceService->addExpense($currentCard, $delta);
+                } elseif ($delta < 0) {
+                    $this->balanceService->removeExpense($currentCard, abs($delta));
+                }
             }
 
+            // Update cycle assignment
             $cycle = $this->resolveCycle($currentCard, $expense->spent_at ?? now());
 
             if ((int) $expense->credit_card_cycle_id !== (int) $cycle->id) {
@@ -102,7 +123,7 @@ class CreditCardExpenseService
                 $card = CreditCard::query()->lockForUpdate()->find((int) $expense->credit_card_id);
 
                 if ($card) {
-                    $this->applyBalanceDelta($card, - ((float) $expense->amount));
+                    $this->balanceService->removeExpense($card, (float) $expense->amount);
                 }
             }
 
@@ -113,11 +134,11 @@ class CreditCardExpenseService
                 }
             }
 
-            if ($expense->credit_card_id) {
-                $this->cycleService->syncCardById((int) $expense->credit_card_id);
-            }
-        });
-    }
+             if ($expense->credit_card_id) {
+                 $this->cycleService->syncCardById((int) $expense->credit_card_id);
+             }
+         });
+     }
 
     private function resolveCycle(CreditCard $card, Carbon|string $spentAt): CreditCardCycle
     {
@@ -142,35 +163,5 @@ class CreditCardExpenseService
     {
         $total = (float) $cycle->expenses()->sum('amount');
         $cycle->update(['total_spent' => round(max(0.0, $total), 2)]);
-    }
-
-    private function applyBalanceDelta(CreditCard $card, float $delta): void
-    {
-        if ($delta === 0.0) {
-            return;
-        }
-
-        if ($delta > 0) {
-            $this->assertLimitNotExceeded($card, $delta);
-        }
-
-        $newBalance = round(max(0.0, (float) $card->current_balance + $delta), 2);
-
-        $card->update(['current_balance' => $newBalance]);
-    }
-
-    private function assertLimitNotExceeded(CreditCard $card, float $increase): void
-    {
-        if ($card->credit_limit === null) {
-            return;
-        }
-
-        $candidate = round((float) $card->current_balance + $increase, 2);
-
-        if ($candidate > (float) $card->credit_limit) {
-            throw ValidationException::withMessages([
-                'amount' => 'Credit limit exceeded for this card.',
-            ]);
-        }
     }
 }
