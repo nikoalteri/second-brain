@@ -49,7 +49,7 @@ class CreditCardForm
                             ->required()
                             ->default(CreditCardType::CHARGE->value)
                             ->live()
-                            ->afterStateUpdated(fn(\Filament\Forms\Set $set) => $set('fixed_payment', null)),
+                            ->afterStateUpdated(fn(callable $set) => $set('fixed_payment', null)),
                         Select::make('status')
                             ->label('Status')
                             ->options(CreditCardStatus::class)
