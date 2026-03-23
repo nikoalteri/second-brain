@@ -19,6 +19,7 @@ use App\Policies\CreditCardPaymentPolicy;
 use App\Policies\CreditCardPolicy;
 use App\Policies\LoanPaymentPolicy;
 use App\Policies\LoanPolicy;
+use App\Policies\SubscriptionPolicy;
 use App\Policies\TransactionCategoryPolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\TransactionTypePolicy;
@@ -39,10 +40,10 @@ class AuthServiceProvider extends ServiceProvider
         CreditCardPayment::class => CreditCardPaymentPolicy::class,
         Loan::class => LoanPolicy::class,
         LoanPayment::class => LoanPaymentPolicy::class,
+        Subscription::class => SubscriptionPolicy::class,
         Transaction::class => TransactionPolicy::class,
         TransactionCategory::class => TransactionCategoryPolicy::class,
         TransactionType::class => TransactionTypePolicy::class,
-        // Subscription::class => SubscriptionPolicy::class,
     ];
 
     /**
