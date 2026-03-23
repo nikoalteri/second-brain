@@ -164,18 +164,8 @@
   - `LoanPaymentService.php` (payment management)
   - Auto transaction generation
 
-#### 🔧 Needs Refinement:
-- 🔧 Payment schedule regeneration handling (future only / missing only / full rebuild)
-- 🔧 UX: Auto-refresh loan page when changing installment (Livewire event from relation manager)
 
-#### ⏳ To Implement:
-- ⏳ **Revolving loan support** (e.g., Amex):
-  - interest rate per loan
-  - fixed monthly payment (e.g., €250)
-  - interest calculation on remaining balance, split principal/interest
-  - ability to add new expenses that recalculate future schedule
-
-**Status:** 🟡 **IN PROGRESS – 80% COMPLETE**
+**Status:** ✅ **COMPLETE & WORKING**
 
 **Key Files:**
 - Models: `app/Models/Loan.php`, `LoanPayment.php`
@@ -183,7 +173,6 @@
 - Service: `app/Services/LoanPaymentService.php`
 - Database: Migrations `2026_03_17_*` and later
 
-**Estimate for refinement:** 1–2 days
 
 ---
 
@@ -403,7 +392,7 @@
 
 | Milestone | Phases | Status | Estimate |
 |-----------|--------|--------|----------|
-| **Finance Core Complete** | 1–5 | 🟡 75% | 5–7 days |
+| **Finance Core Complete** | 1–5 | 🟡 78% | 4–6 days |
 | **Health + Productivity** | 6–7 | ⏳ 0% | 10–14 days |
 | **Full Second Brain** | 8 | ⏳ 0% | 8–12 days |
 | **Hardening & SaaS-ready** | 9 | ⏳ 0% | 3–5 days |
@@ -417,7 +406,7 @@
 | 0 | Setup & Architecture | ✅ | 100% | N/A |
 | 1 | Finance Core: Accounts & Transactions | ✅ | 100% | N/A |
 | 2 | Subscriptions | ✅ | 100% | N/A |
-| 3 | Loans | 🟡 | 80% | Refine variable rates + revolving |
+| 3 | Loans | ✅ | 100% | N/A |
 | 4 | Credit Cards | 🟡 | 85% | Fix revolving interest (daily balance method) |
 | 5 | Finance Dashboard | ⏳ | 0% | Create widgets + reports |
 | 6 | Health & Fitness | ⏳ | 0% | DB design + UI |
@@ -429,7 +418,7 @@
 
 ## 🚀 Recommended Next Actions
 
-### Short Term (1–2 weeks)
+### Short Term (1 week)
 1. **Fix Credit Cards Revolving Interest** (Phase 4):
    - Implement daily balance method (Metodo del Saldo Medio Giornaliero)
    - Calculate `∑(daily_balance × TAN/365)` instead of annualized rate
@@ -472,6 +461,6 @@
 
 ---
 
-**Last Updated:** 2026-03-23 23:52  
+**Last Updated:** 2026-03-23 23:55  
 **Owner:** Copilot AI  
 **Contact:** [user feedback]
