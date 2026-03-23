@@ -4,12 +4,12 @@ namespace App\Filament\Resources\Subscriptions\Schemas;
 
 use App\Enums\SubscriptionFrequency;
 use App\Enums\SubscriptionStatus;
-use Filament\Schemas\Components\DatePickerField;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\SelectField;
-use Filament\Schemas\Components\TextInputField;
-use Filament\Schemas\Components\TextareaField;
-use Filament\Schemas\Components\ToggleField;
 use Filament\Schemas\Schema;
 
 class SubscriptionForm
@@ -20,12 +20,12 @@ class SubscriptionForm
             ->schema([
                 Section::make('Subscription Info')
                     ->schema([
-                        TextInputField::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255)
                             ->placeholder('e.g., Netflix, Spotify'),
 
-                        SelectField::make('frequency')
+                        Select::make('frequency')
                             ->options(SubscriptionFrequency::class)
                             ->required()
                             ->live(),
@@ -34,13 +34,13 @@ class SubscriptionForm
 
                 Section::make('Cost')
                     ->schema([
-                        TextInputField::make('monthly_cost')
+                        TextInput::make('monthly_cost')
                             ->numeric()
                             ->prefix('€')
                             ->step(0.01)
                             ->helperText('For monthly subscriptions'),
 
-                        TextInputField::make('annual_cost')
+                        TextInput::make('annual_cost')
                             ->numeric()
                             ->prefix('€')
                             ->step(0.01)
@@ -50,14 +50,14 @@ class SubscriptionForm
 
                 Section::make('Renewal')
                     ->schema([
-                        TextInputField::make('day_of_month')
+                        TextInput::make('day_of_month')
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(31)
                             ->default(1)
                             ->helperText('Day of month for renewal'),
 
-                        DatePickerField::make('next_renewal_date')
+                        DatePicker::make('next_renewal_date')
                             ->required()
                             ->helperText('Next scheduled renewal'),
                     ])
@@ -65,13 +65,13 @@ class SubscriptionForm
 
                 Section::make('Account & Category')
                     ->schema([
-                        SelectField::make('account_id')
+                        Select::make('account_id')
                             ->relationship('account', 'name')
                             ->searchable()
                             ->preload()
                             ->helperText('Account to debit'),
 
-                        SelectField::make('category_id')
+                        Select::make('category_id')
                             ->relationship('category', 'name')
                             ->searchable()
                             ->preload()
@@ -81,12 +81,12 @@ class SubscriptionForm
 
                 Section::make('Settings')
                     ->schema([
-                        SelectField::make('status')
+                        Select::make('status')
                             ->options(SubscriptionStatus::class)
                             ->required()
                             ->default(SubscriptionStatus::ACTIVE),
 
-                        ToggleField::make('auto_create_transaction')
+                        Toggle::make('auto_create_transaction')
                             ->default(false)
                             ->helperText('Auto-create transaction on renewal'),
                     ])
@@ -94,7 +94,7 @@ class SubscriptionForm
 
                 Section::make('Notes')
                     ->schema([
-                        TextareaField::make('notes')
+                        Textarea::make('notes')
                             ->maxLength(500)
                             ->columnSpanFull(),
                     ]),
