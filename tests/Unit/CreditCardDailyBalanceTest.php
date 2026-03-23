@@ -7,6 +7,7 @@ use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
 use App\Services\CreditCardCycleService;
+use App\Services\RevolvingCreditCalculator;
 use Carbon\Carbon;
 use Tests\TestCase;
 
@@ -15,7 +16,7 @@ class CreditCardDailyBalanceTest extends TestCase
     /** @test */
     public function calculates_daily_balances_from_expenses(): void
     {
-        $service = new CreditCardCycleService();
+        $calculator = new RevolvingCreditCalculator();
 
         $card = CreditCard::factory()->create([
             'type' => CreditCardType::REVOLVING,
@@ -47,7 +48,7 @@ class CreditCardDailyBalanceTest extends TestCase
             'amount' => 200,
         ]);
 
-        $dailyBalances = $service->calculateDailyBalances($cycle);
+        $dailyBalances = $calculator->calculateDailyBalances($cycle);
 
         // Should have balances for each day from Mar 1 to Mar 10
         $this->assertCount(10, $dailyBalances);
@@ -75,7 +76,7 @@ class CreditCardDailyBalanceTest extends TestCase
     /** @test */
     public function calculates_cycle_interest_from_daily_balances(): void
     {
-        $service = new CreditCardCycleService();
+        $calculator = new RevolvingCreditCalculator();
 
         // Simulate daily balances over 10 days
         $dailyBalances = [
@@ -93,7 +94,7 @@ class CreditCardDailyBalanceTest extends TestCase
 
         // 14% annual rate = 14% / 365 = 0.0384% per day
         // Total interest = (100*2 + 200*8) * (0.14/365)
-        $interest = $service->calculateCycleInterestFromDailyBalances($dailyBalances, 14.0);
+        $interest = $calculator->calculateInterestFromDailyBalances($dailyBalances, 14.0);
 
         // (100 + 100 + 200 + 200 + 200 + 200 + 200 + 200 + 200 + 200) * (0.14/365)
         // = 1700 * 0.0003835... = 0.652055...
@@ -103,7 +104,7 @@ class CreditCardDailyBalanceTest extends TestCase
     /** @test */
     public function calculates_payment_breakdown_from_cycle_with_daily_balance(): void
     {
-        $service = new CreditCardCycleService();
+        $calculator = new RevolvingCreditCalculator();
 
         $card = CreditCard::factory()->create([
             'type' => CreditCardType::REVOLVING,
@@ -130,7 +131,7 @@ class CreditCardDailyBalanceTest extends TestCase
             'amount' => 540,
         ]);
 
-        $breakdown = $service->calculateRevolvingPaymentBreakdownFromCycle($cycle);
+        $breakdown = $calculator->calculatePaymentBreakdown($card, $cycle);
 
         $this->assertNotEmpty($breakdown);
         $this->assertIsNumeric($breakdown['interest_amount']);
@@ -144,17 +145,17 @@ class CreditCardDailyBalanceTest extends TestCase
     /** @test */
     public function daily_balance_interest_is_lower_than_direct_monthly_rate(): void
     {
-        $service = new CreditCardCycleService();
+        $calculator = new RevolvingCreditCalculator();
 
         // 20-day cycle with constant balance
         $dailyBalances = array_fill_keys(range(1, 20), 542.0);
 
-        $dailyInterest = $service->calculateCycleInterestFromDailyBalances($dailyBalances, 14.0);
+        $dailyInterest = $calculator->calculateInterestFromDailyBalances($dailyBalances, 14.0);
 
         // Direct monthly: 542 * 0.14 = 75.88
-        // Daily over 20 days: 542 * (0.14/365) * 20 = 542 * 0.00766... = 4.15
+        // Daily over 20 days: 542 * (0.14/365) * 20 = 542 * 0.00766... = 4.16
         // (Daily method accumulates interest slowly)
         $this->assertLessThan(75.88, $dailyInterest);
-        $this->assertEqualsWithDelta(4.14, $dailyInterest, 0.01);
+        $this->assertEqualsWithDelta(4.16, $dailyInterest, 0.01);
     }
 }

@@ -132,8 +132,6 @@ class CreditCardCycleService
                 'status' => CreditCardPaymentStatus::PENDING,
             ]);
 
-            $this->syncCardBalance($card->fresh(['cycles.payments', 'payments']));
-
             return true;
         });
     }
@@ -227,7 +225,6 @@ class CreditCardCycleService
             }
 
             $card->refresh();
-            $this->syncCardBalance($card);
         });
     }
 
@@ -238,8 +235,6 @@ class CreditCardCycleService
         if (! $card) {
             return;
         }
-
-        $this->syncCardBalance($card);
     }
 
     public function handleDeletedPayment(CreditCardPayment $payment): void
@@ -286,15 +281,7 @@ class CreditCardCycleService
             }
 
             $card->refresh();
-            $this->syncCardBalance($card);
         });
-    }
-
-    public function syncCardBalance(CreditCard $card): void
-    {
-        $card->update([
-            'current_balance' => round(max(0.0, (float) $card->current_balance), 2),
-        ]);
     }
 
     public function refreshCycleStatuses(CreditCard $card): void
