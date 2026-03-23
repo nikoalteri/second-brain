@@ -113,6 +113,19 @@ class CyclesRelationManager extends RelationManager
                     ->color('warning')
                     ->requiresConfirmation()
                     ->action(function ($record) {
+                        $card = $record->creditCard;
+
+                        // Validate card configuration
+                        if (! $card || ! $card->fixed_payment || ! $card->interest_rate) {
+                            Notification::make()
+                                ->title('Cannot issue cycle: configure card first')
+                                ->description('Set fixed payment amount and interest rate on the credit card')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         $issued = app(CreditCardCycleService::class)->issueCycle($record);
 
                         if (! $issued) {
