@@ -226,7 +226,8 @@ class CreditCardCycleService
                 $this->balanceService->reversePrincipalPayment($card, $principal);
             }
 
-            $this->syncCardBalance($card->fresh());
+            $card->refresh();
+            $this->syncCardBalance($card);
         });
     }
 
@@ -284,7 +285,8 @@ class CreditCardCycleService
                 $this->balanceService->reversePrincipalPayment($card, (float) $payment->principal_amount);
             }
 
-            $this->syncCardBalance($card->fresh());
+            $card->refresh();
+            $this->syncCardBalance($card);
         });
     }
 
