@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\Roles\Schemas;
 
 use App\Services\PermissionService;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\TextInputField;
-use Filament\Schemas\Components\CheckboxListField;
 use Filament\Schemas\Schema;
 
 class RoleForm
@@ -18,7 +18,7 @@ class RoleForm
         $components = [
             Section::make('Role Information')
                 ->components([
-                    TextInputField::make('name')
+                    TextInput::make('name')
                         ->required()
                         ->maxLength(255),
                 ]),
@@ -29,7 +29,7 @@ class RoleForm
             $components[] = Section::make($groupName . ' Permissions')
                 ->collapsed(false)
                 ->components([
-                    CheckboxListField::make('permissions')
+                    CheckboxList::make('permissions')
                         ->relationship('permissions', 'name')
                         ->options($permissions)
                         ->columns(2),
