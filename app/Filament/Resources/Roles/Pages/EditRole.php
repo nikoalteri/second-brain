@@ -6,11 +6,23 @@ use App\Filament\Resources\Roles\RoleResource;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
+use Filament\Forms\Form;
 use Filament\Resources\Pages\EditRecord;
 
 class EditRole extends EditRecord
 {
     protected static string $resource = RoleResource::class;
+
+    public function fillForm(): void
+    {
+        parent::fillForm();
+
+        // Load existing permissions into form state
+        $this->form->fill([
+            ...$this->form->getState(),
+            'permissions' => $this->record->permissions()->pluck('name')->toArray(),
+        ]);
+    }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
