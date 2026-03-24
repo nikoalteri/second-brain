@@ -30,7 +30,6 @@ class RoleForm
                 ->collapsed(false)
                 ->components([
                     CheckboxList::make('permissions')
-                        ->relationship('permissions', 'name')
                         ->options($permissions)
                         ->columns(2),
                 ]);
