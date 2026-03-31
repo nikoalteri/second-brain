@@ -37,7 +37,10 @@ class FinanceReport extends Page
         return 'Finance';
     }
 
-    /** @var array<int> Filtro Tipologia (transaction_type_id) - vuoto = tutti */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
     public array $selectedTypes = [];
 
     /** @var string|null Filtro Note - null = Tutto */
