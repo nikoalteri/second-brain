@@ -21,8 +21,8 @@ class Dashboard extends BaseDashboard
             \App\Filament\Widgets\ExpensesByCategoryChart::class,
             \App\Filament\Widgets\NetWorthTrendChart::class,
             \App\Filament\Widgets\MonthlyCashflowChart::class,
-            \App\Filament\Widgets\UpcomingPaymentsWidget::class,
             \App\Filament\Widgets\UpcomingRenewalsWidget::class,
+            \App\Filament\Widgets\UpcomingPaymentsWidget::class,
         ];
     }
 }

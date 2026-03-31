@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 class UpcomingRenewalsWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
-    protected int | string | array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'half';
 
     public function table(Table $table): Table
     {

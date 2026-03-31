@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class TotalDebtsWidget extends BaseWidget
 {
-    protected int|string|array $columnSpan = 'half';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {

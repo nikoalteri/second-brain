@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class NetWorthWidget extends BaseWidget
 {
-    protected int|string|array $columnSpan = 'half';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
