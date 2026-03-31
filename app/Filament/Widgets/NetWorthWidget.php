@@ -27,7 +27,7 @@ class NetWorthWidget extends BaseWidget
             Stat::make('Net Worth', '€' . number_format((float) $netWorth, 2, ',', '.'))
                 ->description('All active accounts (excl. debt)')
                 ->color('success')
-                ->icon('heroicon-o-trending-up'),
+                ->icon('heroicon-o-arrow-up-right'),
         ];
     }
 }

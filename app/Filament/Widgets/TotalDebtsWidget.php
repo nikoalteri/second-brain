@@ -32,7 +32,7 @@ class TotalDebtsWidget extends BaseWidget
             Stat::make('Total Debts', '€' . number_format($totalDebt, 2, ',', '.'))
                 ->description('Loans + Credit Cards')
                 ->color('danger')
-                ->icon('heroicon-o-arrow-trending-down'),
+                ->icon('heroicon-o-arrow-down-right'),
         ];
     }
 }
