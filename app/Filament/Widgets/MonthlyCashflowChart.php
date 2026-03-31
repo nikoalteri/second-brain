@@ -23,21 +23,21 @@ class MonthlyCashflowChart extends ChartWidget
 
         // Income
         $income = Transaction::where('user_id', $user->id)
-            ->whereHas('transactionType', fn($q) => $q->where('name', 'Income'))
+            ->whereHas('type', fn($q) => $q->where('name', 'Income'))
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->where('is_transfer', false)
             ->sum('amount');
 
         // Expenses
         $expenses = Transaction::where('user_id', $user->id)
-            ->whereHas('transactionType', fn($q) => $q->where('name', 'Expense'))
+            ->whereHas('type', fn($q) => $q->where('name', 'Expense'))
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->where('is_transfer', false)
             ->sum('amount');
 
         // Payments (loan + cc)
         $payments = Transaction::where('user_id', $user->id)
-            ->whereHas('transactionType', fn($q) => $q->where('name', 'Payment'))
+            ->whereHas('type', fn($q) => $q->where('name', 'Payment'))
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->where('is_transfer', false)
             ->sum('amount');
