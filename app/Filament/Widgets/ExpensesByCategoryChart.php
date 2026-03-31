@@ -23,7 +23,7 @@ class ExpensesByCategoryChart extends ChartWidget
         $endOfMonth = now()->endOfMonth();
 
         $expenses = Transaction::where('user_id', $user->id)
-            ->whereHas('transactionType', fn($q) => $q->where('name', 'Expense'))
+            ->whereHas('type', fn($q) => $q->where('name', 'Expense'))
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->with('category')
             ->get()
