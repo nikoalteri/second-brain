@@ -18,6 +18,9 @@ use App\Filament\Widgets\SubscriptionsStatsWidget;
 use App\Filament\Widgets\NetWorthWidget;
 use App\Filament\Widgets\TotalDebtsWidget;
 use App\Filament\Widgets\UpcomingPaymentsWidget;
+use App\Filament\Widgets\ExpensesByCategoryChart;
+use App\Filament\Widgets\NetWorthTrendChart;
+use App\Filament\Widgets\MonthlyCashflowChart;
 use App\Filament\Resources\Subscriptions\SubscriptionResource;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
@@ -58,6 +61,9 @@ class AdminPanelProvider extends PanelProvider
                 NetWorthWidget::class,
                 TotalDebtsWidget::class,
                 SubscriptionsStatsWidget::class,
+                ExpensesByCategoryChart::class,
+                NetWorthTrendChart::class,
+                MonthlyCashflowChart::class,
                 UpcomingPaymentsWidget::class,
                 StatsOverview::class,
                 CreditCardsKpiOverview::class,
