@@ -102,13 +102,6 @@ class TransactionsTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ])
-            ->headerActions([
-                Action::make('report')
-                    ->label('Report Finance')
-                    ->icon('heroicon-o-chart-bar')
-                    ->color('primary')
-                    ->url('/admin/finance-report'),
             ]);
     }
 }
