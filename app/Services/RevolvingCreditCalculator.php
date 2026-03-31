@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\InterestCalculationMethod;
 use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use Carbon\Carbon;
@@ -70,7 +71,7 @@ class RevolvingCreditCalculator
     }
 
     /**
-     * Calculate total interest from daily balances
+     * Calculate total interest from daily balances using daily balance method
      * 
      * Interest = sum of (daily_balance * (annual_rate / 365)) for each day
      * 
@@ -103,11 +104,32 @@ class RevolvingCreditCalculator
     }
 
     /**
+     * Calculate total interest using direct monthly method
+     * 
+     * Interest = current_balance × (annual_rate / 100)
+     * This applies the annual rate directly as a monthly charge
+     * 
+     * @param float $currentBalance
+     * @param float $annualRatePercent
+     * @return float Total interest amount
+     */
+    public function calculateInterestDirectMonthly(
+        float $currentBalance,
+        float $annualRatePercent
+    ): float {
+        if ($currentBalance <= 0 || $annualRatePercent <= 0) {
+            return 0.0;
+        }
+
+        return round($currentBalance * ($annualRatePercent / 100), 2);
+    }
+
+    /**
      * Calculate payment breakdown for a revolving card cycle
      * 
-     * This uses the daily balance method for interest calculation:
+     * This uses either daily balance or direct monthly method based on card configuration:
      * - First cycle always has 0 interest
-     * - Subsequent cycles calculate daily interest
+     * - Subsequent cycles calculate interest using configured method
      * - Fixed payment is split: Interest + Principal
      * - Bollo (stamp duty) is separate, not deducted from payment
      * 
@@ -143,12 +165,20 @@ class RevolvingCreditCalculator
             ];
         }
 
-        // Calculate interest
+        // Calculate interest based on method
         $interestAmount = 0.0;
         if (!$this->isFirstCycle($card, $cycle)) {
-            // Not first cycle: calculate daily interest
-            $dailyBalances = $this->calculateDailyBalances($cycle);
-            $interestAmount = $this->calculateInterestFromDailyBalances($dailyBalances, $annualRate);
+            // Not first cycle: calculate interest based on configured method
+            $method = $card->interest_calculation_method ?? InterestCalculationMethod::DAILY_BALANCE;
+            
+            if ($method === InterestCalculationMethod::DIRECT_MONTHLY) {
+                // Direct monthly: apply annual rate directly
+                $interestAmount = $this->calculateInterestDirectMonthly($currentDebt, $annualRate);
+            } else {
+                // Daily balance: sum daily calculations
+                $dailyBalances = $this->calculateDailyBalances($cycle);
+                $interestAmount = $this->calculateInterestFromDailyBalances($dailyBalances, $annualRate);
+            }
         }
         // else: First cycle has 0 interest by definition
 

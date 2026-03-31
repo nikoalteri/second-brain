@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
+use App\Enums\InterestCalculationMethod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,6 +35,7 @@ class CreditCard extends Model
         'current_balance',
         'status',
         'start_date',
+        'interest_calculation_method',
     ];
 
     protected $casts = [
@@ -46,6 +48,7 @@ class CreditCard extends Model
         'current_balance' => 'decimal:2',
         'status' => CreditCardStatus::class,
         'start_date' => 'date',
+        'interest_calculation_method' => InterestCalculationMethod::class,
     ];
 
     public function user(): BelongsTo

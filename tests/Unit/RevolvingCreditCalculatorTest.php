@@ -290,4 +290,82 @@ class RevolvingCreditCalculatorTest extends TestCase
 
         $this->assertEmpty($breakdown);
     }
+
+    /** @test */
+    public function it_calculates_interest_using_direct_monthly_method()
+    {
+        $currentBalance = 542.00;
+        $annualRate = 14.00;
+
+        // Direct monthly: 542 * (14 / 100) = 75.88
+        $interest = $this->calculator->calculateInterestDirectMonthly($currentBalance, $annualRate);
+
+        $this->assertEqualsWithDelta(75.88, $interest, 0.01);
+    }
+
+    /** @test */
+    public function it_uses_direct_monthly_method_when_configured()
+    {
+        $card = CreditCard::factory()->create([
+            'current_balance' => 542.00,
+            'interest_rate' => 14.00,
+            'fixed_payment' => 250.00,
+            'interest_calculation_method' => 'direct_monthly',
+        ]);
+
+        // First cycle (already issued)
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'status' => 'paid',
+        ]);
+
+        // Second cycle
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'total_spent' => 0,
+            'status' => 'open',
+        ]);
+
+        $breakdown = $this->calculator->calculatePaymentBreakdown($cycle);
+
+        // Should use direct monthly: 542 * 0.14 = 75.88
+        $this->assertEqualsWithDelta(75.88, $breakdown['interest_amount'], 0.01);
+    }
+
+    /** @test */
+    public function daily_balance_and_direct_monthly_produce_different_results()
+    {
+        $card = CreditCard::factory()->create([
+            'current_balance' => 542.00,
+            'interest_rate' => 14.00,
+            'fixed_payment' => 250.00,
+            'interest_calculation_method' => 'daily_balance',
+        ]);
+
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'status' => 'paid',
+        ]);
+
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'total_spent' => 0,
+            'status' => 'open',
+        ]);
+
+        // Calculate with daily balance
+        $breakdownDaily = $this->calculator->calculatePaymentBreakdown($cycle);
+
+        // Update card to use direct monthly
+        $card->update(['interest_calculation_method' => 'direct_monthly']);
+        $card->refresh();
+
+        $breakdownMonthly = $this->calculator->calculatePaymentBreakdown($cycle->refresh());
+
+        // They should produce different results
+        $this->assertNotEquals($breakdownDaily['interest_amount'], $breakdownMonthly['interest_amount']);
+        
+        // Direct monthly should be ~75.88, daily should be much lower (~6.49 for 31 days)
+        $this->assertGreaterThan($breakdownDaily['interest_amount'], $breakdownMonthly['interest_amount']);
+    }
 }

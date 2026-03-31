@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
+use App\Enums\InterestCalculationMethod;
 use App\Models\Account;
 use App\Models\CreditCard;
 use App\Models\User;
@@ -30,6 +31,7 @@ class CreditCardFactory extends Factory
             'current_balance' => 0.00,
             'status' => CreditCardStatus::ACTIVE,
             'start_date' => now(),
+            'interest_calculation_method' => InterestCalculationMethod::DAILY_BALANCE,
         ];
     }
 
