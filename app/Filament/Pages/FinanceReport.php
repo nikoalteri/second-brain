@@ -14,14 +14,28 @@ use Illuminate\Support\Facades\Auth;
 
 class FinanceReport extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
-    protected static ?string $navigationLabel = 'Finance Reports';
-    protected static ?string $title = 'Finance Reports';
-    protected static ?string $navigationGroup = 'Finance';
-    protected static bool $shouldRegisterNavigation = true;
-
     public int $selectedYear = 2026;
     public array $years = [];
+
+    public function getTitle(): string
+    {
+        return 'Finance Reports';
+    }
+
+    public static function getNavigationIcon(): string
+    {
+        return 'heroicon-o-document-chart-bar';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return 'Finance Reports';
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return 'Finance';
+    }
 
     /** @var array<int> Filtro Tipologia (transaction_type_id) - vuoto = tutti */
     public array $selectedTypes = [];
