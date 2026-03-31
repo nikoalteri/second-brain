@@ -11,10 +11,11 @@ use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Livewire\Attributes\Computed;
 
 class FinanceReport extends Page
 {
+    protected string $view = 'filament.pages.finance-report';
+
     public int $selectedYear = 2026;
     public array $years = [];
 
@@ -61,28 +62,6 @@ class FinanceReport extends Page
         $this->years = app(\App\Services\FinanceReportService::class)
             ->loadYears(Auth::id());
         $this->selectedYear = $this->years[0] ?? now()->year;
-    }
-
-    #[Computed]
-    public function pivot()
-    {
-        return $this->getPivotData();
-    }
-
-    #[Computed]
-    public function monthNames()
-    {
-        $monthNames = [];
-        for ($m = 1; $m <= 12; $m++) {
-            $monthNames[$m] = Carbon::create(2026, $m, 1)->format('M');
-        }
-        return $monthNames;
-    }
-
-    #[Computed]
-    public function months()
-    {
-        return range(1, 12);
     }
 
     public function getHeaderActions(): array
