@@ -10,29 +10,13 @@ class TransactionTypeSeeder extends Seeder
     public function run(): void
     {
         $types = [
-            [
-                'name' => 'Earnings',
-                'color' => '#10B981',
-                'icon' => 'heroicon-o-arrow-up',
-                'is_income' => true,
-            ],
-            [
-                'name' => 'Expenses',
-                'color' => '#EF4444',
-                'icon' => 'heroicon-o-arrow-down',
-                'is_income' => false,
-            ],
-            [
-                'name' => 'Transfer',
-                'color' => '#3B82F6',
-                'icon' => 'heroicon-o-arrows-up-down',
-            ],
-            [
-                'name' => 'Cashback',
-                'color' => '#F59E0B',
-                'icon' => 'heroicon-o-arrow-up-circle',
-                'is_income' => true,
-            ],
+            ['name' => 'Earnings', 'is_income' => true],
+            ['name' => 'Expenses', 'is_income' => false],
+            ['name' => 'Transfer', 'is_income' => false],
+            ['name' => 'Cashback', 'is_income' => true],
+            ['name' => 'Income', 'is_income' => true],
+            ['name' => 'Expense', 'is_income' => false],
+            ['name' => 'Payment', 'is_income' => false],
         ];
 
         foreach ($types as $type) {
