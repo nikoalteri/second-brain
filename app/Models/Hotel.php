@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,16 +19,19 @@ class Hotel extends Model
         'city',
         'check_in_date',
         'check_out_date',
-        'nights',
         'cost_per_night',
-        'total_cost',
+        'number_of_nights',
+        'room_number',
+        'status',
+        'notes',
     ];
 
     protected $casts = [
         'check_in_date' => 'date',
         'check_out_date' => 'date',
         'cost_per_night' => 'decimal:2',
-        'total_cost' => 'decimal:2',
+        'number_of_nights' => 'integer',
+        'status' => BookingStatus::class,
     ];
 
     public function user()

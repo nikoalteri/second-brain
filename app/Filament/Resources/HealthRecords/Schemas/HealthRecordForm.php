@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\HealthRecords\Schemas;
 
+use App\Enums\HealthRecordType;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
 
 class HealthRecordForm
@@ -12,24 +15,17 @@ class HealthRecordForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
+                Select::make('type')
+                    ->options(HealthRecordType::class)
+                    ->required(),
                 DatePicker::make('date')
                     ->required(),
-                TextInput::make('weight')
-                    ->numeric(),
-                TextInput::make('height')
-                    ->numeric(),
-                TextInput::make('heart_rate')
-                    ->numeric(),
-                TextInput::make('blood_pressure_systolic')
-                    ->numeric(),
-                TextInput::make('blood_pressure_diastolic')
-                    ->numeric(),
-                TextInput::make('temperature')
-                    ->numeric(),
-                TextInput::make('notes'),
+                TextInput::make('value')
+                    ->numeric()
+                    ->step(0.01)
+                    ->required(),
+                Textarea::make('notes')
+                    ->columnSpanFull(),
             ]);
     }
 }

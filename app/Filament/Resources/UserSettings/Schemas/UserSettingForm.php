@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\UserSettings\Schemas;
 
+use App\Enums\UITheme;
+use App\Enums\PrivacyLevel;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
 class UserSettingForm
@@ -12,20 +14,16 @@ class UserSettingForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
-                Select::make('setting_key')
-                    ->options([
-            'theme' => 'Theme',
-            'language' => 'Language',
-            'notifications' => 'Notifications',
-            'privacy' => 'Privacy',
-        ])
-                    ->default('theme')
+                Select::make('theme')
+                    ->options(UITheme::class)
                     ->required(),
-                TextInput::make('setting_value')
+                Select::make('privacy_level')
+                    ->options(PrivacyLevel::class)
                     ->required(),
+                Checkbox::make('notifications_enabled')
+                    ->label('Enable email notifications'),
+                Checkbox::make('two_factor_enabled')
+                    ->label('Enable two-factor authentication'),
             ]);
     }
 }

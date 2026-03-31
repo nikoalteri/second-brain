@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\GoalCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,11 +19,8 @@ class Goal extends Model
         'category',
         'start_date',
         'target_date',
-        'status',
-        'progress_percentage',
         'target_value',
         'current_value',
-        'unit',
         'notes',
     ];
 
@@ -31,6 +29,7 @@ class Goal extends Model
         'target_date' => 'date',
         'target_value' => 'decimal:2',
         'current_value' => 'decimal:2',
+        'category' => GoalCategory::class,
     ];
 
     public function user()

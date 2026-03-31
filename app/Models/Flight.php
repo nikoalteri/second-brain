@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,9 +21,11 @@ class Flight extends Model
         'departure_time',
         'arrival_date',
         'arrival_time',
-        'departure_airport',
-        'arrival_airport',
-        'seat',
+        'from_city',
+        'to_city',
+        'status',
+        'cost',
+        'notes',
     ];
 
     protected $casts = [
@@ -30,6 +33,8 @@ class Flight extends Model
         'departure_time' => 'datetime:H:i',
         'arrival_date' => 'date',
         'arrival_time' => 'datetime:H:i',
+        'cost' => 'decimal:2',
+        'status' => BookingStatus::class,
     ];
 
     public function user()

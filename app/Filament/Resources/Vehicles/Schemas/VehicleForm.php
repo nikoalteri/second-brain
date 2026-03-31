@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Vehicles\Schemas;
 
+use App\Enums\VehicleType;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -13,26 +15,23 @@ class VehicleForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
                 TextInput::make('make')
                     ->required(),
                 TextInput::make('model')
                     ->required(),
                 TextInput::make('year')
-                    ->required()
-                    ->numeric(),
+                    ->numeric()
+                    ->required(),
+                Select::make('type')
+                    ->options(VehicleType::class)
+                    ->required(),
                 TextInput::make('license_plate')
-                    ->required(),
-                Select::make('vehicle_type')
-                    ->options(['car' => 'Car', 'motorcycle' => 'Motorcycle', 'truck' => 'Truck', 'bicycle' => 'Bicycle'])
-                    ->default('car')
-                    ->required(),
-                Select::make('status')
-                    ->options(['active' => 'Active', 'inactive' => 'Inactive'])
-                    ->default('active')
-                    ->required(),
+                    ->required()
+                    ->unique('vehicles', 'license_plate'),
+                DatePicker::make('purchase_date'),
+                TextInput::make('purchase_price')
+                    ->numeric()
+                    ->step(0.01),
                 Textarea::make('notes')
                     ->columnSpanFull(),
             ]);

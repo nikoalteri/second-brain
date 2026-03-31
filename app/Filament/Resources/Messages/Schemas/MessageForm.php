@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Messages\Schemas;
 
+use App\Enums\MessageImportance;
+use App\Enums\MessageCategory;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -26,12 +28,12 @@ class MessageForm
                     ->columnSpanFull(),
                 DateTimePicker::make('read_at'),
                 Select::make('importance')
-                    ->options(['low' => 'Low', 'medium' => 'Medium', 'high' => 'High'])
-                    ->default('medium')
+                    ->options(MessageImportance::class)
+                    ->default(MessageImportance::MEDIUM)
                     ->required(),
                 Select::make('category')
-                    ->options(['personal' => 'Personal', 'work' => 'Work', 'urgent' => 'Urgent'])
-                    ->default('personal')
+                    ->options(MessageCategory::class)
+                    ->default(MessageCategory::PERSONAL)
                     ->required(),
             ]);
     }

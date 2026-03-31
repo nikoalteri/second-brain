@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\WorkoutType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -17,16 +18,13 @@ class Workout extends Model
         'type',
         'duration_minutes',
         'calories_burned',
-        'exercise_name',
-        'distance_km',
-        'intensity_level',
-        'location',
+        'distance',
         'notes',
     ];
 
     protected $casts = [
         'date' => 'date',
-        'type' => 'string',
+        'type' => WorkoutType::class,
     ];
 
     public function user()

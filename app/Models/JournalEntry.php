@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\JournalMood;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,17 +15,16 @@ class JournalEntry extends Model
     protected $fillable = [
         'user_id',
         'date',
-        'content',
         'title',
+        'content',
         'mood',
-        'emotion',
         'tags',
-        'is_private',
     ];
 
     protected $casts = [
         'date' => 'date',
         'tags' => 'array',
+        'mood' => JournalMood::class,
     ];
 
     public function user()

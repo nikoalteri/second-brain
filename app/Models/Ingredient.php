@@ -13,13 +13,23 @@ class Ingredient extends Model
 
     protected $fillable = [
         'user_id',
+        'recipe_id',
         'name',
+        'quantity',
         'unit',
-        'category',
+    ];
+
+    protected $casts = [
+        'quantity' => 'decimal:2',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function recipe()
+    {
+        return $this->belongsTo(Recipe::class);
     }
 }

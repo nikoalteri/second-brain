@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,22 +14,20 @@ class Project extends Model
 
     protected $fillable = [
         'user_id',
-        'name',
+        'title',
         'description',
         'status',
-        'priority',
         'start_date',
         'due_date',
         'completed_date',
-        'progress_percentage',
         'notes',
-        'color',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'due_date' => 'date',
         'completed_date' => 'date',
+        'status' => ProjectStatus::class,
     ];
 
     public function user()

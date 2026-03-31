@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MaintenanceRecordType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -11,21 +12,22 @@ class MaintenanceRecord extends Model
 {
     use HasFactory, SoftDeletes, HasUserScoping;
 
-    protected $table = 'maintenance_records';
-
     protected $fillable = [
         'user_id',
         'vehicle_id',
-        'service_type',
         'date',
-        'cost',
+        'type',
         'description',
-        'mileage',
+        'cost',
+        'odometer_reading',
+        'notes',
     ];
 
     protected $casts = [
         'date' => 'date',
         'cost' => 'decimal:2',
+        'odometer_reading' => 'integer',
+        'type' => MaintenanceRecordType::class,
     ];
 
     public function user()

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BloodTestResultStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,29 +15,24 @@ class BloodTest extends Model
     protected $fillable = [
         'user_id',
         'date',
+        'test_name',
         'hemoglobin',
         'hematocrit',
-        'glucose',
-        'cholesterol',
-        'hdl',
-        'ldl',
-        'triglycerides',
         'white_blood_cells',
         'red_blood_cells',
         'platelets',
+        'result_status',
         'notes',
-        'lab_name',
     ];
 
     protected $casts = [
         'date' => 'date',
         'hemoglobin' => 'decimal:1',
         'hematocrit' => 'decimal:1',
-        'glucose' => 'decimal:2',
-        'cholesterol' => 'decimal:2',
-        'hdl' => 'decimal:2',
-        'ldl' => 'decimal:2',
-        'triglycerides' => 'decimal:2',
+        'white_blood_cells' => 'decimal:2',
+        'red_blood_cells' => 'decimal:2',
+        'platelets' => 'integer',
+        'result_status' => BloodTestResultStatus::class,
     ];
 
     public function user()

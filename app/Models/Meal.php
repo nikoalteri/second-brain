@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MealType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,14 +16,17 @@ class Meal extends Model
         'user_id',
         'recipe_id',
         'date_eaten',
-        'rating',
+        'meal_type',
+        'calories',
         'notes',
         'is_favorite',
     ];
 
     protected $casts = [
         'date_eaten' => 'date',
+        'calories' => 'integer',
         'is_favorite' => 'boolean',
+        'meal_type' => MealType::class,
     ];
 
     public function user()

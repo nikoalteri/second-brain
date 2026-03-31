@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Flights\Schemas;
 
-use Filament\Forms\Components\DatePicker;
+use App\Enums\BookingStatus;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\TimePicker;
+use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
 
 class FlightForm
@@ -13,29 +15,32 @@ class FlightForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
-                TextInput::make('trip_id')
-                    ->required()
-                    ->numeric(),
+                Select::make('trip_id')
+                    ->relationship('trip', 'destination')
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 TextInput::make('airline')
                     ->required(),
                 TextInput::make('flight_number')
                     ->required(),
-                DatePicker::make('departure_date')
+                DateTimePicker::make('departure_time')
                     ->required(),
-                TimePicker::make('departure_time')
-                    ->required(),
-                DatePicker::make('arrival_date')
-                    ->required(),
-                TimePicker::make('arrival_time')
+                DateTimePicker::make('arrival_time')
                     ->required(),
                 TextInput::make('departure_airport')
                     ->required(),
                 TextInput::make('arrival_airport')
                     ->required(),
-                TextInput::make('seat'),
+                TextInput::make('price')
+                    ->numeric()
+                    ->step(0.01)
+                    ->required(),
+                Select::make('status')
+                    ->options(BookingStatus::class)
+                    ->required(),
+                Textarea::make('notes')
+                    ->columnSpanFull(),
             ]);
     }
 }

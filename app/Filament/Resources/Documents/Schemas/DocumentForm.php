@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Documents\Schemas;
 
+use App\Enums\DocumentType;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
 
 class DocumentForm
@@ -13,25 +16,18 @@ class DocumentForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
                 TextInput::make('title')
                     ->required(),
-                Select::make('document_type')
-                    ->options([
-            'title' => 'Title',
-            'insurance' => 'Insurance',
-            'registration' => 'Registration',
-            'maintenance' => 'Maintenance',
-            'other' => 'Other',
-        ])
-                    ->default('other')
+                Select::make('type')
+                    ->options(DocumentType::class)
                     ->required(),
-                TextInput::make('upload_path')
+                DatePicker::make('date_created')
                     ->required(),
-                DatePicker::make('upload_date')
-                    ->required(),
+                FileUpload::make('file_path')
+                    ->disk('documents')
+                    ->directory('documents'),
+                Textarea::make('description')
+                    ->columnSpanFull(),
             ]);
     }
 }

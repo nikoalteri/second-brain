@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\HealthRecordType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -14,19 +15,16 @@ class HealthRecord extends Model
     protected $fillable = [
         'user_id',
         'date',
-        'weight',
-        'height',
-        'heart_rate',
-        'blood_pressure_systolic',
-        'blood_pressure_diastolic',
-        'temperature',
+        'type',
+        'value',
+        'unit',
         'notes',
     ];
 
     protected $casts = [
         'date' => 'date',
-        'weight' => 'decimal:2',
-        'temperature' => 'decimal:1',
+        'type' => HealthRecordType::class,
+        'value' => 'decimal:2',
     ];
 
     public function user()

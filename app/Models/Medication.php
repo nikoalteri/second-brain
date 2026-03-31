@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MedicationDosageUnit;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,28 +16,24 @@ class Medication extends Model
         'user_id',
         'name',
         'dosage',
+        'dosage_unit',
         'frequency',
         'start_date',
         'end_date',
         'reason',
-        'doctor_name',
+        'side_effects',
         'notes',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'dosage' => 'decimal:2',
+        'dosage_unit' => MedicationDosageUnit::class,
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function isActive()
-    {
-        $today = now()->toDateString();
-        return $today >= $this->start_date->toDateString() &&
-               ($this->end_date === null || $today <= $this->end_date->toDateString());
     }
 }

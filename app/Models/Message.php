@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\MessageImportance;
+use App\Enums\MessageCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -23,6 +25,8 @@ class Message extends Model
 
     protected $casts = [
         'read_at' => 'datetime',
+        'importance' => MessageImportance::class,
+        'category' => MessageCategory::class,
     ];
 
     public function user()

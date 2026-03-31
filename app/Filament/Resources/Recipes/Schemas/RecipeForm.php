@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\Recipes\Schemas;
 
+use App\Enums\RecipeCuisine;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
 
 class RecipeForm
@@ -12,34 +14,22 @@ class RecipeForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
                 TextInput::make('name')
                     ->required(),
                 Select::make('cuisine')
-                    ->options([
-            'italian' => 'Italian',
-            'asian' => 'Asian',
-            'mexican' => 'Mexican',
-            'mediterranean' => 'Mediterranean',
-            'other' => 'Other',
-        ])
-                    ->default('other')
-                    ->required(),
-                Select::make('difficulty')
-                    ->options(['easy' => 'Easy', 'medium' => 'Medium', 'hard' => 'Hard'])
-                    ->default('medium')
-                    ->required(),
-                TextInput::make('prep_time')
-                    ->numeric(),
-                TextInput::make('cook_time')
-                    ->numeric(),
-                TextInput::make('servings')
-                    ->required()
+                    ->options(RecipeCuisine::class),
+                TextInput::make('prep_time_minutes')
                     ->numeric()
-                    ->default(1),
-                TextInput::make('ingredients_list'),
+                    ->label('Prep Time (minutes)'),
+                TextInput::make('cook_time_minutes')
+                    ->numeric()
+                    ->label('Cook Time (minutes)'),
+                TextInput::make('servings')
+                    ->numeric(),
+                Textarea::make('instructions')
+                    ->columnSpanFull(),
+                Textarea::make('description')
+                    ->columnSpanFull(),
             ]);
     }
 }

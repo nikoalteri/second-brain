@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\NotePriority;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -15,16 +16,17 @@ class Note extends Model
         'user_id',
         'title',
         'content',
+        'priority',
+        'date',
         'tags',
-        'color',
         'is_pinned',
-        'is_archived',
-        'last_edited_at',
     ];
 
     protected $casts = [
         'date' => 'date',
         'tags' => 'array',
+        'is_pinned' => 'boolean',
+        'priority' => NotePriority::class,
     ];
 
     public function user()

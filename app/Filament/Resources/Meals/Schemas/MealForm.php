@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\Meals\Schemas;
 
+use App\Enums\MealType;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 
 class MealForm
@@ -14,20 +16,21 @@ class MealForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
-                TextInput::make('recipe_id')
-                    ->required()
-                    ->numeric(),
+                Select::make('meal_type')
+                    ->options(MealType::class)
+                    ->required(),
                 DatePicker::make('date_eaten')
                     ->required(),
-                TextInput::make('rating')
+                Select::make('recipe_id')
+                    ->relationship('recipe', 'name')
+                    ->searchable()
+                    ->preload(),
+                TextInput::make('calories')
                     ->numeric(),
                 Textarea::make('notes')
                     ->columnSpanFull(),
-                Toggle::make('is_favorite')
-                    ->required(),
+                Checkbox::make('is_favorite')
+                    ->label('Mark as favorite'),
             ]);
     }
 }

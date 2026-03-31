@@ -2,8 +2,11 @@
 
 namespace App\Filament\Resources\Hotels\Schemas;
 
+use App\Enums\BookingStatus;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Schemas\Schema;
 
 class HotelForm
@@ -12,28 +15,32 @@ class HotelForm
     {
         return $schema
             ->components([
-                TextInput::make('user_id')
-                    ->required()
-                    ->numeric(),
-                TextInput::make('trip_id')
-                    ->required()
-                    ->numeric(),
+                Select::make('trip_id')
+                    ->relationship('trip', 'destination')
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 TextInput::make('name')
                     ->required(),
-                TextInput::make('city')
+                TextInput::make('location')
                     ->required(),
                 DatePicker::make('check_in_date')
                     ->required(),
                 DatePicker::make('check_out_date')
                     ->required(),
-                TextInput::make('nights')
-                    ->required()
-                    ->numeric(),
-                TextInput::make('cost_per_night')
-                    ->numeric(),
-                TextInput::make('total_cost')
+                TextInput::make('number_of_rooms')
                     ->numeric()
-                    ->prefix('$'),
+                    ->default(1)
+                    ->required(),
+                TextInput::make('price_per_night')
+                    ->numeric()
+                    ->step(0.01)
+                    ->required(),
+                Select::make('status')
+                    ->options(BookingStatus::class)
+                    ->required(),
+                Textarea::make('notes')
+                    ->columnSpanFull(),
             ]);
     }
 }

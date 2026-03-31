@@ -2,21 +2,31 @@
 
 namespace App\Models;
 
+use App\Enums\UITheme;
+use App\Enums\PrivacyLevel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserScoping;
 
 class UserSetting extends Model
 {
-    use HasFactory, SoftDeletes, HasUserScoping;
-
-    protected $table = 'user_settings';
+    use HasFactory, HasUserScoping;
 
     protected $fillable = [
         'user_id',
-        'setting_key',
-        'setting_value',
+        'theme',
+        'privacy_level',
+        'notifications_enabled',
+        'email_notifications',
+        'dark_mode',
+    ];
+
+    protected $casts = [
+        'notifications_enabled' => 'boolean',
+        'email_notifications' => 'boolean',
+        'dark_mode' => 'boolean',
+        'theme' => UITheme::class,
+        'privacy_level' => PrivacyLevel::class,
     ];
 
     public function user()

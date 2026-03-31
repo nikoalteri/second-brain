@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Contacts\Schemas;
 
+use App\Enums\ContactRelationshipType;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -25,13 +26,8 @@ class ContactForm
                 TextInput::make('phone')
                     ->tel(),
                 Select::make('relationship_type')
-                    ->options([
-            'family' => 'Family',
-            'friend' => 'Friend',
-            'colleague' => 'Colleague',
-            'business' => 'Business',
-        ])
-                    ->default('friend')
+                    ->options(ContactRelationshipType::class)
+                    ->default(ContactRelationshipType::FRIEND)
                     ->required(),
                 Textarea::make('notes')
                     ->columnSpanFull(),
