@@ -19,9 +19,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             SuperAdminSeeder::class,
             TransactionTypeSeeder::class,
-            DummyDataSeeder::class,
-            HealthDataSeeder::class,
-            ProductivityDataSeeder::class,
+            CompleteDummyDataSeeder::class,
             Phase8DataSeeder::class,
             Phase9DataSeeder::class,
         ]);

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('date');
             $table->text('content');
             $table->string('title')->nullable();
-            $table->enum('mood', ['terrible', 'bad', 'neutral', 'good', 'excellent'])->nullable();
+            $table->enum('mood', ['poor', 'fair', 'good', 'excellent'])->nullable();
             $table->enum('emotion', ['angry', 'sad', 'anxious', 'neutral', 'happy', 'excited', null])->nullable();
             $table->json('tags')->nullable(); // array of tags/keywords
             $table->boolean('is_private')->default(true);

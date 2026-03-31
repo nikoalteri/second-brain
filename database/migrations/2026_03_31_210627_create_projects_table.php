@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->enum('status', ['planning', 'in_progress', 'on_hold', 'completed', 'archived'])->default('planning');
+            $table->enum('status', ['planning', 'in_progress', 'completed', 'cancelled'])->default('planning');
             $table->enum('priority', ['low', 'medium', 'high', 'critical'])->default('medium');
             $table->date('start_date')->nullable();
             $table->date('due_date')->nullable();

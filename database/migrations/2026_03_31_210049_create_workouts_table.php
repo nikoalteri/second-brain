@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->date('date');
-            $table->enum('type', ['cardio', 'strength', 'flexibility', 'sports', 'other'])->default('other');
+            $table->enum('type', ['running', 'cycling', 'swimming', 'weight_training', 'yoga', 'pilates', 'walking', 'hiking'])->default('running');
             $table->integer('duration_minutes');
             $table->integer('calories_burned')->nullable();
             $table->string('exercise_name');
