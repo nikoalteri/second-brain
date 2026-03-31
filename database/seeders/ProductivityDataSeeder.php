@@ -41,7 +41,7 @@ class ProductivityDataSeeder extends Seeder
 
         // Goals
         $goals = [
-            ['title' => 'Learn Golang', 'category' => 'learning'],
+            ['title' => 'Learn Golang', 'category' => 'career'],
             ['title' => 'Complete Side Project', 'category' => 'career'],
             ['title' => 'Read 12 Books', 'category' => 'personal'],
             ['title' => 'Save $10,000', 'category' => 'finance'],
