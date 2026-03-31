@@ -14,8 +14,11 @@ use Illuminate\Support\Facades\Auth;
 
 class FinanceReport extends Page
 {
-    protected string $view = 'filament.pages.finance-report';
-    protected static bool $shouldRegisterNavigation = false;
+    protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
+    protected static ?string $navigationLabel = 'Finance Reports';
+    protected static ?string $title = 'Finance Reports';
+    protected static ?string $navigationGroup = 'Finance';
+    protected static bool $shouldRegisterNavigation = true;
 
     public int $selectedYear = 2026;
     public array $years = [];
