@@ -2,13 +2,15 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\Loan;
 use App\Models\LoanPayment;
 use App\Models\CreditCardPayment;
-use Filament\Widgets\ChartWidget;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Table;
+use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Facades\Auth;
 
-class UpcomingPaymentsWidget extends ChartWidget
+class UpcomingPaymentsWidget extends BaseWidget
 {
     public function getHeading(): ?string
     {
@@ -17,45 +19,71 @@ class UpcomingPaymentsWidget extends ChartWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected function getData(): array
+    public function table(Table $table): Table
     {
         $user = Auth::user();
-        $today = now()->toDateString();
-        $nextWeek = now()->addDays(7)->toDateString();
+        $today = now();
+        $nextWeek = now()->addDays(7);
 
-        // Loan payments due
+        // Get loan payments
         $loanPayments = LoanPayment::whereHas('loan', fn($q) => $q->where('user_id', $user->id))
             ->whereBetween('due_date', [$today, $nextWeek])
             ->where('status', '!=', 'paid')
-            ->get();
+            ->get()
+            ->map(fn($p) => [
+                'id' => 'loan_' . $p->id,
+                'type' => 'Loan',
+                'description' => $p->loan->name ?? 'Loan Payment',
+                'amount' => $p->amount,
+                'due_date' => $p->due_date,
+                'status' => $p->status,
+            ]);
 
-        // Credit card payments due
+        // Get credit card payments
         $ccPayments = CreditCardPayment::whereHas('creditCard', fn($q) => $q->where('user_id', $user->id))
             ->whereBetween('due_date', [$today, $nextWeek])
             ->where('status', '!=', 'paid')
-            ->get();
+            ->get()
+            ->map(fn($p) => [
+                'id' => 'cc_' . $p->id,
+                'type' => 'Credit Card',
+                'description' => $p->creditCard->name ?? 'CC Payment',
+                'amount' => $p->total_amount,
+                'due_date' => $p->due_date,
+                'status' => $p->status,
+            ]);
 
-        return [
-            'datasets' => [
-                [
-                    'label' => 'Loan Payments',
-                    'data' => [$loanPayments->sum('amount')],
-                    'borderColor' => '#f59e0b',
-                    'backgroundColor' => 'rgba(245, 158, 11, 0.1)',
-                ],
-                [
-                    'label' => 'CC Payments',
-                    'data' => [$ccPayments->sum('total_amount')],
-                    'borderColor' => '#ef4444',
-                    'backgroundColor' => 'rgba(239, 68, 68, 0.1)',
-                ],
-            ],
-            'labels' => ['Upcoming'],
-        ];
-    }
+        // Merge and sort by due_date
+        $allPayments = collect($loanPayments)
+            ->merge($ccPayments)
+            ->sortBy('due_date')
+            ->values();
 
-    protected function getType(): string
-    {
-        return 'bar';
+        return $table
+            ->query(
+                CreditCardPayment::query()
+                    ->whereHas('creditCard', fn($q) => $q->where('user_id', $user->id))
+                    ->whereBetween('due_date', [$today, $nextWeek])
+                    ->where('status', '!=', 'paid')
+            )
+            ->columns([
+                TextColumn::make('creditCard.name')
+                    ->label('Payment Type')
+                    ->default('Credit Card Payment'),
+
+                TextColumn::make('total_amount')
+                    ->money('EUR')
+                    ->label('Amount'),
+
+                TextColumn::make('due_date')
+                    ->date()
+                    ->label('Due Date')
+                    ->sortable(),
+
+                BadgeColumn::make('status')
+                    ->label('Status'),
+            ])
+            ->paginationPageOptions([25])
+            ->defaultPaginationPageOption(25);
     }
 }
