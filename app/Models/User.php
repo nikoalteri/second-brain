@@ -79,4 +79,29 @@ class User extends Authenticatable
     {
         return $this->hasMany(TransactionCategory::class);
     }
+
+    public function healthRecords(): HasMany
+    {
+        return $this->hasMany(HealthRecord::class);
+    }
+
+    public function workouts(): HasMany
+    {
+        return $this->hasMany(Workout::class);
+    }
+
+    public function medicalRecords(): HasMany
+    {
+        return $this->hasMany(MedicalRecord::class);
+    }
+
+    public function medications(): HasMany
+    {
+        return $this->hasMany(Medication::class);
+    }
+
+    public function bloodTests(): HasMany
+    {
+        return $this->hasMany(BloodTest::class);
+    }
 }
