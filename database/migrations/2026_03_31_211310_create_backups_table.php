@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->enum('backup_type', ['auto', 'manual'])->default('auto');
             $table->dateTime('backup_date');
-            $table->string('file_path');
+            $table->string('file_path')->nullable();
             $table->unsignedBigInteger('file_size')->nullable();
             $table->timestamps();
             $table->softDeletes();

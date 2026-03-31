@@ -4,18 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserScoping;
 
 class Backup extends Model
 {
-    use HasFactory, HasUserScoping;
+    use HasFactory, HasUserScoping, SoftDeletes;
 
     protected $fillable = [
         'user_id',
-        'filename',
-        'file_size',
+        'backup_type',
         'backup_date',
-        'notes',
+        'file_path',
+        'file_size',
     ];
 
     protected $casts = [

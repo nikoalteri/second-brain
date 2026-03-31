@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->enum('setting_key', ['theme', 'language', 'notifications', 'privacy'])->default('theme');
-            $table->string('setting_value');
+            $table->string('setting_value')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->unique(['user_id', 'setting_key']);
