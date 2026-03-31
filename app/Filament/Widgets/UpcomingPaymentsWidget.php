@@ -17,7 +17,7 @@ class UpcomingPaymentsWidget extends BaseWidget
         return 'Upcoming Payments (Next 7 Days)';
     }
 
-    protected int|string|array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'half';
 
     public function table(Table $table): Table
     {
