@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             TransactionTypeSeeder::class,
             DummyDataSeeder::class,
+            HealthDataSeeder::class,
         ]);
 
         User::factory()->create([
