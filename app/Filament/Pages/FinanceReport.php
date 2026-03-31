@@ -66,12 +66,7 @@ class FinanceReport extends Page
 
     public function getHeaderActions(): array
     {
-        return [
-            Action::make('refresh')
-                ->label('Refresh')
-                ->icon('heroicon-o-arrow-path')
-                ->action('loadData'),
-        ];
+        return [];
     }
 
     public function loadData(): void
