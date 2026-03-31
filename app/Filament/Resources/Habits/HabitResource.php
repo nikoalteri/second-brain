@@ -9,6 +9,7 @@ use App\Filament\Resources\Habits\Schemas\HabitForm;
 use App\Filament\Resources\Habits\Tables\HabitsTable;
 use App\Models\Habit;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -21,6 +22,8 @@ class HabitResource extends Resource
     protected static ?string $model = Habit::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Productivity';
 
     public static function form(Schema $schema): Schema
     {

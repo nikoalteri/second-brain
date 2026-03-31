@@ -9,6 +9,7 @@ use App\Filament\Resources\Medications\Schemas\MedicationForm;
 use App\Filament\Resources\Medications\Tables\MedicationsTable;
 use App\Models\Medication;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -21,6 +22,8 @@ class MedicationResource extends Resource
     protected static ?string $model = Medication::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Health';
 
     public static function form(Schema $schema): Schema
     {

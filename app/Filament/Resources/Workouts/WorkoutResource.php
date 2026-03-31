@@ -9,6 +9,7 @@ use App\Filament\Resources\Workouts\Schemas\WorkoutForm;
 use App\Filament\Resources\Workouts\Tables\WorkoutsTable;
 use App\Models\Workout;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -21,6 +22,8 @@ class WorkoutResource extends Resource
     protected static ?string $model = Workout::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Health';
 
     public static function form(Schema $schema): Schema
     {

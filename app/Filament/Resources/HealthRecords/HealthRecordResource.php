@@ -9,6 +9,7 @@ use App\Filament\Resources\HealthRecords\Schemas\HealthRecordForm;
 use App\Filament\Resources\HealthRecords\Tables\HealthRecordsTable;
 use App\Models\HealthRecord;
 use BackedEnum;
+use UnitEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -21,6 +22,8 @@ class HealthRecordResource extends Resource
     protected static ?string $model = HealthRecord::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Health';
 
     protected static ?string $recordTitleAttribute = 'date';
 
