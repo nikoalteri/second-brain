@@ -25,20 +25,20 @@ class DummyDataSeeder extends Seeder
         }
 
         // Accounts
-        $checkingAccount = Account::firstOrCreate(
+        $checkingAccount = Account::updateOrCreate(
             ['user_id' => $user->id, 'name' => 'Checking Account'],
             [
-                'type' => 'checking',
+                'type' => 'bank',
                 'balance' => 5000,
                 'currency' => 'EUR',
                 'is_active' => true,
             ]
         );
 
-        $savingsAccount = Account::firstOrCreate(
+        $savingsAccount = Account::updateOrCreate(
             ['user_id' => $user->id, 'name' => 'Savings Account'],
             [
-                'type' => 'savings',
+                'type' => 'bank',
                 'balance' => 15000,
                 'currency' => 'EUR',
                 'is_active' => true,
@@ -47,149 +47,142 @@ class DummyDataSeeder extends Seeder
 
         // Transaction Categories
         $groceries = TransactionCategory::firstOrCreate(
-            ['name' => 'Groceries'],
-            ['description' => 'Food and groceries']
+            ['user_id' => $user->id, 'name' => 'Groceries']
         );
-
         $restaurants = TransactionCategory::firstOrCreate(
-            ['name' => 'Restaurants'],
-            ['description' => 'Dining out'],
-            ['parent_id' => null]
+            ['user_id' => $user->id, 'name' => 'Restaurants']
         );
-
         $utilities = TransactionCategory::firstOrCreate(
-            ['name' => 'Utilities'],
-            ['description' => 'Electricity, water, internet']
+            ['user_id' => $user->id, 'name' => 'Utilities']
         );
 
         // Transactions - March 2026
         $expenseType = TransactionType::where('name', 'Expense')->first();
         $incomeType = TransactionType::where('name', 'Income')->first();
 
+        if (!$expenseType || !$incomeType) {
+            return;
+        }
+
         // Sample expenses
-        Transaction::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'account_id' => $checkingAccount->id,
-                'date' => Carbon::create(2026, 3, 5),
-                'amount' => -85.50,
-            ],
-            [
-                'transaction_type_id' => $expenseType->id,
-                'transaction_category_id' => $groceries->id,
-                'description' => 'Carrefour',
-                'competence_month' => '2026-03',
-            ]
-        );
+        Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $checkingAccount->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $groceries->id,
+            'date' => Carbon::create(2026, 3, 5),
+            'amount' => -85.50,
+            'description' => 'Carrefour',
+            'competence_month' => '2026-03',
+        ]);
 
-        Transaction::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'account_id' => $checkingAccount->id,
-                'date' => Carbon::create(2026, 3, 7),
-                'amount' => -120.00,
-            ],
-            [
-                'transaction_type_id' => $expenseType->id,
-                'transaction_category_id' => $restaurants->id,
-                'description' => 'Pizzeria Luigi',
-                'competence_month' => '2026-03',
-            ]
-        );
+        Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $checkingAccount->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $restaurants->id,
+            'date' => Carbon::create(2026, 3, 7),
+            'amount' => -120.00,
+            'description' => 'Pizzeria Luigi',
+            'competence_month' => '2026-03',
+        ]);
 
-        Transaction::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'account_id' => $checkingAccount->id,
-                'date' => Carbon::create(2026, 3, 10),
-                'amount' => -150.00,
-            ],
-            [
-                'transaction_type_id' => $expenseType->id,
-                'transaction_category_id' => $utilities->id,
-                'description' => 'Electric bill',
-                'competence_month' => '2026-03',
-            ]
-        );
+        Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $checkingAccount->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $utilities->id,
+            'date' => Carbon::create(2026, 3, 10),
+            'amount' => -150.00,
+            'description' => 'Electric bill',
+            'competence_month' => '2026-03',
+        ]);
 
         // Sample income
-        Transaction::firstOrCreate(
-            [
-                'user_id' => $user->id,
-                'account_id' => $checkingAccount->id,
-                'date' => Carbon::create(2026, 3, 1),
-                'amount' => 3500.00,
-            ],
-            [
-                'transaction_type_id' => $incomeType->id,
-                'description' => 'Monthly salary',
-                'competence_month' => '2026-03',
-            ]
-        );
+        Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $checkingAccount->id,
+            'transaction_type_id' => $incomeType->id,
+            'date' => Carbon::create(2026, 3, 1),
+            'amount' => 3500.00,
+            'description' => 'Monthly salary',
+            'competence_month' => '2026-03',
+        ]);
+
+        // More expenses in February for testing
+        Transaction::create([
+            'user_id' => $user->id,
+            'account_id' => $checkingAccount->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $groceries->id,
+            'date' => Carbon::create(2026, 2, 15),
+            'amount' => -95.00,
+            'description' => 'Supermarket',
+            'competence_month' => '2026-02',
+        ]);
 
         // Subscriptions
-        Subscription::firstOrCreate(
+        Subscription::updateOrCreate(
             ['user_id' => $user->id, 'name' => 'Netflix'],
             [
                 'status' => SubscriptionStatus::ACTIVE,
                 'frequency' => SubscriptionFrequency::MONTHLY,
                 'monthly_cost' => 12.99,
-                'start_date' => Carbon::create(2026, 1, 1),
                 'next_renewal_date' => Carbon::now()->addDays(5),
             ]
         );
 
-        Subscription::firstOrCreate(
+        Subscription::updateOrCreate(
             ['user_id' => $user->id, 'name' => 'Spotify'],
             [
                 'status' => SubscriptionStatus::ACTIVE,
                 'frequency' => SubscriptionFrequency::MONTHLY,
                 'monthly_cost' => 10.99,
-                'start_date' => Carbon::create(2026, 1, 15),
                 'next_renewal_date' => Carbon::now()->addDays(10),
             ]
         );
 
-        Subscription::firstOrCreate(
+        Subscription::updateOrCreate(
             ['user_id' => $user->id, 'name' => 'Microsoft 365'],
             [
                 'status' => SubscriptionStatus::ACTIVE,
                 'frequency' => SubscriptionFrequency::ANNUAL,
                 'monthly_cost' => 9.99 / 12,
-                'start_date' => Carbon::create(2026, 2, 1),
                 'next_renewal_date' => Carbon::now()->addMonths(11),
             ]
         );
 
         // Credit Cards
-        CreditCard::firstOrCreate(
+        CreditCard::updateOrCreate(
             ['user_id' => $user->id, 'name' => 'Visa'],
             [
                 'account_id' => $checkingAccount->id,
-                'card_number' => '4532XXXXXXXX1234',
-                'cardholder_name' => $user->name,
+                'type' => 'revolving',
                 'credit_limit' => 10000,
                 'current_balance' => 2500,
-                'annual_percentage_rate' => 14.5,
-                'billing_cycle_day' => 15,
+                'interest_rate' => 14.5,
+                'statement_day' => 15,
+                'due_day' => 22,
                 'interest_calculation_method' => 'daily_balance',
             ]
         );
 
         // Loans
-        Loan::firstOrCreate(
+        Loan::updateOrCreate(
             ['user_id' => $user->id, 'name' => 'Car Loan'],
             [
-                'principal_amount' => 30000,
-                'remaining_amount' => 22000,
-                'annual_interest_rate' => 5.5,
+                'account_id' => $checkingAccount->id,
+                'total_amount' => 30000,
                 'monthly_payment' => 650,
+                'withdrawal_day' => 1,
                 'start_date' => Carbon::create(2025, 6, 1),
                 'end_date' => Carbon::create(2032, 6, 1),
-                'status' => 'active',
+                'total_installments' => 84,
+                'remaining_amount' => 22000,
             ]
         );
 
         $this->command->info('Dummy data seeded successfully!');
     }
 }
+
