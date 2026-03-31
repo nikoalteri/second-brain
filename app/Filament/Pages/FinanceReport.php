@@ -260,4 +260,50 @@ class FinanceReport extends Page
 
         return $data;
     }
+
+    public function exportCsv(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $pivotData = $this->getPivotData();
+        $tree = $pivotData['tree'];
+        $pivot = $pivotData['pivot'];
+
+        $csv = "Finance Report - Year {$this->selectedYear}\n";
+        $csv .= "Category";
+        for ($m = 1; $m <= 12; $m++) {
+            $csv .= "," . Carbon::create(2026, $m, 1)->format('M');
+        }
+        $csv .= ",Total\n";
+
+        foreach ($tree as $parent) {
+            $parentData = $pivot[$parent['key']] ?? [];
+            $csv .= $parent['label'];
+            for ($m = 1; $m <= 12; $m++) {
+                $csv .= "," . number_format($parentData[$m] ?? 0, 2, '.', '');
+            }
+            $csv .= "," . number_format($parentData['total'] ?? 0, 2, '.', '') . "\n";
+
+            if ($parent['has_children']) {
+                foreach ($parent['children'] as $child) {
+                    $childData = $pivot[$child['key']] ?? [];
+                    $csv .= "  " . $child['label'];
+                    for ($m = 1; $m <= 12; $m++) {
+                        $csv .= "," . number_format($childData[$m] ?? 0, 2, '.', '');
+                    }
+                    $csv .= "," . number_format($childData['total'] ?? 0, 2, '.', '') . "\n";
+                }
+            }
+        }
+
+        return response()->streamDownload(
+            fn() => print($csv),
+            "finance-report-{$this->selectedYear}.csv",
+            ['Content-Type' => 'text/csv']
+        );
+    }
+
+    public function exportPdf(): void
+    {
+        // TODO: Implement PDF export using barryvdh/laravel-dompdf
+        session()->flash('warning', 'PDF export coming soon! Please use CSV export for now.');
+    }
 }
