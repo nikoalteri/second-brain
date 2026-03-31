@@ -62,6 +62,22 @@ class FinanceReport extends Page
         $this->selectedYear = $this->years[0] ?? now()->year;
     }
 
+    public function getViewData(): array
+    {
+        $pivot = $this->getPivotData();
+        $monthNames = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $monthNames[$m] = Carbon::create(2026, $m, 1)->format('M');
+        }
+        $months = range(1, 12);
+
+        return array_merge(parent::getViewData(), [
+            'pivot' => $pivot,
+            'monthNames' => $monthNames,
+            'months' => $months,
+        ]);
+    }
+
     public function getHeaderActions(): array
     {
         return [
