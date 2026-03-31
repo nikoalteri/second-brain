@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             TransactionTypeSeeder::class,
             DummyDataSeeder::class,
             HealthDataSeeder::class,
+            ProductivityDataSeeder::class,
         ]);
 
         User::factory()->create([
