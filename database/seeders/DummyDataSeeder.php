@@ -19,7 +19,7 @@ class DummyDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $user = User::where('email', 'test@example.com')->first();
+        $user = User::first();
         if (!$user) {
             return;
         }
@@ -120,6 +120,47 @@ class DummyDataSeeder extends Seeder
             'description' => 'Supermarket',
             'competence_month' => '2026-02',
         ]);
+
+        // Generate more transaction history for realistic dashboard data
+        $categories = [$groceries, $restaurants, $utilities];
+        $descriptions = [
+            'Carrefour', 'Auchan', 'Coop', 'Esselunga',
+            'McDonald\'s', 'Pizzeria', 'Restaurant', 'Cafe',
+            'Water bill', 'Gas bill', 'Internet bill', 'Phone bill',
+        ];
+        
+        // Generate 35 more transactions across March and February
+        for ($i = 0; $i < 35; $i++) {
+            $days_ago = rand(1, 60);
+            $date = Carbon::now()->subDays($days_ago);
+            $category = $categories[array_rand($categories)];
+            $description = $descriptions[array_rand($descriptions)];
+            
+            Transaction::create([
+                'user_id' => $user->id,
+                'account_id' => $checkingAccount->id,
+                'transaction_type_id' => $expenseType->id,
+                'transaction_category_id' => $category->id,
+                'date' => $date,
+                'amount' => -rand(10, 200),
+                'description' => $description,
+                'competence_month' => $date->format('Y-m'),
+            ]);
+        }
+
+        // Add some income transactions
+        for ($i = 0; $i < 3; $i++) {
+            $date = Carbon::create(2026, 1 + $i, 1);
+            Transaction::create([
+                'user_id' => $user->id,
+                'account_id' => $checkingAccount->id,
+                'transaction_type_id' => $incomeType->id,
+                'date' => $date,
+                'amount' => 3500.00,
+                'description' => 'Monthly salary',
+                'competence_month' => $date->format('Y-m'),
+            ]);
+        }
 
         // Subscriptions
         Subscription::updateOrCreate(
