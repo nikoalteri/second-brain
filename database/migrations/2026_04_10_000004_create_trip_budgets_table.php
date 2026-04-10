@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('trip_budgets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('trip_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('trip_id')->constrained()->cascadeOnDelete();
             $table->decimal('initial_amount', 12, 2);
             $table->string('currency')->default('USD');
             $table->text('notes')->nullable();
