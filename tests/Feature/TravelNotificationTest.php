@@ -26,11 +26,10 @@ class TravelNotificationTest extends TestCase
     {
         parent::setUp();
 
-        Queue::fake();
-        Mail::fake();
-
         $this->notificationService = app(TravelNotificationService::class);
         $this->user = User::factory()->create(['email' => 'user@example.com']);
+        
+        // Create trip without queue/mail faked to avoid side effects
         $this->trip = Trip::factory()
             ->for($this->user)
             ->create([
@@ -38,6 +37,10 @@ class TravelNotificationTest extends TestCase
                 'start_date' => now()->addDays(10),
                 'end_date' => now()->addDays(20),
             ]);
+        
+        // Now fake queue and mail for the actual tests
+        Queue::fake();
+        Mail::fake();
     }
 
     /**
