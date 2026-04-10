@@ -11,13 +11,12 @@ return new class extends Migration
         Schema::create('trips', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('destination');
+            $table->string('title');
+            $table->text('description')->nullable();
             $table->date('start_date');
             $table->date('end_date');
-            $table->enum('trip_type', ['vacation', 'business', 'adventure'])->default('vacation');
-            $table->enum('status', ['planned', 'in_progress', 'completed'])->default('planned');
-            $table->decimal('budget', 10, 2)->nullable();
-            $table->decimal('total_spent', 10, 2)->nullable();
+            $table->string('status')->default('planning');
+            $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->index(['user_id', 'status']);
