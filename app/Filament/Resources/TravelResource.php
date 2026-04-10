@@ -54,6 +54,12 @@ class TravelResource extends Resource
                 \Filament\Actions\CreateAction::make(),
             ])
             ->recordActions([
+                \Filament\Tables\Actions\Action::make('export-pdf')
+                    ->label('Export PDF')
+                    ->icon('heroicon-m-arrow-down-tray')
+                    ->action(function (Trip $record): mixed {
+                        return app(\App\Services\TravelPdfExporter::class)->export($record);
+                    }),
                 EditAction::make(),
                 DeleteAction::make(),
             ])
