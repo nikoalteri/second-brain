@@ -58,27 +58,27 @@ class TripDashboardWidget extends BaseWidget
         return [
             Stat::make('Active Trips', $activeTrips)
                 ->description('Currently ongoing')
-                ->icon('heroicon-m-calendar')
+                ->icon('heroicon-o-calendar')
                 ->color('primary'),
 
             Stat::make('Total Budget', '€' . number_format($totalBudget, 2, ',', '.'))
                 ->description('Across active trips')
-                ->icon('heroicon-m-banknote')
+                ->icon('heroicon-o-banknote')
                 ->color('info'),
 
             Stat::make('Scheduled Activities', $scheduledActivities)
                 ->description('Across all trips')
-                ->icon('heroicon-m-clipboard-document-list')
+                ->icon('heroicon-o-clipboard-document-list')
                 ->color('success'),
 
             Stat::make('Participants', $totalParticipants)
                 ->description('Unique people')
-                ->icon('heroicon-m-users')
+                ->icon('heroicon-o-users')
                 ->color('warning'),
 
             Stat::make('Total Expenses', '€' . number_format($totalExpenses, 2, ',', '.'))
                 ->description('All trips combined')
-                ->icon('heroicon-m-arrow-trending-up')
+                ->icon('heroicon-o-arrow-trending-up')
                 ->color('danger'),
         ];
     }
