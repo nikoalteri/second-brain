@@ -6,12 +6,14 @@ use App\Filament\Resources\Inventories\Pages\CreateInventory;
 use App\Filament\Resources\Inventories\Pages\EditInventory;
 use App\Filament\Resources\Inventories\Pages\ListInventories;
 use App\Models\Inventory;
+use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use UnitEnum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,13 +22,13 @@ use Illuminate\Support\Facades\Auth;
 class InventoryResource extends Resource
 {
     protected static ?string $model = Inventory::class;
-    protected static ?string $navigationGroup = 'Home Management';
-    protected static ?string $navigationIcon = 'heroicon-o-cube';
+    protected static string|UnitEnum|null $navigationGroup = 'Home Management';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cube';
     protected static ?int $navigationSort = 5;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Select::make('property_id')
                 ->relationship('property', 'address')
                 ->required(),

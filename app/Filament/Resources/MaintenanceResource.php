@@ -7,12 +7,14 @@ use App\Filament\Resources\Maintenance\Pages\EditMaintenance;
 use App\Filament\Resources\Maintenance\Pages\ListMaintenances;
 use App\Filament\Resources\Maintenance\RelationManagers\RecordsRelationManager;
 use App\Models\MaintenanceTask;
+use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use UnitEnum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,13 +23,13 @@ use Illuminate\Support\Facades\Auth;
 class MaintenanceResource extends Resource
 {
     protected static ?string $model = MaintenanceTask::class;
-    protected static ?string $navigationGroup = 'Home Management';
-    protected static ?string $navigationIcon = 'heroicon-o-wrench';
+    protected static string|UnitEnum|null $navigationGroup = 'Home Management';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-wrench';
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Select::make('property_id')
                 ->relationship('property', 'address')
                 ->required(),

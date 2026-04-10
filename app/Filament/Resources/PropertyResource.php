@@ -9,12 +9,14 @@ use App\Filament\Resources\Properties\RelationManagers\MaintenanceTasksRelationM
 use App\Filament\Resources\Properties\RelationManagers\UtilitiesRelationManager;
 use App\Filament\Resources\Properties\RelationManagers\InventoriesRelationManager;
 use App\Models\Property;
+use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use UnitEnum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -25,13 +27,13 @@ use Illuminate\Support\Facades\Auth;
 class PropertyResource extends Resource
 {
     protected static ?string $model = Property::class;
-    protected static ?string $navigationIcon = 'heroicon-o-home';
-    protected static ?string $navigationGroup = 'Home Management';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-home';
+    protected static string|UnitEnum|null $navigationGroup = 'Home Management';
     protected static ?int $navigationSort = 1;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Tabs::make('Property Details')->tabs([
                 Tabs\Tab::make('Basic Info')->schema([
                     TextInput::make('address')

@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Properties\RelationManagers;
 
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\DeleteAction;
@@ -16,9 +16,9 @@ class UtilitiesRelationManager extends RelationManager
 {
     protected static string $relationship = 'utilities';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Select::make('type')
                 ->options([
                     'electricity' => 'Electricity',

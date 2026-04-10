@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Maintenance\RelationManagers;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\DeleteAction;
@@ -17,9 +17,9 @@ class RecordsRelationManager extends RelationManager
 {
     protected static string $relationship = 'propertyMaintenanceRecords';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             DatePicker::make('date')
                 ->required(),
             TextInput::make('cost')

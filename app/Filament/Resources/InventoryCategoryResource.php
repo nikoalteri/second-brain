@@ -3,9 +3,11 @@
 namespace App\Filament\Resources;
 
 use App\Models\InventoryCategory;
+use BackedEnum;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Form;
+use Filament\Schemas\Schema;
 use Filament\Resources\Resource;
+use UnitEnum;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
@@ -17,13 +19,13 @@ use Illuminate\Support\Facades\Auth;
 class InventoryCategoryResource extends Resource
 {
     protected static ?string $model = InventoryCategory::class;
-    protected static ?string $navigationGroup = 'Home Management';
-    protected static ?string $navigationIcon = 'heroicon-o-tag';
+    protected static string|UnitEnum|null $navigationGroup = 'Home Management';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-tag';
     protected static ?int $navigationSort = 4;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             TextInput::make('name')
                 ->required()
                 ->unique(ignoreRecord: true),
