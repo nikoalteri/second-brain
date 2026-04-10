@@ -15,33 +15,17 @@ return new class extends Migration
             $table->id();
             
             // User scoping
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->onDelete('cascade')
-                ->index();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             
             // Trip reference
-            $table->foreignId('trip_id')
-                ->constrained('trips')
-                ->onDelete('cascade')
-                ->index();
+            $table->foreignId('trip_id')->constrained()->cascadeOnDelete();
             
             // Itinerary reference
-            $table->foreignId('itinerary_id')
-                ->constrained('itineraries')
-                ->onDelete('cascade')
-                ->index();
+            $table->foreignId('itinerary_id')->constrained()->cascadeOnDelete();
             
             // Activity references for conflicting activities
-            $table->foreignId('activity_1_id')
-                ->constrained('activities')
-                ->onDelete('cascade')
-                ->index();
-            
-            $table->foreignId('activity_2_id')
-                ->constrained('activities')
-                ->onDelete('cascade')
-                ->index();
+            $table->unsignedBigInteger('activity_1_id');
+            $table->unsignedBigInteger('activity_2_id');
             
             // Conflict time range
             $table->dateTime('conflict_start');
@@ -60,6 +44,21 @@ return new class extends Migration
             $table->softDeletes();
             
             $table->timestamps();
+
+            // Add foreign keys for activities (using raw syntax to avoid naming issues)
+            $table->foreign('activity_1_id')
+                ->references('id')
+                ->on('activities')
+                ->cascadeOnDelete();
+            
+            $table->foreign('activity_2_id')
+                ->references('id')
+                ->on('activities')
+                ->cascadeOnDelete();
+
+            // Add indices for common queries
+            $table->index(['user_id', 'resolved_at']);
+            $table->index(['trip_id', 'resolved_at']);
         });
     }
 
