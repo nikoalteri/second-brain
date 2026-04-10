@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Itinerary;
+use App\Models\TripItineraryConflict;
 use App\Services\ItineraryService;
 use Illuminate\Support\Facades\Log;
 
@@ -52,6 +53,19 @@ class ItineraryObserver
             $conflicts = $this->itineraryService->detectConflicts($itinerary);
 
             if (!empty($conflicts)) {
+                // Log each conflict to database
+                foreach ($conflicts as $conflict) {
+                    TripItineraryConflict::create([
+                        'user_id' => $itinerary->user_id,
+                        'trip_id' => $itinerary->trip_id,
+                        'itinerary_id' => $itinerary->id,
+                        'activity_1_id' => $conflict['activity1_id'],
+                        'activity_2_id' => $conflict['activity2_id'],
+                        'conflict_start' => $conflict['overlap_start'],
+                        'conflict_end' => $conflict['overlap_end'],
+                    ]);
+                }
+
                 $conflictDetails = [];
                 foreach ($conflicts as $conflict) {
                     $conflictDetails[] = sprintf(

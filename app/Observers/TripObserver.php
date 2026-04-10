@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Trip;
 use App\Models\TripBudget;
+use App\Services\TravelNotificationService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -12,6 +13,7 @@ class TripObserver
     /**
      * Handle trip creation event.
      * Auto-creates a TripBudget for the trip.
+     * Schedules a notification to be sent N days before trip start.
      *
      * @param Trip $trip
      * @return void
@@ -35,6 +37,16 @@ class TripObserver
                     'user_id' => $trip->user_id,
                     'initial_budget' => $initialAmount,
                 ]);
+
+                // Schedule notification 7 days before trip start
+                try {
+                    app(TravelNotificationService::class)->scheduleStartNotification($trip, 7);
+                } catch (\Exception $e) {
+                    Log::error('Failed to schedule trip notification', [
+                        'trip_id' => $trip->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             });
         } catch (\Exception $e) {
             Log::error('Error in TripObserver::created', [
