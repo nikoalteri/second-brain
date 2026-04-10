@@ -36,7 +36,9 @@ class TripDashboardWidget extends BaseWidget
             ->count();
 
         // Sum initial budget from active trips
-        $totalBudget = Trip::where('status', TripStatus::IN_PROGRESS)
+        $totalBudget = Trip::withoutGlobalScopes()
+            ->where('trips.user_id', $user->id)
+            ->where('trips.status', TripStatus::IN_PROGRESS)
             ->join('trip_budgets', 'trips.id', '=', 'trip_budgets.trip_id')
             ->sum('trip_budgets.initial_amount');
 
