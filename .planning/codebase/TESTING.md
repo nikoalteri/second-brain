@@ -1,285 +1,467 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-03-23
+**Analysis Date:** 2024-12-19
 
 ## Test Framework
 
 **Runner:**
-- PHPUnit 11.5.3+ (configured in `phpunit.xml`)
+- PHPUnit 11.5.3
 - Config: `phpunit.xml` in project root
-- Test bootstrap: `vendor/autoload.php`
 
 **Assertion Library:**
-- PHPUnit's built-in assertions (no separate assertion library)
+- PHPUnit assertions (built-in)
+- Mockery 1.6 for mocking objects
+- Laravel test helpers: `assertDatabaseHas()`, `assertDatabaseMissing()`, Eloquent assertion methods
 
 **Run Commands:**
 ```bash
-composer test              # Run all tests (Unit + Feature)
-php artisan test           # Alternative: via Laravel artisan
-php artisan test tests/Unit/LoanScheduleServiceTest.php  # Run specific test
-./vendor/bin/phpunit --filter="it_generates_payments"    # Run by method name
-php artisan test --coverage                              # Generate coverage (if enabled)
+php artisan test                    # Run all tests
+php artisan test tests/Unit         # Run unit tests only
+php artisan test tests/Feature      # Run feature tests only
+php artisan test --filter=TestName  # Run specific test
+php artisan test --parallel         # Run tests in parallel
+composer test                       # Composer script (runs config:clear then tests)
+```
+
+**Coverage:**
+```bash
+php artisan test --coverage          # Generate coverage report
+php artisan test --coverage-html     # HTML coverage report
+php artisan test --min-coverage=70   # Enforce minimum coverage
 ```
 
 ## Test File Organization
 
 **Location:**
-- Unit tests: `tests/Unit/` (isolated, fast)
-- Feature tests: `tests/Feature/` (integration, HTTP workflows)
-- Base test class: `tests/TestCase.php`
+- Unit tests: `tests/Unit/`
+- Feature tests: `tests/Feature/`
+- Test files co-located by domain under Feature (not app structure)
 
 **Naming:**
-- File: `{Subject}Test.php` (e.g., `LoanScheduleServiceTest.php`)
-- Method: `test_{description}()` or `/** @test */ it_{description}()`
+- Pattern: `{Subject}Test.php`
+- Examples: `CreditCardCycleServiceTest.php`, `CreditCardLifecycleIntegrationTest.php`
 
 **Structure:**
 ```
 tests/
+├── TestCase.php                          # Base test class with helpers
 ├── Unit/
-│   ├── CreditCardKpiServiceTest.php
+│   ├── CreditCardBalanceServiceTest.php
 │   ├── CreditCardCycleServiceTest.php
+│   ├── CreditCardKpiServiceTest.php
 │   ├── LoanScheduleServiceTest.php
 │   ├── LoanRepositoryTest.php
-│   └── ExampleTest.php
+│   ├── RevolvingCreditCalculatorTest.php
+│   ├── SubscriptionServiceTest.php
+│   ├── ExampleTest.php
+│   └── [12 total unit test files]
 ├── Feature/
+│   ├── CreditCardExpenseIntegrationTest.php
 │   ├── CreditCardLifecycleIntegrationTest.php
+│   ├── ExampleTest.php
 │   ├── LoanAuthorizationTest.php
 │   ├── TransactionAuthorizationTest.php
-│   └── ExampleTest.php
-└── TestCase.php
+│   ├── AccountAuthorizationTest.php
+│   ├── Filament/Widgets/DashboardWidgetsTest.php
+│   ├── Health/HealthModuleTest.php
+│   ├── Productivity/ProductivityModuleTest.php
+│   ├── Relationships/RelationshipsModuleTest.php
+│   ├── Settings/SettingsModuleTest.php
+│   └── [9 total feature test files]
 ```
 
 ## Test Structure
 
-**Suite Organization:**
-
+**Base Class:**
 ```php
-class LoanScheduleServiceTest extends TestCase
+// tests/TestCase.php
+class TestCase extends BaseTestCase
 {
-    use RefreshDatabase;
+    use CreatesApplication;
+    // Custom helpers available to all tests
+}
+```
 
+**Unit Test Pattern:**
+```php
+namespace Tests\Unit;
+
+use App\Enums\CreditCardType;
+use App\Models\CreditCard;
+use App\Services\CreditCardCycleService;
+use Tests\TestCase;
+
+class CreditCardCycleServiceTest extends TestCase
+{
     /** @test */
-    public function it_generates_payments_for_a_loan()
+    public function revolving_breakdown_with_12_percent_rate(): void
     {
-        // Arrange: Set up test data
-        $loan = Loan::factory()->create([
-            'start_date' => Carbon::now()->subMonths(2),
-            'total_installments' => 3,
-            'withdrawal_day' => 15,
-            'monthly_payment' => 100,
-            'skip_weekends' => false,
+        // Arrange
+        $service = new CreditCardCycleService();
+        $card = new CreditCard([
+            'type' => CreditCardType::REVOLVING,
+            'fixed_payment' => 250,
+            'interest_rate' => 12,
+            'stamp_duty_amount' => 2,
         ]);
 
-        // Act: Execute the behavior
-        $service = new LoanScheduleService();
-        $service->generate($loan);
+        // Act
+        $result = $service->calculateRevolvingPaymentBreakdown($card, 1000);
 
-        // Assert: Verify the results
-        $this->assertCount(3, $loan->payments);
-        foreach ($loan->payments as $payment) {
-            $this->assertEquals(100, $payment->amount);
-            $this->assertEquals(LoanPaymentStatus::PENDING, $payment->status);
-        }
+        // Assert
+        $this->assertSame(120.0, $result['interest_amount']);
+        $this->assertSame(130.0, $result['principal_amount']);
+        $this->assertFalse($result['invalid_installment']);
     }
+}
+```
+
+**Feature Test Pattern (with Database):**
+```php
+namespace Tests\Feature;
+
+use App\Models\Account;
+use App\Models\CreditCard;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class CreditCardLifecycleIntegrationTest extends TestCase
+{
+    use RefreshDatabase;  // Refresh database for isolation
 
     /** @test */
-    public function it_syncs_loan_status_and_amount()
+    public function charge_cycle_issue_and_payment_sync_everything(): void
     {
-        $loan = Loan::factory()->create([
-            'total_amount' => 300,
-            'monthly_payment' => 100,
-            'total_installments' => 3,
+        // Arrange
+        $account = Account::factory()->create(['balance' => 1000]);
+        $card = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            // ... card details
         ]);
-        $service = new LoanScheduleService();
-        $service->generate($loan);
 
-        $payment = $loan->payments()->first();
-        $payment->update(['status' => 'paid']);
+        // Act
+        $issued = app(CreditCardCycleService::class)->issueCycle($cycle);
 
-        $service->syncLoan($loan->fresh());
-
-        $loan->refresh();
-        $this->assertEquals(1, $loan->paid_installments);
-        $this->assertEquals(200, $loan->remaining_amount);
+        // Assert
+        $this->assertTrue($issued);
+        $card->refresh();
+        $this->assertSame(CreditCardCycleStatus::ISSUED, $card->status);
     }
 }
 ```
 
 **Patterns:**
-- Setup: Arrange test data using factories
-- Act: Call the method under test
-- Assert: Verify expectations with PHPUnit assertions
-- Teardown: RefreshDatabase trait automatically rolls back transactions
+
+- **@test annotation**: Marks methods as tests (alternative to `test` prefix)
+- **RefreshDatabase trait**: Wraps each test in database transaction (faster than migrate:fresh)
+- **Factory usage**: `Model::factory()->create()` for test data generation
+- **Model refresh**: `$model->refresh()` to reload from database after changes
+- **Assertions**: Mixed PHPUnit native and Laravel-specific helpers
+- **Setup**: Arrange-Act-Assert pattern strictly followed
 
 ## Mocking
 
-**Framework:** Mockery (installed as dev dependency `mockery/mockery`)
+**Framework:** Mockery 1.6
 
 **Patterns:**
-- Not heavily used in observed tests - prefer real database with factories
-- Example where mocking might apply: External API calls, time-dependent logic
 
 ```php
-// Example pattern (not in current codebase but follows convention):
-$mockedService = Mockery::mock(ExternalApiService::class);
-$mockedService->shouldReceive('call')->andReturn($data);
+// Mocking service in constructor
+public function __construct(
+    ?RevolvingCreditCalculator $calculator = null,
+    ?CreditCardBalanceService $balanceService = null
+) {
+    $this->calculator = $calculator ?? app(RevolvingCreditCalculator::class);
+    $this->balanceService = $balanceService ?? app(CreditCardBalanceService::class);
+}
 
-// Inject mock into service
-$service = new MyService($mockedService);
-$result = $service->doSomething();
+// In test:
+$mockCalculator = Mockery::mock(RevolvingCreditCalculator::class);
+$mockCalculator->shouldReceive('calculate')->andReturn([...]);
+$service = new CreditCardCycleService($mockCalculator);
+```
+
+**Example from tests:**
+```php
+$mock = $this->mock(SomeClass::class, function ($mock) {
+    $mock->shouldReceive('method')->andReturn('value');
+});
 ```
 
 **What to Mock:**
-- External API calls (not applicable in this self-contained app)
-- Current time/date (use Carbon::setTestNow() instead of mocking)
-- Heavy computations (not observed in codebase)
+- External services (payment gateways, APIs)
+- Repository methods in service tests
+- Heavy dependencies in unit tests
+- Database access via Repository pattern
 
 **What NOT to Mock:**
-- Database interactions (use RefreshDatabase and factories instead)
-- Eloquent models (use real models to test relations)
-- Laravel services (inject real services unless testing their isolation)
+- Models (use factories instead)
+- Services being tested (test real implementation)
+- Eloquent relationships (test with actual data)
+- Database-backed services (use RefreshDatabase)
 
 ## Fixtures and Factories
 
-**Test Data:**
+**Test Data Pattern:**
 
-Factories located in `database/factories/`:
-- `UserFactory.php` - Generates test users
-- `LoanFactory.php` - Generates test loans with realistic defaults
-- `CreditCardFactory.php` - Generates test credit cards
-- `AccountFactory.php` - Generates test accounts
-- `TransactionFactory.php` - Generates test transactions
+All 8 factories follow consistent pattern:
 
-**Usage pattern:**
 ```php
-// Create single instance
-$loan = Loan::factory()->create([
-    'start_date' => Carbon::now(),
-    'total_installments' => 12,
-]);
+// database/factories/CreditCardFactory.php
+namespace Database\Factories;
 
-// Create multiple instances
-$loans = Loan::factory()->count(5)->create();
+use App\Enums\CreditCardStatus;
+use App\Enums\CreditCardType;
+use App\Models\CreditCard;
+use App\Models\User;
+use App\Models\Account;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-// Create with relationships
-$user = User::factory()
-    ->has(Account::factory()->count(2))
-    ->create();
+class CreditCardFactory extends Factory
+{
+    protected $model = CreditCard::class;
 
-// Create without persisting
-$loan = Loan::factory()->make(['status' => 'draft']);
+    public function definition(): array
+    {
+        return [
+            'user_id' => User::factory(),
+            'account_id' => Account::factory(),
+            'name' => $this->faker->word(),
+            'type' => CreditCardType::REVOLVING,
+            'credit_limit' => 5000.00,
+            'fixed_payment' => 250.00,
+            'interest_rate' => 12.00,
+            'stamp_duty_amount' => 2.00,
+            'statement_day' => 20,
+            'due_day' => 25,
+            'skip_weekends' => false,
+            'current_balance' => 0.00,
+            'status' => CreditCardStatus::ACTIVE,
+            'start_date' => now(),
+            'interest_calculation_method' => InterestCalculationMethod::DAILY_BALANCE,
+        ];
+    }
+
+    // State methods for variations
+    public function charge(): static
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'type' => CreditCardType::CHARGE,
+                'interest_rate' => 0.00,
+                'fixed_payment' => 0.00,
+            ];
+        });
+    }
+
+    public function unlimited(): static
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'credit_limit' => null,
+            ];
+        });
+    }
+}
+
+// Usage in tests:
+$card = CreditCard::factory()->create();
+$chargeCard = CreditCard::factory()->charge()->create();
+$unlimitedCard = CreditCard::factory()->unlimited()->create();
 ```
 
 **Location:**
-- Factories: `database/factories/` (auto-discovered by Laravel)
-- Test database: Temporary SQLite in-memory database for tests
-- RefreshDatabase trait handles migration/rollback per test
+- Factories: `database/factories/`
+- Named matching model: `UserFactory` for `User` model
+- Registered automatically via Eloquent factory registration
+
+**Seeders:**
+- Location: `database/seeders/`
+- Used for development data population
+- Not typically used in tests (use factories instead)
 
 ## Coverage
 
-**Requirements:** Not enforced - no coverage threshold configured in `phpunit.xml`
+**Requirements:** 
+- No enforced minimum
+- PHPUnit reports coverage via `--coverage` flag
+- `phpunit.xml` includes `<source>` section covering `app/` directory
 
 **View Coverage:**
 ```bash
-php artisan test --coverage
-# Requires: pcov or xdebug PHP extension
+php artisan test --coverage --min-coverage=70
+# Generates coverage report showing line/branch/method coverage
 ```
+
+**Configuration (phpunit.xml):**
+```xml
+<source>
+    <include>
+        <directory>app</directory>
+    </include>
+</source>
+```
+
+Coverage includes all code in `app/` when running tests with `--coverage` flag.
 
 ## Test Types
 
 **Unit Tests:**
-- Scope: Single service or utility function isolated from database
-- Approach: Test business logic, calculations, edge cases
-- Example: `CreditCardKpiServiceTest` tests KPI calculation logic
-- Database: Uses RefreshDatabase for state isolation (even though database is involved)
+- Scope: Single service or calculator in isolation
+- Approach: No database, no models (or new model instances)
+- Files: `tests/Unit/{Service}Test.php`
+- Examples: `CreditCardCycleServiceTest`, `RevolvingCreditCalculatorTest`, `LoanScheduleServiceTest`
+- Count: 16 unit test files testing calculation logic, financial algorithms
 
 **Integration Tests:**
-- Scope: Multiple layers (HTTP request → Service → Database)
-- Approach: Test workflows end-to-end
-- Example: `CreditCardLifecycleIntegrationTest` tests credit card creation through payment posting
-- Database: Real database with factories to set up state
-
-**E2E Tests:**
-- Framework: Not detected - No Dusk, Selenium, or Puppeteer configuration
-- Could be added: `laravel/dusk` for browser automation testing
+- Scope: Multiple services interacting, with database
+- Approach: Create real models, test full workflows
+- Files: `tests/Feature/{Domain}IntegrationTest.php`
+- Examples: `CreditCardLifecycleIntegrationTest`, `CreditCardExpenseIntegrationTest`
+- Count: 5 integration test files
 
 **Authorization Tests:**
-- Scope: Test policy enforcement and role-based access
-- Example: `LoanAuthorizationTest` verifies only authorized users can access loan data
-- Pattern: Create users with roles, assert HTTP response codes (403 for denied)
+- Scope: Policy enforcement
+- Approach: Create users with different permissions, test access
+- Files: `tests/Feature/{Model}AuthorizationTest.php`
+- Examples: `CreditCardAuthorizationTest`, `LoanAuthorizationTest`, `TransactionAuthorizationTest`, `AccountAuthorizationTest`
+- Count: 4 authorization test files
+
+**Module Tests:**
+- Scope: Complete feature modules
+- Approach: Test entire workflow (Filament resources, forms, tables)
+- Files: `tests/Feature/{Module}/{Module}ModuleTest.php`
+- Examples: `HealthModuleTest`, `ProductivityModuleTest`, `RelationshipsModuleTest`, `SettingsModuleTest`
+- Count: 4 module test files
+
+**Widget Tests:**
+- Scope: Dashboard widgets
+- Approach: Test widget rendering and data
+- Files: `tests/Feature/Filament/Widgets/{Widget}Test.php`
+- Example: `DashboardWidgetsTest`
+- Count: 1 widget test file
+
+**E2E Tests:**
+- Not explicitly used in codebase
+- Feature tests with `RefreshDatabase` serve similar purpose
+- Manual testing via Filament UI in browser
 
 ## Common Patterns
 
 **Async Testing:**
-
 ```php
-// Example: Testing background jobs
+// Not directly tested (queue connection is sync in tests)
+// Jobs execute synchronously in phpunit.xml config:
+// <env name="QUEUE_CONNECTION" value="sync"/>
+
+// When testing queued operations:
 $this->expectsJob(GenerateLoanPaymentsJob::class);
-
-Loan::factory()->create();
-// Job should have been dispatched
-
-// Or verify job was processed:
-Bus::fake();
-Loan::factory()->create();
-Bus::assertDispatched(GenerateLoanPaymentsJob::class);
+$service->triggerJobAsync();
 ```
 
 **Error Testing:**
-
 ```php
-// Test validation failures
-$this->actingAs($user)
-    ->post('/loans', [
-        'total_installments' => 0,  // Invalid
-        'monthly_payment' => -100,  // Invalid
-    ])
-    ->assertSessionHasErrors(['total_installments', 'monthly_payment']);
+public function test_invalid_installment_is_caught(): void
+{
+    $service = new CreditCardCycleService();
+    
+    $card = new CreditCard([
+        'type' => CreditCardType::REVOLVING,
+        'fixed_payment' => 0,  // Invalid
+        'interest_rate' => 12,
+    ]);
 
-// Test service exceptions
-$service = new LoanScheduleService();
-$loan = Loan::factory()->make(['total_installments' => -1]);
+    $result = $service->calculateRevolvingPaymentBreakdown($card, 1000);
+    
+    $this->assertTrue($result['invalid_installment']);
+}
 
-// Service might throw or return error; test the behavior
+// Exception testing:
+$this->expectException(InvalidArgumentException::class);
+$service->methodThatThrows();
 ```
 
-**Date-Based Testing:**
-
+**Database Assertion:**
 ```php
-// Travel through time for date-dependent logic
-Carbon::setTestNow('2026-03-23 10:00:00');
-
-$loan = Loan::factory()->create([
-    'start_date' => Carbon::now(),
+$this->assertDatabaseHas('credit_cards', [
+    'user_id' => $user->id,
+    'status' => 'active',
 ]);
 
-$service = new LoanScheduleService();
-$service->generate($loan);
-
-// Assertions based on known date
-$this->assertEquals(15, $loan->payments[0]->due_date->day);
-
-// Reset time after test
-Carbon::setTestNow(null);
+$this->assertDatabaseMissing('credit_cards', [
+    'status' => 'deleted',
+]);
 ```
 
-## Test Execution
+**Model Relationship Testing:**
+```php
+$user = User::factory()->create();
+$account = Account::factory()->create(['user_id' => $user->id]);
 
-**Base Test Class (tests/TestCase.php):**
-- Extends `PHPUnit\Framework\TestCase` via Laravel
-- Provides: `RefreshDatabase` trait, `actingAs()` for auth, HTTP testing helpers
-- Available in both Unit and Feature tests
+$user->load('accounts');
+$this->assertTrue($user->accounts->contains($account));
+```
+
+**Observer Behavior Testing:**
+```php
+$cycle = CreditCardCycle::factory()->create();
+$cycle->status = CreditCardCycleStatus::PAID;
+$cycle->save();  // Triggers observer
+
+$this->assertDatabaseHas('credit_card_payments', [
+    'credit_card_cycle_id' => $cycle->id,
+    'status' => CreditCardPaymentStatus::PAID,
+]);
+```
+
+## Test Environment Configuration
+
+**phpunit.xml settings:**
+```xml
+<env name="APP_ENV" value="testing"/>
+<env name="BCRYPT_ROUNDS" value="4"/>  # Faster hashing for tests
+<env name="CACHE_STORE" value="array"/>  # In-memory cache
+<env name="DB_CONNECTION" value="sqlite"/>
+<env name="DB_DATABASE" value=":memory:"/>  # In-memory database
+<env name="QUEUE_CONNECTION" value="sync"/>  # Synchronous job execution
+<env name="SESSION_DRIVER" value="array"/>  # Array session driver
+<env name="MAIL_MAILER" value="array"/>  # Array mail driver (no sending)
+```
 
 **RefreshDatabase Trait:**
-- Migrates database schema before each test
-- Rolls back to clean state after each test
-- Uses transaction rollback for speed (or migration for isolation)
-- Ensures test isolation and deterministic behavior
+- Automatically runs migrations before each test
+- Wraps test in database transaction
+- Rolls back transaction after test (fast, no need for migrate:fresh)
+- Alternative: `DatabaseMigrations` trait (slower, actually migrates)
 
-**Parallelization:**
-- Not detected - PHPUnit runs tests sequentially
-- Could be added with `laravel/paratest` for faster CI
+**Test Isolation:**
+- Each test is independent
+- Database state not shared between tests
+- Models created in setup are isolated
+- No global state pollution
+
+## Debugging Tests
+
+**Run single test:**
+```bash
+php artisan test tests/Unit/CreditCardCycleServiceTest.php --filter test_name
+```
+
+**Print debugging:**
+```php
+dd($variable);  // Dump and die
+dump($variable);  // Dump without dying
+ray($variable);  # Ray debugger if installed
+```
+
+**PHPUnit options:**
+```bash
+php artisan test --verbose  # Verbose output
+php artisan test --stop-on-failure  # Stop on first failure
+php artisan test --order-by=random  # Randomize test order
+```
 
 ---
 
-*Testing analysis: 2026-03-23*
+*Testing analysis: 2024-12-19*

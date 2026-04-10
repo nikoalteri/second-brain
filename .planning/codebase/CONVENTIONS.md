@@ -1,242 +1,354 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-03-23
+**Analysis Date:** 2024-12-19
 
 ## Naming Patterns
 
 **Files:**
-- Classes: PascalCase (e.g., `LoanScheduleService`, `CreditCardCycle`, `CreateLoan`)
-- Tests: `{Subject}Test.php` (e.g., `LoanScheduleServiceTest`)
-- Migrations: Timestamp + snake_case action (e.g., `2026_03_17_091146_create_loans_table.php`)
+- Models: `PascalCase`, singular → `CreditCard.php`, `User.php`, `Transaction.php`
+- Services: `PascalCase` + "Service" suffix → `CreditCardCycleService.php`, `LoanScheduleService.php`
+- Policies: `PascalCase` + "Policy" suffix → `CreditCardPolicy.php`, `UserPolicy.php`
+- Observers: `PascalCase` + "Observer" suffix → `CreditCardCycleObserver.php`
+- Enums: `PascalCase`, singular → `CreditCardStatus.php`, `JournalMood.php`
+- Controllers: `PascalCase` + "Controller" suffix (rarely used)
+- Requests: `PascalCase` + "Request" suffix → `StoreLoanRequest.php`, `StoreTransactionRequest.php`
+- Jobs: `PascalCase` + "Job" suffix → `GenerateLoanPaymentsJob.php`
+- Traits: `PascalCase`, starts with "Has" or "Is" → `HasUserScoping.php`
+- Repositories: `PascalCase` + "Repository" suffix → `LoanRepository.php`
 
-**Functions/Methods:**
-- camelCase for all methods (e.g., `generatePayments()`, `syncLoan()`, `calculateInterest()`)
-- Action verbs first (get, create, update, delete, generate, calculate, sync, adjust)
-- Private methods prefixed with underscore optional but not used (just private visibility)
+**Classes (PHP):**
+- PSR-12 compliant
+- Namespace: `App\Models`, `App\Services`, `App\Policies`, etc.
+- Class names match file names exactly
+- Properties: `camelCase`
+- Methods: `camelCase`
+- Constants: `UPPER_SNAKE_CASE`
+
+**Functions & Methods:**
+- `camelCase` for instance/static methods
+- `camelCase` for function names
+- Private methods prefixed with underscore only if needed (not common)
+- Helper functions: Flat namespace, `camelCase`
+- Eloquent relationships: `camelCase`, singular or plural matching return type
+  - Example: `$model->creditCards()` returns HasMany
+  - Example: `$model->user()` returns BelongsTo
 
 **Variables:**
-- camelCase (e.g., `$monthlyPayment`, `$dueDate`, `$existingDates`)
-- Constants in UPPER_SNAKE_CASE (within Enums and classes)
-- $this->property for model attributes
+- `camelCase` for all variables
+- Short, descriptive names
+- Boolean variables prefixed with `is`, `has`, `should` → `$isActive`, `$hasBalance`, `$shouldProcess`
+- Loop variables: `$i`, `$item`, `$key`, `$value` for simple loops; descriptive for domain loops
+- Collections/arrays: Plural names → `$accounts`, `$transactions`, `$payments`
 
-**Types:**
-- Enums for status values: `LoanStatus::ACTIVE`, `PaymentStatus::PENDING`
-- Type hints on all parameters and return types (PHP 8.2+ strict typing)
-- Collections returned as proper types: `Collection`, `Paginate`, array
+**Constants & Enums:**
+- `UPPER_SNAKE_CASE` for class constants
+- Enum backing values: lowercase strings or integers → `'revolving'`, `'charge'`, `1`, `2`
+- Enum case names: `PascalCase` → `CreditCardType::REVOLVING`, `CreditCardStatus::ACTIVE`
 
-**Database:**
-- Table names: snake_case plural (loans, credit_cards, loan_payments)
-- Column names: snake_case (due_date, monthly_payment, skip_weekends)
-- Foreign keys: `{entity}_id` pattern (loan_id, user_id)
-- Boolean columns: `is_active`, `skip_weekends` (is_/has_ prefix)
+**Directories:**
+- Plural for collections: `Models/`, `Services/`, `Policies/`, `Observers/`, `Enums/`
+- Singular for concepts: `Http/`, `Jobs/`, `Traits/`, `Support/`
+- Domain-grouped under Filament: `Resources/`, `Resources/{Domain}/Pages/`, `Resources/{Domain}/Schemas/`, `Resources/{Domain}/Tables/`
+- Test structure mirrors app: `tests/Unit/`, `tests/Feature/`
 
 ## Code Style
 
 **Formatting:**
-- PSR-12 (PHP) with Larvel conventions
-- Spaces: 4-space indentation
-- Line length: No hard limit, but keep under 120 characters where practical
+- Tool: Laravel Pint (code style fixer)
+- Standard: PSR-12 (PHP Standard Recommendation)
+- Indent: 4 spaces (never tabs)
+- Line length: 120 characters (soft limit, enforced by EditorConfig)
+- Line endings: LF (Unix style)
+- Final newline: Required in all files
+- Trailing whitespace: Removed
 
 **Linting:**
-- Laravel Pint (PHP linter) - configured via composer scripts
-- No external linter configured for JavaScript/Vue
-- Run: `composer run pint` (or `php artisan pint`)
+- Tool: Laravel Pint (included in dev dependencies)
+- Run: `php artisan pint` to fix style issues
+- No ESLint or Prettier for JavaScript (JavaScript is minimal, mostly CSS)
+- Code quality: PHPUnit for test coverage
 
-**Comments:**
-- Minimal comments - code should be self-documenting
-- Use comments only for "why", not "what"
-- PHPDoc blocks on public methods with @param, @return, @throws
+**Spacing:**
+- Between class members: 1 blank line
+- Between method groups: 1 blank line
+- Inside methods: Sparse use of blank lines to group logical sections
+- Array spacing: No space after opening bracket, no space before closing bracket
+- Function parameters: `function name($param1, $param2)` - no extra spaces
+- Operators: Space around binary operators (`$a + $b`), no space around unary (`-$x`, `!$bool`)
 
 ## Import Organization
 
 **Order:**
-1. PHP built-in classes (namespace declarations first)
-2. Laravel framework imports (Illuminate\*)
-3. Package imports (Spatie\*, Nuwave\*, etc.)
-4. Application imports (App\*)
-5. Traits last (use statements within namespace declaration)
+1. Namespace declaration
+2. Blank line
+3. Use statements grouped by vendor/package
+4. Blank line
+5. Class declaration
 
-**Example from codebase:**
+**Pattern:**
 ```php
+<?php
+
 namespace App\Services;
 
-use App\Models\Loan;
-use App\Models\LoanPayment;
+use App\Enums\CreditCardStatus;
+use App\Models\CreditCard;
+use App\Models\CreditCardPayment;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use App\Support\Concerns\HasWorkdayCalculation;
 
-class LoanScheduleService
-{
-    use HasWorkdayCalculation;
-    // ...
-}
+class CreditCardCycleService
 ```
 
+**Grouping:**
+- App\ imports first (application code)
+- Third-party Illuminate\ imports next (Laravel framework)
+- Other vendor imports
+- Alphabetically within each group
+
 **Path Aliases:**
-- None detected in jsconfig.json (uses standard relative imports for JS)
-- Laravel uses PSR-4 autoloading: `App\\` → `app/`, `Database\\` → `database/`, `Tests\\` → `tests/`
+- No aliases configured in `jsconfig.json` or `composer.json`
+- Full namespace paths used throughout
 
 ## Error Handling
 
 **Patterns:**
-- Validation at entry point (Form Requests validate HTTP input)
-- Service methods assume valid input from controllers
-- Database transactions wrap multi-step operations: `DB::transaction(function() { ... })`
-- Eloquent exceptions caught at controller/resource level, returned as validation errors
-- GraphQL @rules directive validates types before resolver execution
-
-**Exception Handling:**
-- No custom exception classes observed - uses Laravel's built-in exceptions
-- Filament resources catch and display Eloquent exceptions as notifications
-
-## Logging
-
-**Framework:** Laravel default logging with stack driver (logs to `storage/logs/`)
-
-**Patterns:**
-- Optional pail integration (`laravel/pail`) for CLI log viewing
-- No explicit logging calls observed in services; rely on framework defaults
-- Query logging in development: `DB::listen()` callbacks
-- For debugging: `Log::info()` or `dd()` for local development
-
-## Comments
-
-**When to Comment:**
-- Only for non-obvious domain logic (e.g., Italian holiday calculation, workday adjustment)
-- Algorithm explanation if not immediately clear from code
-- Avoid stating the obvious ("increment counter", "check if active")
-
-**Example pattern observed:**
-```php
-// Adjust to next workday if due date falls on weekend/holiday
-$dueDate = $this->adjustToWorkday($dueDate, (bool) $loan->skip_weekends);
-```
-
-**JSDoc/TSDoc:**
-- Not observed in JavaScript/Vue files
-- PHPDoc used on public methods with @param and @return types
-
-## Function Design
-
-**Size:**
-- Aim for small, focused functions (single responsibility)
-- Service methods typically 20-50 lines (some exceptions like CreditCardCycleService at 334 lines - complex domain)
-- Large methods indicate potential refactoring opportunity
-
-**Parameters:**
-- Type hinted (PHP 8.2+ strict types)
-- Max 3-4 parameters; use dependency injection for shared services
-- Optional boolean flags used for behavior toggles (e.g., `$onlyMissing = true`)
-
-**Return Values:**
-- Explicit return types (void, Model, Collection, bool, array, int)
-- No implicit null returns - explicitly return null or throw exception
-- Service methods return modified models or Collections
-
-## Module Design
-
-**Exports:**
-- Each class has single responsibility
-- Services export public methods (no private contracts)
-- Models export public relations, casts, and attributes
-
-**Barrel Files:**
-- Not used (no index.php or __init__.php re-exports)
-- Direct imports from specific classes
-
-## Database Interactions
-
-**Pattern:** Eloquent ORM exclusively (no raw SQL)
-
-**Common patterns:**
-```php
-// With transactions for multi-step operations
-DB::transaction(function () use ($loan, $onlyMissing) {
-    if (! $onlyMissing) {
-        $loan->payments()->where('status', 'pending')->delete();
-    }
-    // ... create new payments
-});
-
-// With Model::withoutEvents() to suppress observers during seeding
-LoanPayment::withoutEvents(function () use ($loan) {
-    $loan->payments()->create([...]);
-});
-
-// Scoped queries with local scopes
-$loan->payments()->where('status', 'paid')->count();
-
-// Bulk operations for performance
-Model::whereIn('id', $ids)->update(['status' => 'processed']);
-```
-
-**Observers:**
-- Model lifecycle hooks (created, updating, deleted) used sparingly
-- Example: LoanObserver dispatches GenerateLoanPaymentsJob on creation/update
-
-## Filament Resources
-
-**Pattern:**
-- Resources define CRUD pages, tables, and forms declaratively
-- Schemas separate into form fields (CreateForm, EditForm) and table columns
-- Policies checked on resource pages; unauthorized users see 403
-- Relation managers handle nested data (e.g., Loan Payments as relation of Loan)
-
-**Example location:** `app/Filament/Resources/Loans/`
-
-## GraphQL Conventions
-
-**Schema Location:** `graphql/schema.graphql`
-
-**Directives used:**
-- `@find` - Single model lookup by ID or attribute
-- `@paginate` - Paginated model list with cursor/offset
-- `@eq` - Equality filter on query parameter
-- `@where` - WHERE clause with operator (like for LIKE)
-- `@rules` - Validation rules applied before resolver
-- Custom scalar: `DateTime` for timestamps
-
+- **Authorization**: Policies return boolean, Laravel throws `AuthorizationException` automatically
+- **Validation**: Form requests throw `ValidationException` with field-level messages
+- **Database**: Services wrap multi-step operations in `DB::transaction()` for atomicity
+- **Silent failures**: Observers do not throw exceptions (logged instead)
+- **Method contracts**: Type hints on parameters and return types enforce contracts
+  
 **Example:**
-```graphql
-user(
-  id: ID @eq @rules(apply: ["prohibits:email", "required_without:email"])
-  email: String @eq @rules(apply: ["email"])
-): User @find
-```
-
-## Testing Conventions
-
-**File Structure:**
-- `tests/Unit/` - Service and model unit tests with RefreshDatabase
-- `tests/Feature/` - Integration tests exercising HTTP/job workflows
-- Test factories in `database/factories/`
-
-**Pattern:**
 ```php
-class LoanScheduleServiceTest extends TestCase
+public function applyPrincipalPayment(CreditCard $card, float $principalAmount): float
 {
-    use RefreshDatabase;
+    $this->validateCreditLimit($card, $principalAmount);
+    // Operation...
+    return $newBalance;
+}
 
-    /** @test */
-    public function it_generates_payments_for_a_loan()
-    {
-        $loan = Loan::factory()->create([...]);
-        $service = new LoanScheduleService();
-        $service->generate($loan);
-        
-        $this->assertCount(3, $loan->payments);
+private function validateCreditLimit(CreditCard $card, float $amount): void
+{
+    if ($card->credit_limit !== null && $amount > $card->available_credit) {
+        throw new InvalidArgumentException('Amount exceeds available credit');
     }
 }
 ```
 
+## Logging
+
+**Framework:** Laravel's built-in logging (Monolog)
+
 **Patterns:**
-- Factory methods for test data: `Model::factory()->create([])`
-- RefreshDatabase trait rolls back each test
-- Assertion library: PHPUnit assertions
-- Mocking: Mockery for external dependencies
-- Setup in test methods (no setUp fixture re-use)
+- Lever context: `Log::info('message', ['key' => 'value'])`
+- Error logging: `Log::error('error', ['exception' => $e])`
+- Observers log to AuditLog model for domain-specific tracking
+- Services may log complex operations: `Log::debug()` for development, `Log::info()` for important events
+- Config: `config/logging.php` - stack driver (single channel in dev)
+
+**Example:**
+```php
+Log::info('Credit card cycle issued', [
+    'cycle_id' => $cycle->id,
+    'card_id' => $cycle->credit_card_id,
+    'total_due' => $cycle->total_due,
+]);
+```
+
+## Comments
+
+**When to Comment:**
+- Complex business logic: Interest calculation, payment breakdown
+- Non-obvious algorithms: Revolving credit calculator
+- Configuration rationale: Why a specific Enum or relationship
+- Deprecation: `@deprecated Use X instead, kept for backward compatibility`
+- NOT for obvious code: `// increment counter` unnecessary
+
+**JSDoc/TSDoc/PHPDoc:**
+- Methods in services have PHPDoc with `@param`, `@return`, `@throws` tags
+- Example from `CreditCardBalanceService`:
+```php
+/**
+ * @param CreditCard $card
+ * @param float $amount Expense amount (positive)
+ * @return float New current balance
+ */
+public function addExpense(CreditCard $card, float $amount): float
+```
+
+- Models rarely documented (self-explanatory via type hints)
+- Observers documented if logic is non-obvious
+- No inline comments preferred (code should be clear without them)
+
+## Function Design
+
+**Size:** 
+- Target: 10-30 lines per method
+- Maximum: 50 lines before extracting
+- Services: 80-300 lines total (9 services under 200 lines, 2 over 200)
+- Complex services: `CreditCardCycleService` (307 lines) legitimately large due to domain complexity
+
+**Parameters:** 
+- Maximum 3-4 positional parameters before considering object/array
+- Type hints: Always used (PHP 8.2+ requirement)
+- Return type: Always declared
+- Nullable types: Used sparingly, `?Type` for true optionals
+
+**Return Values:**
+- Single type: `public function method(): ReturnType`
+- Mixed returns: Rare, usually array with type specification
+- Void: Used for side-effect methods
+- Example good pattern:
+```php
+public function issueCycle(CreditCardCycle $cycle): bool
+public function calculateRevolvingPaymentBreakdown(CreditCard $card, float $currentBalance): array
+public function addExpense(CreditCard $card, float $amount): float
+```
+
+**Constructor Injection:**
+```php
+public function __construct(
+    ?RevolvingCreditCalculator $calculator = null,
+    ?CreditCardBalanceService $balanceService = null
+) {
+    $this->calculator = $calculator ?? app(RevolvingCreditCalculator::class);
+    $this->balanceService = $balanceService ?? app(CreditCardBalanceService::class);
+}
+```
+- Optional dependencies with null coalescing to container fallback
+- Allows testing without service container
+
+## Module Design
+
+**Exports:**
+- Services: Single public class per file
+- Models: Eloquent model only (relationships defined inside)
+- Policies: Single policy per class/model pair
+- Observers: Single observer per model
+- No barrel exports (no index.php re-exporting)
+
+**Barrel Files:**
+- Not used in codebase
+- Each import explicit from source file
+
+**Model Structure:**
+```php
+class CreditCard extends Model
+{
+    // 1. Traits
+    use HasFactory, SoftDeletes;
+    
+    // 2. Appended attributes
+    protected $appends = [];
+    
+    // 3. Fillable
+    protected $fillable = [];
+    
+    // 4. Casts
+    protected $casts = [];
+    
+    // 5. Relationships
+    public function user(): BelongsTo { }
+    public function cycles(): HasMany { }
+    
+    // 6. Attributes (accessors)
+    public function getAvailableCreditAttribute(): ?float { }
+    
+    // 7. Scopes (if any)
+    public function scopeActive(Builder $query) { }
+}
+```
+
+## Database Naming
+
+**Tables:**
+- Plural: `users`, `credit_cards`, `transactions`
+- Snake case: `credit_card_cycles`, `transaction_categories`
+- Singular model to plural table (automatic in Eloquent)
+
+**Columns:**
+- Snake case: `user_id`, `current_balance`, `is_active`
+- Foreign keys: `{model}_id` → `user_id`, `credit_card_id`
+- Timestamps: `created_at`, `updated_at` (added automatically)
+- Soft deletes: `deleted_at` column (SoftDeletes trait)
+- Boolean: `is_*` prefix → `is_active`, `is_unlimited`
+- Amounts: `decimal:2` cast for financial data
+
+**Relationships:**
+- Implicit naming: `user()` method creates Foreign key constraint `user_id`
+- Custom foreign keys: Declared explicitly → `belongsTo(Account::class, 'to_account_id')`
+
+## Test Naming
+
+**Test Files:**
+- Pattern: `{Subject}Test.php`
+- Location: `tests/Unit/` or `tests/Feature/`
+- Examples: `CreditCardCycleServiceTest.php`, `CreditCardLifecycleIntegrationTest.php`
+
+**Test Methods:**
+- Pattern: `test_{scenario}` or `/** @test */ public function {scenario}()`
+- Descriptive names: `test_revolving_breakdown_with_14_percent_rate_matches_bank_statement`
+- Arrange-Act-Assert (AAA) pattern: Setup, execute, verify
+
+## API/Endpoint Naming
+
+**Route names:**
+- Plural resource names: `routes/api.php` for REST endpoints
+- RESTful: `GET /items`, `POST /items`, `GET /items/{id}`, `PUT /items/{id}`, `DELETE /items/{id}`
+- Nested: `GET /users/{id}/accounts`, `GET /credit-cards/{id}/cycles`
+- Filament uses `filament.{panel}.resources.{resource}.index` naming convention
+
+## Eloquent Model Conventions
+
+**Relationships:**
+- Method name matches logical concept: `$user->creditCards()` for HasMany
+- Eager loading: `with()` in queries to avoid N+1
+- Type hints on relationships: `public function creditCards(): HasMany`
+
+**Accessors/Mutators:**
+- Appended attributes via `$appends` array
+- Getters: `public function getAttributeAttribute(): Type`
+- Never setters used (use Mutator instead)
+- Computed attributes: `available_credit`, `is_unlimited`
+
+**Scopes:**
+- Local scopes: `public function scopeName(Builder $query)`
+- Global scopes via traits: `HasUserScoping` adds user filtering
+- Usage: `Model::name()->get()` or `$query->name()`
+
+## Filament Conventions
+
+**Resource Structure:**
+```
+Resources/
+├── {Resource}Resource.php
+├── Pages/
+│   ├── List{Resource}s.php
+│   ├── Create{Resource}.php
+│   ├── Edit{Resource}.php
+├── Schemas/
+│   └── {Resource}Form.php
+├── Tables/
+│   └── {Resource}sTable.php
+└── RelationManagers/
+    └── {Relation}RelationManager.php
+```
+
+**Form Schemas:**
+- Single form definition in `Schemas/` directory
+- Used by Create and Edit pages
+- Field definitions: `TextInput`, `Select`, `DatePicker`, etc.
+
+**Table Definitions:**
+- Single table definition in `Tables/` directory
+- Columns defined in fluent API
+- Actions: Edit, Delete buttons built-in
+
+**Pagination:**
+- Default: 10 items per page
+- Configurable per resource
 
 ---
 
-*Convention analysis: 2026-03-23*
+*Conventions analysis: 2024-12-19*

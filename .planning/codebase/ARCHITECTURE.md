@@ -1,166 +1,217 @@
 # Architecture
 
-**Analysis Date:** 2026-03-23
+**Analysis Date:** 2024-12-19
 
 ## Pattern Overview
 
-**Overall:** Layered MVC with Filament Admin + GraphQL API
+**Overall:** Layered architecture with domain-driven organization and service extraction
 
 **Key Characteristics:**
-- Clean separation between Eloquent models (data layer), services (business logic), and Filament resources (presentation)
-- GraphQL as primary API layer via Lighthouse (schema-driven approach)
-- Admin dashboard UI via Filament (declarative resource management)
-- Background job processing for compute-heavy operations (loan/credit card calculations)
-- Role-based access control (RBAC) using Spatie Permission
+- **Filament-first UI** - Admin panel is primary interface (not traditional MVC)
+- **Service layer abstraction** - Business logic extracted from models into services
+- **Observer pattern** - Model lifecycle hooks trigger side effects (balance updates, postings)
+- **Policy-based authorization** - User scoping via policies and traits
+- **Enum-driven types** - Type-safe enums for domain values (CreditCardStatus, CreditCardType, etc.)
+- **Multi-domain application** - Financial, health, lifestyle, travel domains coexist
+- **GraphQL-ready** - Lighthouse GraphQL schema defined but minimally used
+- **User-scoped data** - Global scope on models ensures user isolation via `HasUserScoping` trait
 
 ## Layers
 
-**Presentation Layer (Filament):**
-- Purpose: Admin dashboard UI for managing financial data
-- Location: `app/Filament/Resources/`, `app/Filament/Pages/`, `app/Filament/Widgets/`
-- Contains: Resource pages (List/Create/Edit), custom pages (FinanceReport), widgets (KPI displays)
+**Models Layer:**
+- Purpose: Data persistence and relationship definition
+- Location: `app/Models/`
+- Contains: 40 Eloquent models with relationships, casts, appended attributes
+- Depends on: Eloquent traits, Enums, Carbon for dates
+- Used by: Services, Observers, Policies, Filament Resources
+- Key pattern: Uses trait `HasUserScoping` to automatically scope queries to authenticated user
+- Relationships: Properly typed (BelongsTo, HasMany, HasManyThrough where applicable)
+
+**Service Layer:**
+- Purpose: Encapsulate business logic, calculations, and domain operations
+- Location: `app/Services/`
+- Contains: 15 concrete service classes handling domain operations
+- Depends on: Models, Enums, Carbon, Laravel facades (DB, Auth)
+- Used by: Observers, Filament Resources, Controllers (when REST API used)
+- Key pattern: Constructor dependency injection with optional fallback to container
+- Example: `CreditCardCycleService` orchestrates cycle issuance, payment application, balance updates
+
+**Observer Layer:**
+- Purpose: Trigger side effects on model lifecycle events
+- Location: `app/Observers/`
+- Contains: 6 observers registered in `AppServiceProvider`
+- Depends on: Models, Services, Enums
+- Used by: Eloquent ORM (automatic)
+- Key pattern: Each observer hooks `created()`, `updated()`, `deleted()` events
+- Example: `CreditCardCycleObserver` creates payment records when cycle marked PAID
+
+**Policy Layer:**
+- Purpose: Define authorization rules
+- Location: `app/Policies/`
+- Contains: 11 policies for user-scoped models
+- Depends on: Models, auth() helper
+- Used by: Filament, middleware (canViewAny, can, etc.)
+- Key pattern: User ID matching - `$user->id === $model->user_id`
+- Registered in: `app/Providers/AuthServiceProvider.php`
+
+**Filament Admin Layer:**
+- Purpose: CRUD interface for all domain entities
+- Location: `app/Filament/`
+- Contains: 36 resources with Pages, Forms, Tables, Relation Managers, 14 Widgets
 - Depends on: Models, Policies, Services
-- Used by: Authenticated admin users via `/admin` dashboard
+- Used by: Web browsers (admin users only)
+- Key pattern: Resource generates full CRUD, with customization via Schema (Forms) and Tables
+- Dashboard: `/app/Filament/Pages/Dashboard.php`, FinanceReport: `/app/Filament/Pages/FinanceReport.php` (326 lines)
 
-**API Layer (GraphQL):**
-- Purpose: Exposes data and mutations for frontend/external clients via GraphQL
-- Location: `graphql/schema.graphql`
-- Contains: Type definitions, queries, mutations
-- Depends on: Models, Services, Lighthouse directives
-- Used by: Frontend Vue application, external GraphQL clients
+**Request Validation Layer:**
+- Purpose: Validate incoming HTTP requests
+- Location: `app/Http/Requests/`
+- Contains: 4 request classes (Account, Transaction, TransactionCategory, Loan)
+- Depends on: Illuminate\Foundation\Http\FormRequest
+- Used by: Controllers (when REST API endpoints exist)
+- Key pattern: `rules()` method defines validation, can reference other fields
 
-**Business Logic Layer (Services):**
-- Purpose: Contains domain-specific calculations and state management
-- Location: `app/Services/` - 9 services handling different domains
-  - `LoanScheduleService` - Generates payment schedules with workday adjustments
-  - `LoanPaymentPostingService` - Records payment transactions
-  - `CreditCardCycleService` - Manages credit card billing cycles
-  - `CreditCardPaymentPostingService` - Processes credit card payments
-  - `CreditCardExpenseService` - Records credit card expenses
-  - `CreditCardKpiService` - Calculates KPIs (interest, penalties)
-  - `AccountBalanceService` - Maintains account balances
-  - `FinanceReportService` - Aggregates financial reports
-  - `UserService` - User management operations
-- Depends on: Models, Repositories, Traits, Database transactions
-- Used by: Controllers, GraphQL resolvers, Jobs, Filament resources
-
-**Data Access Layer (Models + Repositories):**
-- Purpose: Object-relational mapping and query abstraction
-- Location: `app/Models/` (11 models), `app/Repositories/` (repository pattern)
-- Contains: Eloquent models with relations, repository classes for complex queries
-- Models: User, Account, Loan, LoanPayment, CreditCard, CreditCardCycle, CreditCardPayment, CreditCardExpense, Transaction, TransactionType, TransactionCategory
-- Depends on: Database schema, migrations
-- Used by: Services, Controllers, GraphQL queries
-
-**Infrastructure Layer:**
-- Purpose: Cross-cutting concerns and utilities
-- Location: `app/Support/Concerns/`, `app/Traits/`, `app/Providers/`
-- Contains: Reusable traits (HasWorkdayCalculation, HasUserScoping), service providers
-- Used by: Models and Services
-
-**Policy & Authorization Layer:**
-- Purpose: Fine-grained access control
-- Location: `app/Policies/` (13 policies - one per model)
-- Contains: Authorization rules (who can view/create/update/delete what)
-- Used by: Filament resources (gates), GraphQL queries (middleware)
+**Enum Layer:**
+- Purpose: Type-safe enum values for domain concepts
+- Location: `app/Enums/`
+- Contains: 30+ enums with backed values (string or int)
+- Used by: Models (via `$casts`), Services, Forms, Policies
+- Example: `CreditCardType::REVOLVING`, `CreditCardStatus::ACTIVE`
 
 ## Data Flow
 
-**Loan Payment Schedule Generation Flow:**
+**Credit Card Cycle Issuance (Complex Example):**
 
-1. Admin creates/edits Loan in Filament (CreateLoan/EditLoan page)
-2. Observer (`LoanObserver`) detects model changes
-3. Dispatches `GenerateLoanPaymentsJob` to job queue
-4. Job instantiates `LoanScheduleService` and calls `generate()`
-5. Service uses `HasWorkdayCalculation` trait to adjust due dates to workdays (Italian holidays aware)
-6. Payments created as `LoanPayment` models, linked to `Loan`
-7. `syncLoan()` updates `Loan` status and totals based on payment states
+1. Scheduled job or manual action triggers `CreditCardCycleService::issueCycle($cycle)`
+2. Service validates cycle status is OPEN and card exists
+3. Service calculates payments via `RevolvingCreditCalculator` or manual breakdown
+4. Service creates `CreditCardPayment` records for principal, interest, stamp duty
+5. Service updates `CreditCardCycle::status` to ISSUED
+6. Service updates `CreditCard::current_balance` via `CreditCardBalanceService`
+7. `CreditCardCycleObserver::updated()` fires, detects status change to ISSUED, may log or trigger notifications
+8. `CreditCardPaymentObserver::created()` fires when payment records created
 
-**Financial Report Generation Flow:**
+**Payment Posting (Multi-Step):**
 
-1. User navigates to FinanceReport page (`app/Filament/Pages/FinanceReport.php`)
-2. Page instantiates `FinanceReportService` with date filters
-3. Service aggregates: Account balances, Loan totals, Credit card expenses
-4. Returns data to Livewire component for reactive display
-
-**GraphQL Query Flow:**
-
-1. Frontend Vue app sends GraphQL query to `/graphql` endpoint
-2. Lighthouse processes query against `graphql/schema.graphql`
-3. Resolves query to Model/Service methods
-4. Applies authorization policies
-5. Returns JSON response to frontend
+1. Filament form receives payment_date and status update to PAID
+2. `CreditCardPaymentObserver::updated()` fires, calls `CreditCardPaymentPostingService`
+3. Service creates `Transaction` record with debit (-) amount
+4. Service updates related `CreditCardCycle::paid_amount` and `status`
+5. Service calls `CreditCardBalanceService::applyPrincipalPayment()` to reduce card balance
+6. Service updates `Account::balance` to reflect payment received
+7. `TransactionObserver::created()` logs transaction and may trigger notifications
+8. UI refreshes via Filament, shows updated balances
 
 **State Management:**
-- Database as source of truth (no in-memory state)
-- Account balances recalculated from transactions (denormalized for performance)
-- Loan/Credit Card status computed from payment history
-- Observers trigger background jobs for expensive calculations
+- **Database transactions** - Complex operations wrapped in `DB::transaction()` to ensure atomicity
+- **Model relationships** - Eager loaded via `loadMissing()` to avoid N+1 queries
+- **Balance calculations** - Computed via services, cached in model attributes
+- **Authorization** - Checked at Filament resource level via policies
+- **User scoping** - Applied via global scope in trait, enforced on all queries
 
 ## Key Abstractions
 
-**Loan Domain:**
-- Purpose: Models and services for loan management (amortization schedules, payments)
-- Examples: `app/Models/Loan`, `app/Models/LoanPayment`, `app/Services/LoanScheduleService`, `app/Services/LoanPaymentPostingService`
-- Pattern: Observer pattern triggers schedule generation via job queue; service encapsulates calculation logic
+**Service Abstractions:**
+- `CreditCardCycleService` - Manages cycle lifecycle: creation, issuance, payment posting, status transitions
+- `RevolvingCreditCalculator` - Pure calculation logic for payment breakdowns (interest, principal, stamp duty)
+- `CreditCardBalanceService` - Updates card balance atomically, validates credit limit
+- `LoanScheduleService` - Generates amortization schedules, calculates payment amounts
+- `SubscriptionService` - Renewal logic, frequency-based payment generation
 
-**Credit Card Domain:**
-- Purpose: Models and services for credit card lifecycle (cycles, expenses, payments, KPIs)
-- Examples: `app/Models/CreditCard`, `app/Models/CreditCardCycle`, `app/Models/CreditCardExpense`, `app/Services/CreditCardCycleService`, `app/Services/CreditCardKpiService`
-- Pattern: Cycle management with expense posting; KPI service calculates interest/penalties
+**Model Abstractions:**
+- `HasUserScoping` trait - Automatically applies user filter to all queries
+- Model attributes - Appended calculated fields: `available_credit`, `is_unlimited`, `net_worth`
+- Model casts - Type conversion: `'amount' => 'decimal:2'`, `'status' => CreditCardStatus::class`
 
-**Account/Transaction Domain:**
-- Purpose: Generic financial tracking (accounts, transactions, categories)
-- Examples: `app/Models/Account`, `app/Models/Transaction`, `app/Services/AccountBalanceService`
-- Pattern: Transactions linked to accounts; balance derived from transaction history
-
-**Filament Resources:**
-- Purpose: Admin UI for CRUD operations and data inspection
-- Examples: `app/Filament/Resources/Loans/`, `app/Filament/Resources/CreditCards/`, `app/Filament/Resources/Accounts/`
-- Pattern: Resource classes define tables/forms; relation managers handle nested data; policies gate access
+**Repository Pattern:**
+- Minimal use: Only `LoanRepository` exists
+- Purpose: Encapsulate complex query logic
+- Location: `app/Repositories/LoanRepository.php`
 
 ## Entry Points
 
-**Web Dashboard:**
-- Location: `app/Providers/Filament/AdminPanelProvider.php`
-- Triggers: User login at `/admin`
-- Responsibilities: Dashboard page, navigation, theme/plugin registration
+**Web Application:**
+- Location: `routes/web.php`
+- Triggers: Any request to `/`
+- Responsibilities: Redirects to Filament admin login (`route('filament.admin.auth.login')`)
+- No traditional web routes - everything goes through Filament admin panel
 
-**API Gateway:**
-- Location: `/graphql` endpoint (Lighthouse configured in `config/graphql.php`)
-- Triggers: GraphQL POST requests from frontend
-- Responsibilities: Schema validation, query resolution, authorization
+**GraphQL API:**
+- Location: `/graphql` route (from Lighthouse config)
+- Schema: `graphql/schema.graphql` (41 lines, minimal)
+- Triggers: POST requests to `/graphql`
+- Responsibilities: Query users, paginated user lists (basic queries only)
+- Status: Configured but not heavily used
 
-**Job Queue:**
-- Location: `app/Jobs/` and Observer classes
-- Triggers: Model events (create/update/delete)
-- Responsibilities: Async processing of expensive calculations
+**REST API:**
+- Location: `routes/api.php`
+- Triggers: Any request to `/api/*`
+- Middleware: API rate limiting, CORS
+- Responsibilities: Empty - no endpoints defined
+- Status: Infrastructure in place but unused
 
-**Database Migrations:**
-- Location: `database/migrations/`
-- Triggers: `php artisan migrate`
-- Responsibilities: Schema versioning and deployment
+**Console Commands:**
+- Location: `routes/console.php`
+- Triggers: `php artisan` CLI
+- Responsibilities: Job scheduling, command registration
+- Example: `GenerateLoanPaymentsJob` - generates loan payment schedules
 
 ## Error Handling
 
-**Strategy:** Try-catch in critical paths; validation at request layer; graceful degradation in UI
+**Strategy:** Laravel exception handling with policy/authorization checks
 
 **Patterns:**
-- Database transactions in services prevent partial updates (`DB::transaction()`)
-- Form request validation (`app/Http/Requests/`) validates input before processing
-- Eloquent exceptions caught in Filament resource pages
-- GraphQL validation handled by Lighthouse (type system enforces contracts)
+- **Authorization errors** - Policies throw `AuthorizationException` when policy methods return false
+- **Validation errors** - Form requests throw `ValidationException` with field-level error messages
+- **Database errors** - Transactions rolled back on exception, caught and logged
+- **Soft deletes** - Models use soft deletes, observers handle cleanup
+- **Observable failures** - Observers do not throw; failures logged silently to avoid cascade
 
 ## Cross-Cutting Concerns
 
-**Logging:** Laravel stack driver to `storage/logs/` with named channels per module
+**Logging:** 
+- Framework default: Stack driver (single log file) or multiple channels
+- Services log complex operations via `Log::info()`, `Log::error()`
+- Observers log model changes via `AuditLog` model
+- Config: `config/logging.php`
 
-**Validation:** Lighthouse `@rules` directives on GraphQL types; Form Request classes for HTTP input; Service-level domain validation
+**Validation:** 
+- Form requests: `app/Http/Requests/` define rules for stored models
+- Service-level: Validators in services check business logic (e.g., credit limit validation)
+- Policy-level: Authorization checks in `app/Policies/`
+- Eloquent: Mutators/casts ensure type safety
 
-**Authentication:** Laravel Sanctum for API tokens; session-based for Filament dashboard; Spatie Permission middleware for role checking
+**Authentication:** 
+- Laravel Sanctum for API tokens (configured in `config/sanctum.php`)
+- Filament authentication: Built-in user/password via standard Laravel auth
+- User model: `Illuminate\Foundation\Auth\User` with Spatie permissions
+- Session-based: `SESSION_DRIVER=database` for persistent sessions
 
-**Authorization:** Filament policies injected into resource pages; GraphQL middleware restricts queries by role; `HasUserScoping` trait filters queries to current user's accounts
+**Authorization:**
+- Spatie Laravel Permission package: Roles and permissions
+- Policies: User-scoped access checks via `$user->id === $model->user_id`
+- Gates: Defined in `AuthServiceProvider` via `$policies` mapping
+- Filament enforcement: Resource authorization via policy methods
+
+**Permissions:**
+- Spatie integration: `spatie/laravel-permission` v7.2
+- Config: `config/permission.php`
+- Service: `PermissionService` (62 lines) - Role and permission management
+- Models use `HasRoles` trait from Spatie
+
+**Queue & Jobs:**
+- Driver: Database-backed (`QUEUE_CONNECTION=database`)
+- Job example: `GenerateLoanPaymentsJob` - generates scheduled payments
+- Execution: Via `php artisan queue:listen` (in dev environment)
+- Timeout: Default 0 (unlimited) for long-running jobs
+
+**Database:**
+- Connection: SQLite by default, configurable to MySQL, PostgreSQL
+- Transactions: Used in services for multi-step operations
+- Global scopes: User scoping via `HasUserScoping` trait
+- Relationships: Typed with proper return types
+- Migrations: 63 migrations in `database/migrations/`
 
 ---
 
-*Architecture analysis: 2026-03-23*
+*Architecture analysis: 2024-12-19*

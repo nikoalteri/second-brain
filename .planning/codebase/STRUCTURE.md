@@ -1,256 +1,247 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-23
+**Analysis Date:** 2024-12-19
 
 ## Directory Layout
 
 ```
 second-brain/
-├── app/                      # Application source code
-│   ├── Enums/               # Domain enums (LoanStatus, CreditCardStatus, etc.)
-│   ├── Filament/            # Admin dashboard resources and pages
-│   ├── Http/                # HTTP request handling
-│   ├── Jobs/                # Background job definitions
-│   ├── Livewire/            # Livewire components (interactive server-side components)
-│   ├── Models/              # Eloquent models (User, Loan, CreditCard, Account, etc.)
-│   ├── Observers/           # Model observers (hooks for model events)
-│   ├── Policies/            # Authorization policies (access control)
-│   ├── Providers/           # Service provider registrations
-│   ├── Repositories/        # Repository pattern for complex queries
-│   ├── Services/            # Business logic layer (Loan, CreditCard, Account services)
-│   ├── Support/             # Utility code (Concerns, custom helpers)
-│   └── Traits/              # Reusable model traits
-├── bootstrap/               # Framework bootstrap (cache, app.php)
-├── config/                  # Configuration files (database, services, auth, etc.)
-├── database/                # Database layer
-│   ├── factories/           # Test data factories
-│   ├── migrations/          # Schema migrations (versioned changes)
-│   └── seeders/             # Database seeders (initial data)
-├── graphql/                 # GraphQL schema definition
-├── public/                  # Web root (index.php, assets)
-├── resources/               # Frontend and view resources
-│   ├── css/                 # Global CSS (Tailwind imports)
-│   ├── js/                  # Vue components and frontend scripts
-│   ├── views/               # Blade templates (Filament layout, fallback views)
-│   └── lang/                # Localization files
+├── app/                      # Laravel application code
+│   ├── Enums/               # PHP 8.1+ Enums for type-safe values
+│   ├── Filament/            # Filament admin panel resources & widgets
+│   ├── Http/                # Controllers, Requests, Middleware
+│   ├── Jobs/                # Queued jobs (background processing)
+│   ├── Models/              # Eloquent ORM models (40 models total)
+│   ├── Observers/           # Model lifecycle observers
+│   ├── Policies/            # Authorization policies (11 models)
+│   ├── Providers/           # Service providers (App, Auth, Filament)
+│   ├── Repositories/        # Data access abstraction layer
+│   ├── Services/            # Business logic services
+│   ├── Support/             # Application support utilities
+│   ├── Traits/              # Reusable model/class traits
+│   └── Livewire/            # Livewire components (minimal use)
+├── database/                # Database infrastructure
+│   ├── factories/           # Eloquent model factories for testing
+│   ├── migrations/          # Database schema changes
+│   ├── seeders/             # Database seeding scripts
+│   └── database.sqlite      # Default SQLite database
 ├── routes/                  # Route definitions
-│   ├── api.php              # API routes (GraphQL, REST if any)
-│   ├── web.php              # Web routes (Filament, public routes)
-│   └── console.php          # Artisan commands
-├── storage/                 # Runtime data (logs, cache, sessions)
-├── tests/                   # Test suite
-│   ├── Feature/             # Integration tests (HTTP, jobs, workflows)
-│   └── Unit/                # Unit tests (services, models, business logic)
-├── vendor/                  # Composer dependencies (not committed)
-├── node_modules/            # npm dependencies (not committed)
-├── .env                     # Environment configuration (secrets, not committed)
-├── .env.example             # Template for .env
-├── composer.json            # PHP dependencies and scripts
-├── package.json             # npm dependencies and scripts
-├── phpunit.xml              # PHPUnit configuration
-├── vite.config.js           # Vite bundler configuration
+│   ├── api.php              # REST/GraphQL API routes (minimal)
+│   ├── web.php              # Web routes (redirects to Filament)
+│   └── console.php          # Artisan console commands
+├── resources/               # Frontend resources
+│   ├── css/                 # Tailwind CSS entry point
+│   └── views/               # Blade templates (for emails, etc.)
+├── config/                  # Laravel configuration files
+│   ├── app.php              # Application settings
+│   ├── auth.php             # Authentication providers
+│   ├── database.php         # Database connections
+│   ├── lighthouse.php       # GraphQL schema config
+│   ├── permission.php       # Role-based permissions
+│   └── [others]
+├── tests/                   # Test suites
+│   ├── Unit/                # Unit tests (16 test files)
+│   ├── Feature/             # Integration/feature tests (9 test files)
+│   └── TestCase.php         # Base test class
+├── public/                  # Web server root (CSS, JS bundles)
+├── storage/                 # Runtime data (logs, cache)
+├── bootstrap/               # Framework bootstrap files
+├── vendor/                  # Composer dependencies
+├── node_modules/            # NPM dependencies
+├── docs/                    # Project documentation
+├── graphql/                 # GraphQL schema definition
+├── openspec/                # OpenAPI/OpenSpec documentation
+├── scripts/                 # Utility scripts
+├── .github/                 # GitHub workflows and actions
+│   └── get-shit-done/       # GSD framework configuration
+├── vite.config.js           # Vite build configuration
 ├── tailwind.config.js       # Tailwind CSS configuration
-├── postcss.config.js        # PostCSS transformations
-├── jsconfig.json            # JavaScript path aliases
-├── ARCHITECTURE.md          # High-level architecture (this project)
-├── README.md                # Project overview
-└── SECURITY_CHECKLIST.md    # Security guidelines
+├── postcss.config.js        # PostCSS configuration
+├── phpunit.xml              # PHPUnit test configuration
+├── composer.json            # PHP dependencies manifest
+├── package.json             # Node.js dependencies manifest
+└── artisan                  # Laravel CLI entry point
 ```
 
 ## Directory Purposes
 
-**app/Enums/:**
-- Purpose: Domain enums for type-safe status values
-- Contains: PHP 8.1+ Enum classes
-- Key files: `LoanStatus.php`, `LoanPaymentStatus.php`, `CreditCardStatus.php`, `CreditCardPaymentStatus.php`, `CreditCardCycleStatus.php`, `CreditCardType.php`
-
-**app/Filament/:**
-- Purpose: Admin dashboard resource definitions and custom pages
-- Contains: CRUD pages (List/Create/Edit), custom pages (reports), relation managers, table/form schemas
-- Key files: `app/Filament/Resources/` - 5 resources (Loans, CreditCards, Accounts, Transactions, Roles); `app/Filament/Pages/FinanceReport.php` (custom dashboard page); `app/Filament/Widgets/` - KPI widgets
+**app/:**
+- Core Laravel application code organized by architectural layer
+- 40 Eloquent models representing all domain entities
+- Rich business logic in Services layer
+- Filament resources for admin interface (36 resources)
 
 **app/Models/:**
-- Purpose: Eloquent ORM models representing database tables
-- Contains: Model classes with relations, casts, computed properties
-- Key models: User, Account, Loan, LoanPayment, CreditCard, CreditCardCycle, CreditCardExpense, CreditCardPayment, Transaction, TransactionType, TransactionCategory
+- Financial models: `CreditCard`, `Transaction`, `Loan`, `LoanPayment`, `CreditCardCycle`, `CreditCardPayment`, `Subscription`, `Account`, `CreditCardExpense`
+- Health models: `HealthRecord`, `BloodTest`, `Medication`, `MedicalRecord`, `Workout`
+- Lifestyle models: `Meal`, `Ingredient`, `Recipe`, `Goal`, `Habit`, `JournalEntry`, `Note`
+- Travel models: `Trip`, `Flight`, `Hotel`, `Vehicle`, `MaintenanceRecord`
+- Administrative models: `User`, `Contact`, `Message`, `Document`, `Notification`, `Event`, `AuditLog`, `Backup`, `UserSetting`, `Project`
 
 **app/Services/:**
-- Purpose: Business logic layer - encapsulates domain operations
-- Contains: 9 service classes (Loan, CreditCard, Account, Finance calculation services)
-- Typical pattern: Inject dependencies, use models via constructor, return typed data/models
+- `CreditCardCycleService` (307 lines) - Manages card billing cycles, payment posting, status transitions
+- `RevolvingCreditCalculator` (221 lines) - Complex interest and payment calculations for revolving debt
+- `CreditCardBalanceService` (177 lines) - Balance updates, expense tracking, payment application
+- `LoanScheduleService` (160 lines) - Amortization schedules and payment planning
+- `CreditCardExpenseService` (157 lines) - Expense tracking and cycle synchronization
+- `FinanceReportService`, `CreditCardPaymentPostingService`, `LoanPaymentPostingService` - Financial reporting and posting logic
+- `SubscriptionService` - Subscription renewal tracking and notifications
 
-**app/Observers/:**
-- Purpose: React to model lifecycle events (created, updated, deleted)
-- Contains: Observer classes that dispatch jobs or update related models
-- Example: LoanObserver triggers GenerateLoanPaymentsJob on loan creation/update
-
-**app/Http/:**
-- Purpose: HTTP request handling (Controllers, Middleware, FormRequests)
-- Contains: Request validation classes, middleware for rate limiting/auth, API controllers
-- Structure: `Controllers/` for request handlers, `Middleware/` for cross-cutting concerns, `Requests/` for validation
+**app/Filament/:**
+- 36 admin panel resources organized by domain (Accounts, CreditCards, Loans, Transactions, etc.)
+- Each resource has: `Resource.php`, `/Pages/`, `/Schemas/`, `/Tables/`, and optionally `/RelationManagers/`
+- 14 dashboard widgets for analytics and insights
+- 2 custom pages: `Dashboard.php`, `FinanceReport.php` (326 lines - large and complex)
 
 **app/Policies/:**
-- Purpose: Authorization rules for Filament resources and GraphQL queries
-- Contains: One policy per model (13 policies total)
-- Pattern: Methods like `viewAny()`, `view()`, `create()`, `update()`, `delete()` return true/false
+- Authorization logic for 11 models
+- Pattern: User ID matching on `view`, `update`, `delete`, `restore` actions
+- Implemented for: User, Account, CreditCard, CreditCardCycle, CreditCardPayment, Loan, LoanPayment, Subscription, Transaction, TransactionCategory, TransactionType
 
-**app/Support/Concerns/:**
-- Purpose: Reusable concerns/mixins for shared behavior
-- Contains: Traits like `HasWorkdayCalculation` (Italian holidays + weekend logic)
+**app/Observers/:**
+- Lifecycle hooks for model events: `created`, `updated`, `deleted`
+- Used by: CreditCardCycleObserver, CreditCardExpenseObserver, CreditCardPaymentObserver, LoanPaymentObserver, SubscriptionObserver, TransactionObserver
 
-**app/Traits/:**
-- Purpose: Model traits for common functionality
-- Key files: `HasUserScoping.php` - scopes queries to current user's accounts
+**app/Enums/:**
+- 30+ type-safe enums for domain values
+- Examples: `CreditCardType`, `CreditCardStatus`, `InterestCalculationMethod`, `JournalMood`, `HabitFrequency`
 
-**database/migrations/:**
-- Purpose: Versioned database schema changes
-- Contains: Migration classes that create tables, add columns, modify schema
-- Pattern: Migrations are applied in order via `php artisan migrate`
+**routes/:**
+- `web.php` - Single route: `GET /` redirects to `filament.admin.auth.login`
+- `api.php` - Empty, configured for API middleware and rate limiting
+- `console.php` - Artisan command scheduling and registration
 
-**database/factories/:**
-- Purpose: Test data generators
-- Contains: Factory classes (UserFactory, LoanFactory, etc.) for seeding test databases
+**database/:**
+- 63 migrations tracked in `/migrations/` directory
+- 8 factories for testing: User, Account, CreditCard, CreditCardCycle, CreditCardExpense, Loan, Subscription, Transaction
+- 12 seeders for database population
+- SQLite database at `database/database.sqlite` for development
 
-**graphql/:**
-- Purpose: GraphQL schema definition
-- Contains: `schema.graphql` - Type definitions (Query, Mutation, Types), field directives, custom scalars
-- Pattern: Lighthouse processes directives like @find, @paginate, @rules to resolve fields
+**config/:**
+- `lighthouse.php` - GraphQL schema config, route `/graphql`, disabled in production
+- `permission.php` - Spatie permissions configuration
+- Standard Laravel configs: app, auth, cache, database, filesystems, logging, mail, queue, session
 
-**resources/css/:**
-- Purpose: Global stylesheets
-- Contains: `app.css` - Tailwind imports and custom CSS
-
-**resources/js/:**
-- Purpose: Vue 3 components and frontend logic
-- Contains: `.vue` files, JavaScript utilities
-- Pattern: Single-file components with `<template>`, `<script setup>`, `<style scoped>`
-
-**resources/views/:**
-- Purpose: Blade templates (mostly for Filament layout, fallback pages)
-- Contains: Filament page views, custom Blade components
-
-**tests/Unit/:**
-- Purpose: Unit tests for services, models, utilities
-- Contains: Test classes with @test methods
-- Example: `LoanScheduleServiceTest.php` tests schedule generation logic
-
-**tests/Feature/:**
-- Purpose: Integration tests for workflows, auth, API endpoints
-- Contains: Test classes that exercise multiple layers
-- Example: `CreditCardLifecycleIntegrationTest.php` tests full credit card workflow
+**tests/:**
+- Unit tests (16 files) - Service logic, calculations, edge cases
+- Feature tests (9 files) - Module functionality, authorization, integration
+- Test categories: Credit card lifecycle, loan operations, authorization, widgets, settings
 
 ## Key File Locations
 
 **Entry Points:**
-- `public/index.php` - Laravel entry point
-- `app/Providers/Filament/AdminPanelProvider.php` - Filament dashboard registration
-- `routes/web.php` - Web routes (dashboard, public pages)
-- `routes/api.php` - API routes (GraphQL endpoint)
-- `graphql/schema.graphql` - GraphQL API schema
+- `artisan` - Laravel CLI binary
+- `public/index.php` - Web entry point (served by Vite in dev)
+- `vite.config.js` - Asset build configuration
 
 **Configuration:**
-- `config/app.php` - Application name, timezone, service providers
-- `config/database.php` - Database connection settings
-- `config/auth.php` - Authentication guards and providers
-- `config/graphql.php` - Lighthouse configuration
-- `config/permission.php` - Spatie Permission configuration
-- `.env.example` - Required environment variables template
+- `.env.example` - Environment template (SQLite, database driver config, mail, queue)
+- `composer.json` - PHP 8.2+, Laravel 12, Filament 4, Lighthouse GraphQL 6.65
+- `package.json` - Vite 7, Tailwind CSS 3, PostCSS, Laravel Vite Plugin
+- `phpunit.xml` - Test runner config, in-memory SQLite for tests
 
 **Core Logic:**
-- `app/Services/` - All business logic (loan calculations, credit card management)
-- `app/Models/` - All data models and relations
-- `app/Observers/` - Event handlers for model lifecycle
-- `app/Policies/` - Access control logic
+- `app/Services/` - Business logic extracted from models
+- `app/Models/` - Data layer with relationships
+- `app/Filament/Resources/` - Admin CRUD interface
+- `app/Observers/` - Event-driven side effects
+- `app/Policies/` - Authorization rules
 
 **Testing:**
-- `tests/TestCase.php` - Base test class with utilities (RefreshDatabase, etc.)
-- `tests/Unit/` - Service and model unit tests
-- `tests/Feature/` - Workflow and integration tests
+- `tests/Unit/` - Service and calculation tests
+- `tests/Feature/` - Integration and authorization tests
+- `tests/TestCase.php` - Base test class with helper methods
+- `database/factories/` - Test data builders
 
 ## Naming Conventions
 
 **Files:**
-- Model: `PascalCase.php` (e.g., `Loan.php`, `CreditCard.php`)
-- Service: `PascalCaseService.php` (e.g., `LoanScheduleService.php`)
-- Job: `PascalCaseJob.php` (e.g., `GenerateLoanPaymentsJob.php`)
-- Observer: `PascalCaseObserver.php` (e.g., `LoanObserver.php`)
-- Policy: `PascalCasePolicy.php` (e.g., `LoanPolicy.php`)
-- Test: `PascalCaseTest.php` (e.g., `LoanScheduleServiceTest.php`)
-- Migration: `timestamp_descriptive_action.php` (e.g., `2026_03_17_091146_create_loans_table.php`)
+- Models: PascalCase, singular (e.g., `CreditCard.php`, `User.php`)
+- Services: PascalCase with "Service" suffix (e.g., `CreditCardCycleService.php`)
+- Policies: PascalCase with "Policy" suffix (e.g., `CreditCardPolicy.php`)
+- Controllers: PascalCase with "Controller" suffix (rarely used, mostly Filament)
+- Enums: PascalCase with ".php" extension (e.g., `CreditCardStatus.php`)
+- Observers: PascalCase with "Observer" suffix (e.g., `CreditCardCycleObserver.php`)
+- Tests: PascalCase with "Test" suffix (e.g., `CreditCardCycleServiceTest.php`)
 
 **Directories:**
-- Namespace grouping by domain (Loans, CreditCards, Accounts, Transactions)
-- Filament resources grouped by entity: `app/Filament/Resources/Loans/`, with subdirectories for Pages, Tables, Schemas, RelationManagers
+- Plural for collections: `Models/`, `Services/`, `Policies/`, `Observers/`, `Enums/`
+- Nested under Filament: `/Resources/{Domain}/Pages/`, `/Resources/{Domain}/Schemas/`, `/Resources/{Domain}/Tables/`, `/Resources/{Domain}/RelationManagers/`
+- Tests mirror app structure: `tests/Unit/`, `tests/Feature/`
 
-**Database:**
-- Table names: snake_case plural (loans, credit_cards, loan_payments)
-- Column names: snake_case (due_date, monthly_payment, interest_rate)
-- Foreign keys: `{entity}_id` (loan_id, user_id)
-- Timestamp columns: created_at, updated_at, deleted_at
+**Classes:**
+- Models extend `Illuminate\Database\Eloquent\Model`
+- Services are concrete classes with dependency injection in constructor
+- Policies follow pattern: `viewAny()`, `view()`, `create()`, `update()`, `delete()`, `restore()`, `forceDelete()`
+- Observers implement hooks: `created()`, `updated()`, `deleted()`
 
 ## Where to Add New Code
 
-**New Financial Feature (e.g., new loan type):**
-- Models: `app/Models/NewEntity.php` + migration `database/migrations/timestamp_create_new_entities_table.php`
-- Service: `app/Services/NewEntityService.php` (business logic)
-- Observer: `app/Observers/NewEntityObserver.php` (if model events trigger jobs)
-- Filament: `app/Filament/Resources/NewEntity/` with Pages, Schemas, RelationManagers
-- GraphQL: Add types and queries to `graphql/schema.graphql`
-- Tests: `tests/Unit/NewEntityServiceTest.php` + `tests/Feature/NewEntityWorkflowTest.php`
-- Authorization: `app/Policies/NewEntityPolicy.php`
+**New Feature (Finance Domain Example):**
+- Primary code: `app/Services/NewFeatureService.php`
+- Model: `app/Models/NewFeatureModel.php`
+- Authorization: `app/Policies/NewFeatureModelPolicy.php`
+- Events: `app/Observers/NewFeatureModelObserver.php`
+- Filament UI: `app/Filament/Resources/NewFeatures/NewFeatureResource.php` with Pages/, Schemas/, Tables/
+- Tests: `tests/Unit/NewFeatureServiceTest.php` + `tests/Feature/NewFeatureIntegrationTest.php`
 
-**New Service/Business Logic:**
-- Create service in `app/Services/{Domain}Service.php`
-- Inject dependencies in constructor
-- Use models via constructor injection or Model::query()
-- Wrap multi-step logic in `DB::transaction()` for atomicity
-- Throw domain exceptions for errors (or validation via Form Requests)
+**New Component/Module:**
+- If domain-specific: Create new directory under appropriate domain (e.g., `app/Finance/`, `app/Health/`)
+- If cross-cutting: Add to `app/Services/` or `app/Support/`
+- Always pair with Policy if entity is user-scoped
 
-**New Filament Resource:**
-- Create resource: `app/Filament/Resources/Entity/` directory
-- Define pages: `Pages/CreateEntity.php`, `EditEntity.php`, `ListEntity.php`
-- Define form: `Schemas/EntityForm.php` with fields and validations
-- Define table: `Tables/EntitiesTable.php` with columns and filters
-- Attach policies: `app/Policies/EntityPolicy.php` gates access
+**Utilities:**
+- Shared helpers: `app/Support/Helpers/` (create if needed)
+- Traits: `app/Traits/` for reusable model/class concerns (e.g., `HasUserScoping`)
+- Constants/Enums: `app/Enums/` for type-safe values
+- Calculations: `app/Services/` for complex logic (e.g., `RevolvingCreditCalculator`)
 
-**New GraphQL Query/Mutation:**
-- Add type definition to `graphql/schema.graphql`
-- Use Lighthouse directives: @find, @paginate, @all, @rules, @whereAuth
-- Or reference custom resolvers in service classes
-- Test with `tests/Feature/GraphQL/` feature tests
+**Middleware:**
+- API middleware: `app/Http/Middleware/` (currently: `ApiRateLimitMiddleware`, `CheckModuleEnabled`)
+- Register in `app/Providers/AppServiceProvider.php` or route groups
 
-**Utilities/Shared Code:**
-- Traits: `app/Traits/` for model mixins
-- Concerns: `app/Support/Concerns/` for class mixins
-- Helpers: `app/Support/` for static utility functions
+**Jobs/Queue:**
+- Long-running operations: `app/Jobs/GenerateLoanPaymentsJob.php` (example exists)
+- Configure in `routes/console.php` for scheduling
+- Queue connection: Database-backed (configured in `.env`)
 
 ## Special Directories
 
-**storage/:**
-- Purpose: Runtime files (logs, cache, sessions)
-- Generated: Yes - created by Laravel at runtime
-- Committed: No - directory ignored in .gitignore; `storage/framework/` must exist
-
 **vendor/:**
-- Purpose: Composer dependencies
-- Generated: Yes - created by `composer install`
-- Committed: No - directory in .gitignore; use composer.lock for reproducibility
+- Generated by Composer
+- Not committed to git
+- Key dependencies: `laravel/framework`, `filament/filament`, `nuwave/lighthouse`, `spatie/laravel-permission`
 
 **node_modules/:**
-- Purpose: npm dependencies
-- Generated: Yes - created by `npm install`
-- Committed: No - directory in .gitignore; use package-lock.json for reproducibility
+- Generated by npm
+- Not committed to git
+- Key dev dependencies: Vite, Tailwind, Laravel Vite Plugin
 
-**bootstrap/cache/:**
-- Purpose: Laravel bootstrap cache for performance
-- Generated: Yes - created by `php artisan config:cache`, etc.
-- Committed: No - regenerated on each deployment
+**storage/:**
+- Runtime cache, logs, sessions
+- Git-ignored
+- Sub-directories: `logs/`, `framework/`, `app/`
 
-**public/build/:**
-- Purpose: Vite-compiled assets (CSS, JS)
-- Generated: Yes - created by `npm run build`
-- Committed: No - regenerated on deployment
+**public/:**
+- Web-accessible assets (CSS, JS compiled by Vite)
+- Vite manifest: `public/build/manifest.json`
+- Entry point: `public/index.php`
+
+**database/database.sqlite:**
+- SQLite development database
+- Git-ignored (use migrations for schema)
+- Reset via `php artisan migrate:fresh --seed`
+
+**resources/css/ and resources/views/:**
+- Tailwind CSS: `resources/css/app.css`
+- Blade templates: `resources/views/` (mostly for emails)
+- Most UI is in Filament resources, not traditional Blade views
+
+**.github/get-shit-done/:**
+- GSD framework configuration
+- Custom commands and templates for workflow automation
+- Not part of application logic
 
 ---
 
-*Structure analysis: 2026-03-23*
+*Structure analysis: 2024-12-19*
