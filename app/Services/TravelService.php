@@ -16,7 +16,7 @@ class TravelService
      * Create a new trip for the user.
      *
      * @param User $user The user creating the trip
-     * @param array $data Trip data (title/destination, start_date, end_date, description, budget)
+     * @param array $data Trip data (title, start_date, end_date, description, notes)
      * @return Trip
      * @throws InvalidArgumentException
      */
@@ -30,18 +30,18 @@ class TravelService
         return DB::transaction(function () use ($user, $data) {
             $trip = Trip::create([
                 'user_id' => $user->id,
-                'destination' => $data['destination'] ?? $data['title'] ?? 'Untitled Trip',
+                'title' => $data['title'] ?? 'Untitled Trip',
                 'description' => $data['description'] ?? null,
                 'start_date' => $data['start_date'],
                 'end_date' => $data['end_date'],
-                'budget' => $data['budget'] ?? null,
+                'notes' => $data['notes'] ?? null,
                 'status' => TripStatus::PLANNING,
             ]);
 
             Log::info('Trip created', [
                 'trip_id' => $trip->id,
                 'user_id' => $user->id,
-                'destination' => $trip->destination,
+                'title' => $trip->title,
                 'status' => $trip->status->value,
             ]);
 
