@@ -32,30 +32,27 @@ class TripDashboardWidget extends BaseWidget
         $user = Auth::user();
 
         // Count active trips (in progress)
-        $activeTrips = Trip::where('user_id', $user->id)
-            ->where('status', TripStatus::IN_PROGRESS)
+        $activeTrips = Trip::where('status', TripStatus::IN_PROGRESS)
             ->count();
 
         // Sum initial budget from active trips
-        $totalBudget = Trip::where('trips.user_id', $user->id)
-            ->where('trips.status', TripStatus::IN_PROGRESS)
+        $totalBudget = Trip::where('status', TripStatus::IN_PROGRESS)
             ->join('trip_budgets', 'trips.id', '=', 'trip_budgets.trip_id')
             ->sum('trip_budgets.initial_amount');
 
         // Count activities in active trips' itineraries
-        $scheduledActivities = Activity::whereHas('itinerary.trip', function ($query) use ($user) {
-            $query->where('trips.user_id', $user->id)
-                ->where('trips.status', TripStatus::IN_PROGRESS);
+        $scheduledActivities = Activity::whereHas('itinerary.trip', function ($query) {
+            $query->where('status', TripStatus::IN_PROGRESS);
         })->count();
 
         // Count unique participants across all user's trips
-        $totalParticipants = TripParticipant::whereHas('trip', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
+        $totalParticipants = TripParticipant::whereHas('trip', function ($query) {
+            // Trip has HasUserScoping, so it's already filtered
         })->distinct('email')->count();
 
         // Sum total expenses across all user's trips
-        $totalExpenses = TripExpense::whereHas('trip', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
+        $totalExpenses = TripExpense::whereHas('trip', function ($query) {
+            // Trip has HasUserScoping, so it's already filtered
         })->sum('amount');
 
         return [
