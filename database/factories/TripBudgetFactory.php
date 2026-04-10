@@ -13,11 +13,9 @@ class TripBudgetFactory extends Factory
 
     public function definition(): array
     {
-        $user = User::factory()->create();
-        
         return [
-            'user_id' => $user->id,
-            'trip_id' => Trip::factory()->for($user)->create()->id,
+            'user_id' => User::factory(),
+            'trip_id' => Trip::factory(),
             'initial_amount' => $this->faker->randomFloat(2, 1000, 10000),
             'currency' => $this->faker->currencyCode(),
             'notes' => $this->faker->optional()->sentence(),
