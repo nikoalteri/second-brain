@@ -63,7 +63,7 @@ class TripDashboardWidget extends BaseWidget
 
             Stat::make('Total Budget', '€' . number_format($totalBudget, 2, ',', '.'))
                 ->description('Across active trips')
-                ->icon('heroicon-o-currency-dollar')
+                ->icon('heroicon-o-currency-euro')
                 ->color('info'),
 
             Stat::make('Scheduled Activities', $scheduledActivities)
