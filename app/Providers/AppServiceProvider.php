@@ -8,15 +8,19 @@ use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
 use App\Models\CreditCardPayment;
+use App\Models\Itinerary;
 use App\Models\LoanPayment;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Models\Trip;
 use App\Observers\CreditCardCycleObserver;
 use App\Observers\CreditCardExpenseObserver;
 use App\Observers\CreditCardPaymentObserver;
+use App\Observers\ItineraryObserver;
 use App\Observers\LoanPaymentObserver;
 use App\Observers\SubscriptionObserver;
 use App\Observers\TransactionObserver;
+use App\Observers\TripObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,6 +45,8 @@ class AppServiceProvider extends ServiceProvider
         CreditCardPayment::observe(CreditCardPaymentObserver::class);
         CreditCardExpense::observe(CreditCardExpenseObserver::class);
         Subscription::observe(SubscriptionObserver::class);
+        Trip::observe(TripObserver::class);
+        Itinerary::observe(ItineraryObserver::class);
 
         // Registra il middleware rate limit API
         $this->app['router']->aliasMiddleware('api_rate_limit', \App\Http\Middleware\ApiRateLimitMiddleware::class);

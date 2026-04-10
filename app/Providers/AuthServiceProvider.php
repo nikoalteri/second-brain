@@ -3,26 +3,32 @@
 namespace App\Providers;
 
 use App\Models\Account;
+use App\Models\Activity;
 use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use App\Models\CreditCardPayment;
+use App\Models\Itinerary;
 use App\Models\Loan;
 use App\Models\LoanPayment;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use App\Models\TransactionType;
+use App\Models\Trip;
 use App\Models\User;
 use App\Policies\AccountPolicy;
+use App\Policies\ActivityPolicy;
 use App\Policies\CreditCardCyclePolicy;
 use App\Policies\CreditCardPaymentPolicy;
 use App\Policies\CreditCardPolicy;
+use App\Policies\ItineraryPolicy;
 use App\Policies\LoanPaymentPolicy;
 use App\Policies\LoanPolicy;
 use App\Policies\SubscriptionPolicy;
 use App\Policies\TransactionCategoryPolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\TransactionTypePolicy;
+use App\Policies\TripPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
@@ -44,6 +50,9 @@ class AuthServiceProvider extends ServiceProvider
         Transaction::class => TransactionPolicy::class,
         TransactionCategory::class => TransactionCategoryPolicy::class,
         TransactionType::class => TransactionTypePolicy::class,
+        Trip::class => TripPolicy::class,
+        Itinerary::class => ItineraryPolicy::class,
+        Activity::class => ActivityPolicy::class,
     ];
 
     /**
