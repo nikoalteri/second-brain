@@ -53,9 +53,7 @@ class TripDashboardWidget extends BaseWidget
         })->distinct('email')->count();
 
         // Sum total expenses across all user's trips
-        $totalExpenses = TripExpense::whereHas('trip', function ($query) {
-            // Trip has HasUserScoping, so it's already filtered
-        })->sum('amount');
+        $totalExpenses = TripExpense::sum('amount');
 
         return [
             Stat::make('Active Trips', $activeTrips)
