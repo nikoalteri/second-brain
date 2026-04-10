@@ -24,8 +24,7 @@ class TravelPdfExporter
             'itineraries.activities',
             'destinations',
             'participants',
-            'budget',
-            'expenses',
+            'budget.expenses',
         ]);
 
         // Get HTML content from Blade view
@@ -58,13 +57,15 @@ class TravelPdfExporter
      */
     private function getHtmlContent(Trip $trip): string
     {
+        $expenses = $trip->budget ? $trip->budget->expenses : collect();
+        
         return View::make('pdfs.itinerary', [
             'trip' => $trip,
             'itineraries' => $trip->itineraries,
             'destinations' => $trip->destinations,
             'participants' => $trip->participants,
             'budget' => $trip->budget,
-            'expenses' => $trip->expenses,
+            'expenses' => $expenses,
         ])->render();
     }
 }

@@ -202,7 +202,7 @@
                 <span>${{ number_format($budget->initial_amount, 2) }}</span>
             </div>
             @php
-                $totalExpenses = $expenses->sum('amount');
+                $totalExpenses = $expenses ? $expenses->sum('amount') : 0;
                 $remaining = $budget->initial_amount - $totalExpenses;
             @endphp
             <div class="budget-row">
