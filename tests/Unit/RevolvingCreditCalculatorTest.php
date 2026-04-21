@@ -25,7 +25,7 @@ class RevolvingCreditCalculatorTest extends TestCase
     public function it_calculates_daily_balances_for_a_cycle()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 542.00,
+            'current_balance' => 692.00, // 542 pre-cycle + 150 total_spent (withoutEvents, so manual)
             'interest_rate' => 14.00,
         ]);
 

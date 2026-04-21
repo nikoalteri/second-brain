@@ -35,7 +35,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
             'skip_weekends' => true,
             'current_balance' => 0,
             'status' => CreditCardStatus::ACTIVE,
-            'stamp_duty_amount' => 2,
+            'stamp_duty_amount' => 0,
         ]);
 
         CreditCardExpense::create([
@@ -97,6 +97,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
             'current_balance' => 1000,
             'fixed_payment' => 250,
             'interest_rate' => 12,
+            'interest_calculation_method' => 'direct_monthly',
             'status' => CreditCardStatus::ACTIVE,
             'stamp_duty_amount' => 2,
         ]);
@@ -119,10 +120,10 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $cycle->refresh();
         $card->refresh();
 
-        // Used balance already includes expenses: 1000 + 100 = 1100, interest 11, principal 239, total due 252.
+        // Used balance already includes expenses: 1000 + 100 = 1100, interest 132 (1100*12%), principal 118 (250-132), total due 252.
         $this->assertSame(1100.0, (float) $card->current_balance);
-        $this->assertSame(11.0, (float) $cycle->interest_amount);
-        $this->assertSame(239.0, (float) $cycle->principal_amount);
+        $this->assertSame(132.0, (float) $cycle->interest_amount);
+        $this->assertSame(118.0, (float) $cycle->principal_amount);
         $this->assertSame(252.0, (float) $cycle->total_due);
 
         $payment = $cycle->payments()->first();
@@ -136,7 +137,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $account->refresh();
 
         $this->assertSame(CreditCardCycleStatus::PAID, $cycle->status);
-        $this->assertSame(861.0, (float) $card->current_balance);
+        $this->assertSame(982.0, (float) $card->current_balance);
         $this->assertSame(748.0, (float) $account->balance);
     }
 

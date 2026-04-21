@@ -196,12 +196,16 @@ class CreditCardCycleService
                 if ($payment->cycle->total_due > 0 && $paidAmount >= (float) $payment->cycle->total_due) {
                     $status = CreditCardCycleStatus::PAID;
                 } elseif (
-                    $payment->cycle->status !== CreditCardCycleStatus::OPEN
+                    $previousStatus !== null // only when updating, not on initial creation
+                    && $payment->cycle->status !== CreditCardCycleStatus::OPEN
                     && $payment->cycle->due_date
                     && now()->toDateString() > $payment->cycle->due_date->toDateString()
                     && $paidAmount < (float) $payment->cycle->total_due
                 ) {
                     $status = CreditCardCycleStatus::OVERDUE;
+                } elseif ($previousStatus === null) {
+                    // On payment creation, preserve current cycle status (don't override OVERDUE → ISSUED)
+                    $status = $payment->cycle->status;
                 }
 
                 $payment->cycle->update([
@@ -303,5 +307,21 @@ class CreditCardCycleService
                 ]);
             }
         }
+    }
+
+    /**
+     * Recompute and persist current_balance for a card from raw expense/payment data.
+     * Ensures consistency after bulk status refreshes or data corrections.
+     */
+    public function syncCardBalance(CreditCard $card): void
+    {
+        $totalExpenses = (float) $card->expenses()->sum('amount');
+        $totalPrincipalPaid = (float) $card->payments()
+            ->where('status', CreditCardPaymentStatus::PAID)
+            ->sum('principal_amount');
+
+        $balance = round(max(0.0, $totalExpenses - $totalPrincipalPaid), 2);
+
+        $card->update(['current_balance' => $balance]);
     }
 }

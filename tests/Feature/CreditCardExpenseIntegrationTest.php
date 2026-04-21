@@ -76,6 +76,7 @@ class CreditCardExpenseIntegrationTest extends TestCase
         $cycle = CreditCardCycle::create([
             'credit_card_id' => $card->id,
             'period_month' => '2026-03',
+            'period_start_date' => Carbon::parse('2026-03-01'),
             'statement_date' => Carbon::parse('2026-03-31'),
             'due_date' => Carbon::parse('2026-04-15'),
             'total_spent' => 0,

@@ -41,8 +41,9 @@ class RevolvingCreditCalculator
         $endDate = $cycle->statement_date;
         $dailyBalances = [];
         
-        // Starting balance = debt at start of cycle
-        $currentBalance = max(0.0, (float) $card->current_balance);
+        // Starting balance = debt at start of cycle, before this cycle's expenses
+        $cycleSpent = (float) ($cycle->total_spent ?? 0);
+        $currentBalance = max(0.0, (float) $card->current_balance - $cycleSpent);
         
         // Group expenses by date
         $expensesByDate = $cycle->expenses()
@@ -151,8 +152,8 @@ class RevolvingCreditCalculator
         $currentDebt = max(0.0, (float) $card->current_balance);
         $cycleSpent = (float) ($cycle->total_spent ?? 0);
 
-        // Total exposure: existing debt + new expenses
-        $totalExposed = $currentDebt + $cycleSpent;
+        // Total exposure = current debt (already includes cycle expenses via observer)
+        $totalExposed = $currentDebt;
 
         if ($totalExposed <= 0 || $fixedPayment <= 0) {
             return [
