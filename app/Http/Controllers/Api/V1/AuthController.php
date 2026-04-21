@@ -8,6 +8,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @group Authentication
+ *
+ * Endpoints for user authentication and token management.
+ */
 class AuthController extends Controller
 {
     /**

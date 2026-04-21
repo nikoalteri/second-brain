@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
+/**
+ * @group Subscriptions
+ *
+ * Endpoints for managing subscriptions.
+ */
 class SubscriptionController extends Controller
 {
     /**

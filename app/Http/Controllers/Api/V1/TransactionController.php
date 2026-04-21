@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
+/**
+ * @group Transactions
+ *
+ * Endpoints for managing financial transactions.
+ */
 class TransactionController extends Controller
 {
     /**

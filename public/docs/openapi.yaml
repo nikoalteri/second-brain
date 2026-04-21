@@ -1,0 +1,1459 @@
+openapi: 3.0.3
+info:
+  title: 'Fluxa Finance API'
+  description: 'REST API for the Fluxa personal finance tracker. All endpoints require Bearer token authentication obtained via POST /api/v1/auth/login.'
+  version: 1.0.0
+servers:
+  -
+    url: 'https://second-brain.test'
+tags:
+  -
+    name: Accounts
+    description: ''
+  -
+    name: Authentication
+    description: ''
+  -
+    name: 'Credit Cards'
+    description: ''
+  -
+    name: 'Credit Cards @authenticated'
+    description: ''
+  -
+    name: 'Credit Cards @authenticated @response 204 {}'
+    description: ''
+  -
+    name: Loans
+    description: ''
+  -
+    name: 'Loans @authenticated'
+    description: ''
+  -
+    name: 'Loans @authenticated @response 204 {}'
+    description: ''
+  -
+    name: Subscriptions
+    description: ''
+  -
+    name: 'Subscriptions @authenticated'
+    description: ''
+  -
+    name: 'Subscriptions @authenticated @response 204 {}'
+    description: ''
+  -
+    name: Transactions
+    description: ''
+components:
+  securitySchemes:
+    default:
+      type: http
+      scheme: bearer
+      description: 'Obtain a token via POST /api/v1/auth/login. Access tokens expire in 30 minutes.'
+security:
+  -
+    default: []
+paths:
+  /api/v1/accounts:
+    get:
+      summary: 'List all accounts for the authenticated user.'
+      operationId: listAllAccountsForTheAuthenticatedUser
+      description: ''
+      parameters:
+        -
+          in: query
+          name: 'filter[type]'
+          description: 'Filter by account type.'
+          example: 0
+          required: false
+          schema:
+            type: integer
+            description: 'Filter by account type.'
+            example: 0
+        -
+          in: query
+          name: 'filter[is_active]'
+          description: 'Filter by active status.'
+          example: 'true'
+          required: false
+          schema:
+            type: string
+            description: 'Filter by active status.'
+            example: 'true'
+        -
+          in: query
+          name: 'filter[currency]'
+          description: 'Filter by currency code.'
+          example: EUR
+          required: false
+          schema:
+            type: string
+            description: 'Filter by currency code.'
+            example: EUR
+        -
+          in: query
+          name: sort
+          description: 'Sort field (prefix - for descending).'
+          example: '-balance'
+          required: false
+          schema:
+            type: string
+            description: 'Sort field (prefix - for descending).'
+            example: '-balance'
+        -
+          in: query
+          name: cursor
+          description: 'Opaque cursor for pagination.'
+          example: architecto
+          required: false
+          schema:
+            type: string
+            description: 'Opaque cursor for pagination.'
+            example: architecto
+        -
+          in: query
+          name: per_page
+          description: 'Items per page (default 20).'
+          example: 20
+          required: false
+          schema:
+            type: integer
+            description: 'Items per page (default 20).'
+            example: 20
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - Accounts
+    post:
+      summary: 'Create a new account.'
+      operationId: createANewAccount
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                type:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: 'n'
+                opening_balance:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                currency:
+                  type: string
+                  description: 'Must be 3 characters.'
+                  example: zmi
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: false
+              required:
+                - name
+                - type
+                - currency
+  '/api/v1/accounts/{account_id}':
+    get:
+      summary: 'Get a single account.'
+      operationId: getASingleAccount
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - Accounts
+    put:
+      summary: 'Update an account.'
+      operationId: updateAnAccount
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Accounts
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                type:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: 'n'
+                currency:
+                  type: string
+                  description: 'Must be 3 characters.'
+                  example: gzm
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+    patch:
+      summary: 'Update an account.'
+      operationId: updateAnAccount
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Accounts
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                type:
+                  type: string
+                  description: 'Must not be greater than 50 characters.'
+                  example: 'n'
+                currency:
+                  type: string
+                  description: 'Must be 3 characters.'
+                  example: gzm
+                is_active:
+                  type: boolean
+                  description: ''
+                  example: true
+    delete:
+      summary: 'Delete an account.'
+      operationId: deleteAnAccount
+      description: ''
+      parameters: []
+      responses:
+        204:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {  }
+                properties: {  }
+      tags:
+        - Accounts
+    parameters:
+      -
+        in: path
+        name: account_id
+        description: 'The ID of the account.'
+        example: 16
+        required: true
+        schema:
+          type: integer
+      -
+        in: path
+        name: account
+        description: 'The account ID.'
+        example: 1
+        required: true
+        schema:
+          type: integer
+  /api/v1/auth/login:
+    post:
+      summary: 'Authenticate user and issue access + refresh tokens.'
+      operationId: authenticateUserAndIssueAccess+RefreshTokens
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  access_token: 1|...
+                  refresh_token: 2|...
+                  token_type: Bearer
+                  expires_in: 1800
+                properties:
+                  access_token:
+                    type: string
+                    example: 1|...
+                  refresh_token:
+                    type: string
+                    example: 2|...
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 1800
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Invalid credentials.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Invalid credentials.'
+        422:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Validation failed.'
+                  errors:
+                    email:
+                      - 'The email field is required.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Validation failed.'
+                  errors:
+                    type: object
+                    properties:
+                      email:
+                        type: array
+                        example:
+                          - 'The email field is required.'
+                        items:
+                          type: string
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 'User email.'
+                  example: user@example.com
+                password:
+                  type: string
+                  description: 'User password (min 8 chars).'
+                  example: secret1234
+              required:
+                - email
+                - password
+      security: []
+  /api/v1/auth/refresh:
+    post:
+      summary: 'Refresh an expired access token using a valid refresh token.'
+      operationId: refreshAnExpiredAccessTokenUsingAValidRefreshToken
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  access_token: 3|...
+                  token_type: Bearer
+                  expires_in: 1800
+                properties:
+                  access_token:
+                    type: string
+                    example: 3|...
+                  token_type:
+                    type: string
+                    example: Bearer
+                  expires_in:
+                    type: integer
+                    example: 1800
+        401:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: Unauthenticated.
+                properties:
+                  message:
+                    type: string
+                    example: Unauthenticated.
+      tags:
+        - Authentication
+  /api/v1/auth/logout:
+    post:
+      summary: 'Logout user and invalidate all tokens.'
+      operationId: logoutUserAndInvalidateAllTokens
+      description: ''
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Logged out.'
+                properties:
+                  message:
+                    type: string
+                    example: 'Logged out.'
+      tags:
+        - Authentication
+  /api/v1/credit-cards:
+    get:
+      summary: ''
+      operationId: getApiV1CreditCards
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - 'Credit Cards'
+    post:
+      summary: ''
+      operationId: postApiV1CreditCards
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Credit Cards @authenticated'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                account_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the accounts table.'
+                  example: 16
+                type:
+                  type: string
+                  description: ''
+                  example: charge
+                  enum:
+                    - charge
+                    - revolving
+                credit_limit:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 39
+                  nullable: true
+                fixed_payment:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                interest_rate:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                stamp_duty_amount:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 77
+                  nullable: true
+                statement_day:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 15
+                due_day:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 8
+                skip_weekends:
+                  type: boolean
+                  description: ''
+                  example: true
+                current_balance:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 60
+                  nullable: true
+                status:
+                  type: string
+                  description: ''
+                  example: active
+                  enum:
+                    - active
+                    - suspended
+                    - closed
+                start_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                  nullable: true
+                interest_calculation_method:
+                  type: string
+                  description: ''
+                  example: direct_monthly
+                  enum:
+                    - daily_balance
+                    - direct_monthly
+                  nullable: true
+              required:
+                - name
+                - account_id
+                - type
+                - statement_day
+                - due_day
+                - status
+  '/api/v1/credit-cards/{creditCard_id}':
+    get:
+      summary: ''
+      operationId: getApiV1CreditCardsCreditCard_id
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - 'Credit Cards @authenticated'
+    put:
+      summary: ''
+      operationId: putApiV1CreditCardsCreditCard_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Credit Cards @authenticated'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                type:
+                  type: string
+                  description: ''
+                  example: revolving
+                  enum:
+                    - charge
+                    - revolving
+                credit_limit:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 39
+                  nullable: true
+                fixed_payment:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                interest_rate:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                stamp_duty_amount:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 77
+                  nullable: true
+                statement_day:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 15
+                due_day:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 8
+                skip_weekends:
+                  type: boolean
+                  description: ''
+                  example: true
+                current_balance:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 60
+                  nullable: true
+                status:
+                  type: string
+                  description: ''
+                  example: suspended
+                  enum:
+                    - active
+                    - suspended
+                    - closed
+                interest_calculation_method:
+                  type: string
+                  description: ''
+                  example: daily_balance
+                  enum:
+                    - daily_balance
+                    - direct_monthly
+                  nullable: true
+    patch:
+      summary: ''
+      operationId: patchApiV1CreditCardsCreditCard_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Credit Cards @authenticated'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                type:
+                  type: string
+                  description: ''
+                  example: charge
+                  enum:
+                    - charge
+                    - revolving
+                credit_limit:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 39
+                  nullable: true
+                fixed_payment:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                interest_rate:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                stamp_duty_amount:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 77
+                  nullable: true
+                statement_day:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 15
+                due_day:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 8
+                skip_weekends:
+                  type: boolean
+                  description: ''
+                  example: true
+                current_balance:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 60
+                  nullable: true
+                status:
+                  type: string
+                  description: ''
+                  example: active
+                  enum:
+                    - active
+                    - suspended
+                    - closed
+                interest_calculation_method:
+                  type: string
+                  description: ''
+                  example: daily_balance
+                  enum:
+                    - daily_balance
+                    - direct_monthly
+                  nullable: true
+    delete:
+      summary: ''
+      operationId: deleteApiV1CreditCardsCreditCard_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Credit Cards @authenticated @response 204 {}'
+    parameters:
+      -
+        in: path
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        example: 16
+        required: true
+        schema:
+          type: integer
+  /api/v1/loans:
+    get:
+      summary: ''
+      operationId: getApiV1Loans
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - Loans
+    post:
+      summary: ''
+      operationId: postApiV1Loans
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Loans @authenticated'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                account_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the accounts table.'
+                  example: 16
+                total_amount:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 39
+                monthly_payment:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 84
+                interest_rate:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                is_variable_rate:
+                  type: boolean
+                  description: ''
+                  example: true
+                withdrawal_day:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 17
+                skip_weekends:
+                  type: boolean
+                  description: ''
+                  example: false
+                start_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                end_date:
+                  type: string
+                  description: 'Must be a valid date. Must be a date after or equal to <code>start_date</code>.'
+                  example: '2052-05-14'
+                  nullable: true
+                total_installments:
+                  type: integer
+                  description: 'Must be at least 1.'
+                  example: 22
+                paid_installments:
+                  type: integer
+                  description: 'Must be at least 0.'
+                  example: 84
+                remaining_amount:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 12
+                  nullable: true
+                status:
+                  type: string
+                  description: ''
+                  example: completed
+                  enum:
+                    - active
+                    - completed
+                    - defaulted
+              required:
+                - name
+                - account_id
+                - total_amount
+                - monthly_payment
+                - withdrawal_day
+                - start_date
+                - total_installments
+                - paid_installments
+                - status
+  '/api/v1/loans/{loan_id}':
+    get:
+      summary: ''
+      operationId: getApiV1LoansLoan_id
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - 'Loans @authenticated'
+    put:
+      summary: ''
+      operationId: putApiV1LoansLoan_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Loans @authenticated'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                total_amount:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 39
+                monthly_payment:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 84
+                interest_rate:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                is_variable_rate:
+                  type: boolean
+                  description: ''
+                  example: true
+                status:
+                  type: string
+                  description: ''
+                  example: active
+                  enum:
+                    - active
+                    - completed
+                    - defaulted
+    patch:
+      summary: ''
+      operationId: patchApiV1LoansLoan_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Loans @authenticated'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                total_amount:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 39
+                monthly_payment:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 84
+                interest_rate:
+                  type: number
+                  description: 'Must be at least 0. Must not be greater than 100.'
+                  example: 16
+                  nullable: true
+                is_variable_rate:
+                  type: boolean
+                  description: ''
+                  example: true
+                status:
+                  type: string
+                  description: ''
+                  example: defaulted
+                  enum:
+                    - active
+                    - completed
+                    - defaulted
+    delete:
+      summary: ''
+      operationId: deleteApiV1LoansLoan_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Loans @authenticated @response 204 {}'
+    parameters:
+      -
+        in: path
+        name: loan_id
+        description: 'The ID of the loan.'
+        example: 16
+        required: true
+        schema:
+          type: integer
+  /api/v1/subscriptions:
+    get:
+      summary: ''
+      operationId: getApiV1Subscriptions
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - Subscriptions
+    post:
+      summary: ''
+      operationId: postApiV1Subscriptions
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Subscriptions @authenticated'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                account_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the accounts table.'
+                  example: 16
+                monthly_cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 39
+                  nullable: true
+                annual_cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                frequency:
+                  type: string
+                  description: ''
+                  example: monthly
+                  enum:
+                    - monthly
+                    - annual
+                    - biennial
+                day_of_month:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 16
+                next_renewal_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                category_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+                  example: 16
+                  nullable: true
+                auto_create_transaction:
+                  type: boolean
+                  description: ''
+                  example: true
+                status:
+                  type: string
+                  description: ''
+                  example: cancelled
+                  enum:
+                    - active
+                    - inactive
+                    - cancelled
+                notes:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: 'n'
+                  nullable: true
+              required:
+                - name
+                - account_id
+                - frequency
+                - day_of_month
+                - next_renewal_date
+                - status
+  '/api/v1/subscriptions/{subscription_id}':
+    get:
+      summary: ''
+      operationId: getApiV1SubscriptionsSubscription_id
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - 'Subscriptions @authenticated'
+    put:
+      summary: ''
+      operationId: putApiV1SubscriptionsSubscription_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Subscriptions @authenticated'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                monthly_cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 39
+                  nullable: true
+                annual_cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                frequency:
+                  type: string
+                  description: ''
+                  example: biennial
+                  enum:
+                    - monthly
+                    - annual
+                    - biennial
+                day_of_month:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 16
+                next_renewal_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                status:
+                  type: string
+                  description: ''
+                  example: active
+                  enum:
+                    - active
+                    - inactive
+                    - cancelled
+                notes:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: m
+                  nullable: true
+    patch:
+      summary: ''
+      operationId: patchApiV1SubscriptionsSubscription_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Subscriptions @authenticated'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: b
+                monthly_cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 39
+                  nullable: true
+                annual_cost:
+                  type: number
+                  description: 'Must be at least 0.'
+                  example: 84
+                  nullable: true
+                frequency:
+                  type: string
+                  description: ''
+                  example: monthly
+                  enum:
+                    - monthly
+                    - annual
+                    - biennial
+                day_of_month:
+                  type: integer
+                  description: 'Must be at least 1. Must not be greater than 31.'
+                  example: 16
+                next_renewal_date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                status:
+                  type: string
+                  description: ''
+                  example: cancelled
+                  enum:
+                    - active
+                    - inactive
+                    - cancelled
+                notes:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: m
+                  nullable: true
+    delete:
+      summary: ''
+      operationId: deleteApiV1SubscriptionsSubscription_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - 'Subscriptions @authenticated @response 204 {}'
+    parameters:
+      -
+        in: path
+        name: subscription_id
+        description: 'The ID of the subscription.'
+        example: 16
+        required: true
+        schema:
+          type: integer
+  /api/v1/transactions:
+    get:
+      summary: 'List transactions for the authenticated user.'
+      operationId: listTransactionsForTheAuthenticatedUser
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - Transactions
+    post:
+      summary: ''
+      operationId: postApiV1Transactions
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Transactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the accounts table.'
+                  example: 16
+                transaction_type_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the transaction_types table.'
+                  example: 16
+                transaction_category_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+                  example: 16
+                  nullable: true
+                amount:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 39
+                date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                description:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'Animi quos velit et fugiat.'
+                notes:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: d
+                  nullable: true
+                is_transfer:
+                  type: boolean
+                  description: ''
+                  example: true
+                to_account_id:
+                  type: integer
+                  description: 'The value and <code>account_id</code> must be different. The <code>id</code> of an existing record in the accounts table.'
+                  example: 16
+                  nullable: true
+              required:
+                - account_id
+                - transaction_type_id
+                - amount
+                - date
+                - description
+  '/api/v1/transactions/{transaction_id}':
+    get:
+      summary: ''
+      operationId: getApiV1TransactionsTransaction_id
+      description: ''
+      parameters: []
+      responses:
+        500:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example:
+                  message: 'Server Error'
+                properties:
+                  message:
+                    type: string
+                    example: 'Server Error'
+      tags:
+        - Transactions
+    put:
+      summary: ''
+      operationId: putApiV1TransactionsTransaction_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Transactions
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the accounts table.'
+                  example: 16
+                transaction_type_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the transaction_types table.'
+                  example: 16
+                transaction_category_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+                  example: 16
+                  nullable: true
+                amount:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 39
+                date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                description:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'Animi quos velit et fugiat.'
+                notes:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: d
+                  nullable: true
+    patch:
+      summary: ''
+      operationId: patchApiV1TransactionsTransaction_id
+      description: ''
+      parameters: []
+      responses: {  }
+      tags:
+        - Transactions
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the accounts table.'
+                  example: 16
+                transaction_type_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the transaction_types table.'
+                  example: 16
+                transaction_category_id:
+                  type: integer
+                  description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+                  example: 16
+                  nullable: true
+                amount:
+                  type: number
+                  description: 'Must be at least 0.01.'
+                  example: 39
+                date:
+                  type: string
+                  description: 'Must be a valid date.'
+                  example: '2026-04-21T21:51:05'
+                description:
+                  type: string
+                  description: 'Must not be greater than 255 characters.'
+                  example: 'Animi quos velit et fugiat.'
+                notes:
+                  type: string
+                  description: 'Must not be greater than 1000 characters.'
+                  example: d
+                  nullable: true
+    delete:
+      summary: ''
+      operationId: deleteApiV1TransactionsTransaction_id
+      description: ''
+      parameters: []
+      responses:
+        204:
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {  }
+                properties: {  }
+      tags:
+        - Transactions
+    parameters:
+      -
+        in: path
+        name: transaction_id
+        description: 'The ID of the transaction.'
+        example: 16
+        required: true
+        schema:
+          type: integer

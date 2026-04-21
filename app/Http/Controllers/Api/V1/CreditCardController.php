@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
+/**
+ * @group Credit Cards
+ *
+ * Endpoints for managing credit cards.
+ */
 class CreditCardController extends Controller
 {
     /**

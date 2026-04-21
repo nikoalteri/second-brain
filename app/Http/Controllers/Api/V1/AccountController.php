@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
+/**
+ * @group Accounts
+ *
+ * Endpoints for managing bank accounts.
+ */
 class AccountController extends Controller
 {
     /**
