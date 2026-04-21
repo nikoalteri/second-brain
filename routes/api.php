@@ -1,8 +1,66 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CreditCardController;
+use App\Http\Controllers\Api\V1\LoanController;
+use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\TransactionController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['api', 'App\Http\Middleware\ApiRateLimitMiddleware'])
-    ->group(function () {
-        // API routes
+Route::prefix('v1')->group(function () {
+
+    // ─── Authentication (no auth guard required) ───────────────────────────
+    Route::post('/auth/login', [AuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+        Route::post('/auth/logout', [AuthController::class, 'logout']);
     });
+
+    // ─── Read endpoints — 100 req/min ──────────────────────────────────────
+    Route::middleware(['auth:sanctum', 'throttle:api-read'])->group(function () {
+        Route::get('accounts', [AccountController::class, 'index']);
+        Route::get('accounts/{account}', [AccountController::class, 'show']);
+
+        Route::get('transactions', [TransactionController::class, 'index']);
+        Route::get('transactions/{transaction}', [TransactionController::class, 'show']);
+
+        Route::get('loans', [LoanController::class, 'index']);
+        Route::get('loans/{loan}', [LoanController::class, 'show']);
+
+        Route::get('credit-cards', [CreditCardController::class, 'index']);
+        Route::get('credit-cards/{creditCard}', [CreditCardController::class, 'show']);
+
+        Route::get('subscriptions', [SubscriptionController::class, 'index']);
+        Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
+    });
+
+    // ─── Write endpoints — 20 req/min ─────────────────────────────────────
+    Route::middleware(['auth:sanctum', 'throttle:api-write'])->group(function () {
+        Route::post('accounts', [AccountController::class, 'store']);
+        Route::put('accounts/{account}', [AccountController::class, 'update']);
+        Route::patch('accounts/{account}', [AccountController::class, 'update']);
+        Route::delete('accounts/{account}', [AccountController::class, 'destroy']);
+
+        Route::post('transactions', [TransactionController::class, 'store']);
+        Route::put('transactions/{transaction}', [TransactionController::class, 'update']);
+        Route::patch('transactions/{transaction}', [TransactionController::class, 'update']);
+        Route::delete('transactions/{transaction}', [TransactionController::class, 'destroy']);
+
+        Route::post('loans', [LoanController::class, 'store']);
+        Route::put('loans/{loan}', [LoanController::class, 'update']);
+        Route::patch('loans/{loan}', [LoanController::class, 'update']);
+        Route::delete('loans/{loan}', [LoanController::class, 'destroy']);
+
+        Route::post('credit-cards', [CreditCardController::class, 'store']);
+        Route::put('credit-cards/{creditCard}', [CreditCardController::class, 'update']);
+        Route::patch('credit-cards/{creditCard}', [CreditCardController::class, 'update']);
+        Route::delete('credit-cards/{creditCard}', [CreditCardController::class, 'destroy']);
+
+        Route::post('subscriptions', [SubscriptionController::class, 'store']);
+        Route::put('subscriptions/{subscription}', [SubscriptionController::class, 'update']);
+        Route::patch('subscriptions/{subscription}', [SubscriptionController::class, 'update']);
+        Route::delete('subscriptions/{subscription}', [SubscriptionController::class, 'destroy']);
+    });
+});
