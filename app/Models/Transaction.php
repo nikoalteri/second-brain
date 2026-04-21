@@ -73,4 +73,14 @@ class Transaction extends Model
     {
         return $this->belongsTo(CreditCardPayment::class);
     }
+
+    public function scopeDateFrom($query, string $date)
+    {
+        return $query->where('date', '>=', $date);
+    }
+
+    public function scopeDateTo($query, string $date)
+    {
+        return $query->where('date', '<=', $date);
+    }
 }
