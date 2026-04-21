@@ -8,7 +8,7 @@ progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 7
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # v2.0 Project State
@@ -16,7 +16,7 @@ progress:
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v2.0 (API Layer)  
 **Phases:** 6  
-**Status:** Executing Phase 6
+**Status:** Executing Phase 6, Plan 2 of 7
 **Updated:** 2026-04-21
 
 ---
@@ -41,4 +41,25 @@ All finance backend phases delivered:
 
 **Goal:** REST + GraphQL API with JWT auth, rate limiting, and OpenAPI docs.
 
-**Status:** Not yet planned.
+**Current Plan:** 2 of 7
+
+### Plans:
+- Plan 1: API Foundation — Config Fixes, Package Installation, Rate Limiters ✅
+- Plan 2: Auth + Error Handling (in progress)
+- Plan 3: Accounts & Transactions REST endpoints
+- Plan 4: Loans, Credit Cards & Subscriptions REST endpoints
+- Plan 5: GraphQL API
+- Plan 6: API Documentation
+- Plan 7: Tests
+
+## Decisions
+
+- **2026-04-21:** Set Sanctum token expiration to 30 minutes (security default)
+- **2026-04-21:** Named rate limiters registered in AppServiceProvider: api-read (100/min), api-write (20/min)
+- **2026-04-21:** Lighthouse guards set to ['sanctum'] for Bearer token auth in GraphQL
+
+## Last Session
+
+**Stopped at:** Completed 06-01-foundation-PLAN.md  
+**Timestamp:** 2026-04-21T21:30:00Z
+
