@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\Filament\Widgets;
 
+use App\Models\Account;
+use App\Models\Subscription;
+use App\Models\Transaction;
+use App\Models\TransactionCategory;
+use App\Models\TransactionType;
 use App\Models\User;
-use Database\Seeders\DummyDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,11 +23,31 @@ class DashboardWidgetsTest extends TestCase
         $this->user = User::factory()->create();
         $this->actingAs($this->user);
 
-        // Run seeders to create test data
         $this->seed([
             \Database\Seeders\RolesAndPermissionsSeeder::class,
             \Database\Seeders\TransactionTypeSeeder::class,
-            \Database\Seeders\DummyDataSeeder::class,
+        ]);
+
+        // Create finance test data via factories
+        $account = Account::factory()->create(['user_id' => $this->user->id, 'balance' => 5000]);
+
+        $type = TransactionType::first();
+        $category = TransactionCategory::firstOrCreate(
+            ['user_id' => $this->user->id, 'name' => 'General', 'parent_id' => null],
+            ['is_active' => true]
+        );
+
+        Transaction::factory()->count(5)->create([
+            'user_id' => $this->user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $type->id,
+            'transaction_category_id' => $category->id,
+            'amount' => -100,
+        ]);
+
+        Subscription::factory()->create([
+            'user_id' => $this->user->id,
+            'monthly_cost' => 9.99,
         ]);
     }
 
@@ -60,7 +84,7 @@ class DashboardWidgetsTest extends TestCase
     public function monthly_subscription_cost_calculates_correctly()
     {
         $subs = $this->user->subscriptions()
-            ->where('status', 'ACTIVE')
+            ->where('status', 'active')
             ->get();
 
         // If no active subs from seeder, that's ok - test that logic works

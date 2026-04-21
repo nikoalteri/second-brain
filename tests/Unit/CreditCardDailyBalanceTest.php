@@ -9,10 +9,12 @@ use App\Models\CreditCardExpense;
 use App\Services\CreditCardCycleService;
 use App\Services\RevolvingCreditCalculator;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CreditCardDailyBalanceTest extends TestCase
 {
+    use RefreshDatabase;
     /** @test */
     public function calculates_daily_balances_from_expenses(): void
     {
