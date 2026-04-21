@@ -17,12 +17,6 @@ class PermissionService
         $grouped = [
             'Module Access' => [],
             'Finance' => [],
-            'Health' => [],
-            'Productivity' => [],
-            'Relations' => [],
-            'Home' => [],
-            'Cooking' => [],
-            'Travel' => [],
             'Admin Panel' => [],
         ];
 
@@ -31,18 +25,6 @@ class PermissionService
                 $grouped['Module Access'][$perm] = $this->formatLabel($perm);
             } elseif (str_starts_with($perm, 'finance.')) {
                 $grouped['Finance'][$perm] = $this->formatLabel($perm);
-            } elseif (str_starts_with($perm, 'health.')) {
-                $grouped['Health'][$perm] = $this->formatLabel($perm);
-            } elseif (str_starts_with($perm, 'productivity.')) {
-                $grouped['Productivity'][$perm] = $this->formatLabel($perm);
-            } elseif (str_starts_with($perm, 'relations.')) {
-                $grouped['Relations'][$perm] = $this->formatLabel($perm);
-            } elseif (str_starts_with($perm, 'home.')) {
-                $grouped['Home'][$perm] = $this->formatLabel($perm);
-            } elseif (str_starts_with($perm, 'cooking.')) {
-                $grouped['Cooking'][$perm] = $this->formatLabel($perm);
-            } elseif (str_starts_with($perm, 'travel.')) {
-                $grouped['Travel'][$perm] = $this->formatLabel($perm);
             }
         }
 
