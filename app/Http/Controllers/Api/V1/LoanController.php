@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreLoanRequest;
 use App\Http\Requests\Api\UpdateLoanRequest;
 use App\Http\Resources\Api\LoanResource;
 use App\Models\Loan;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -28,12 +29,12 @@ class LoanController extends Controller
     {
         $loans = QueryBuilder::for(Loan::class)
             ->where('user_id', $request->user()->id)
-            ->allowedFilters([
+            ->allowedFilters(
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('account_id'),
                 AllowedFilter::exact('is_variable_rate'),
-            ])
-            ->allowedSorts(['start_date', 'end_date', 'total_amount', 'remaining_amount', 'created_at'])
+            )
+            ->allowedSorts('start_date', 'end_date', 'total_amount', 'remaining_amount', 'created_at')
             ->defaultSort('-created_at')
             ->cursorPaginate($request->integer('per_page', 20));
 
@@ -41,7 +42,7 @@ class LoanController extends Controller
     }
 
     /** @group Loans @authenticated */
-    public function store(StoreLoanRequest $request): Response
+    public function store(StoreLoanRequest $request): JsonResponse
     {
         $this->authorize('create', Loan::class);
 

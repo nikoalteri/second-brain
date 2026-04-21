@@ -14,21 +14,22 @@ class TotalByCategory
         $year  = (int) $args['year'];
         $month = (int) $args['month'];
 
-        return Transaction::query()
-            ->selectRaw('COALESCE(tc.name, "Uncategorised") as category, SUM(t.amount) as total, COUNT(*) as `count`')
-            ->from('transactions as t')
-            ->leftJoin('transaction_categories as tc', 't.transaction_category_id', '=', 'tc.id')
-            ->where('t.user_id', $user->id)
-            ->whereYear('t.date', $year)
-            ->whereMonth('t.date', $month)
-            ->whereNull('t.deleted_at')
-            ->groupBy('t.transaction_category_id', 'tc.name')
+        // Use withoutGlobalScopes to avoid table-alias conflicts with SoftDeletes/HasUserScoping
+        // We handle user filtering and soft-delete filtering manually.
+        return Transaction::withoutGlobalScopes()
+            ->selectRaw('COALESCE(transaction_categories.name, \'Uncategorised\') as category, SUM(transactions.amount) as total, COUNT(*) as cnt')
+            ->leftJoin('transaction_categories', 'transactions.transaction_category_id', '=', 'transaction_categories.id')
+            ->where('transactions.user_id', $user->id)
+            ->whereYear('transactions.date', $year)
+            ->whereMonth('transactions.date', $month)
+            ->whereNull('transactions.deleted_at')
+            ->groupBy('transactions.transaction_category_id', 'transaction_categories.name')
             ->orderByDesc('total')
             ->get()
             ->map(fn ($row) => [
                 'category' => $row->category,
                 'total'    => (float) $row->total,
-                'count'    => (int) $row->count,
+                'count'    => (int) $row->cnt,
             ])
             ->toArray();
     }

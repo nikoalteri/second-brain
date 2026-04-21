@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreSubscriptionRequest;
 use App\Http\Requests\Api\UpdateSubscriptionRequest;
 use App\Http\Resources\Api\SubscriptionResource;
 use App\Models\Subscription;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -28,12 +29,12 @@ class SubscriptionController extends Controller
     {
         $subscriptions = QueryBuilder::for(Subscription::class)
             ->where('user_id', $request->user()->id)
-            ->allowedFilters([
+            ->allowedFilters(
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('frequency'),
                 AllowedFilter::exact('account_id'),
-            ])
-            ->allowedSorts(['next_renewal_date', 'monthly_cost', 'annual_cost', 'created_at'])
+            )
+            ->allowedSorts('next_renewal_date', 'monthly_cost', 'annual_cost', 'created_at')
             ->defaultSort('next_renewal_date')
             ->cursorPaginate($request->integer('per_page', 20));
 
@@ -41,7 +42,7 @@ class SubscriptionController extends Controller
     }
 
     /** @group Subscriptions @authenticated */
-    public function store(StoreSubscriptionRequest $request): Response
+    public function store(StoreSubscriptionRequest $request): JsonResponse
     {
         $this->authorize('create', Subscription::class);
 

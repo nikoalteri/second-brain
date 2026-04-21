@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreTransactionRequest;
 use App\Http\Requests\Api\UpdateTransactionRequest;
 use App\Http\Resources\Api\TransactionResource;
 use App\Models\Transaction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -31,14 +32,14 @@ class TransactionController extends Controller
         $transactions = QueryBuilder::for(Transaction::class)
             ->where('user_id', $request->user()->id)
             ->with(['account', 'category'])
-            ->allowedFilters([
+            ->allowedFilters(
                 AllowedFilter::exact('account_id'),
                 AllowedFilter::exact('transaction_category_id'),
                 AllowedFilter::scope('date_from', 'dateFrom'),
                 AllowedFilter::scope('date_to', 'dateTo'),
                 AllowedFilter::exact('is_transfer'),
-            ])
-            ->allowedSorts(['date', 'amount', 'created_at', 'description'])
+            )
+            ->allowedSorts('date', 'amount', 'created_at', 'description')
             ->defaultSort('-date')
             ->cursorPaginate($request->integer('per_page', 20));
 
@@ -49,8 +50,7 @@ class TransactionController extends Controller
      * @group Transactions
      * @authenticated
      */
-    public function store(StoreTransactionRequest $request): Response
-    {
+    public function store(StoreTransactionRequest $request): JsonResponse    {
         $this->authorize('create', Transaction::class);
 
         $transaction = Transaction::create(array_merge($request->validated(), [

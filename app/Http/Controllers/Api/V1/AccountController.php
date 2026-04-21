@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreAccountRequest;
 use App\Http\Requests\Api\UpdateAccountRequest;
 use App\Http\Resources\Api\AccountResource;
 use App\Models\Account;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -36,12 +37,12 @@ class AccountController extends Controller
     {
         $accounts = QueryBuilder::for(Account::class)
             ->where('user_id', $request->user()->id)
-            ->allowedFilters([
+            ->allowedFilters(
                 AllowedFilter::exact('type'),
                 AllowedFilter::exact('is_active'),
                 AllowedFilter::exact('currency'),
-            ])
-            ->allowedSorts(['name', 'balance', 'opening_balance', 'created_at'])
+            )
+            ->allowedSorts('name', 'balance', 'opening_balance', 'created_at')
             ->defaultSort('-created_at')
             ->cursorPaginate($request->integer('per_page', 20));
 
@@ -54,7 +55,7 @@ class AccountController extends Controller
      * @group Accounts
      * @authenticated
      */
-    public function store(StoreAccountRequest $request): Response
+    public function store(StoreAccountRequest $request): JsonResponse
     {
         $this->authorize('create', Account::class);
 

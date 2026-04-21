@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreCreditCardRequest;
 use App\Http\Requests\Api\UpdateCreditCardRequest;
 use App\Http\Resources\Api\CreditCardResource;
 use App\Models\CreditCard;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -28,12 +29,12 @@ class CreditCardController extends Controller
     {
         $creditCards = QueryBuilder::for(CreditCard::class)
             ->where('user_id', $request->user()->id)
-            ->allowedFilters([
+            ->allowedFilters(
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('type'),
                 AllowedFilter::exact('account_id'),
-            ])
-            ->allowedSorts(['name', 'credit_limit', 'current_balance', 'due_day', 'created_at'])
+            )
+            ->allowedSorts('name', 'credit_limit', 'current_balance', 'due_day', 'created_at')
             ->defaultSort('-created_at')
             ->cursorPaginate($request->integer('per_page', 20));
 
@@ -41,7 +42,7 @@ class CreditCardController extends Controller
     }
 
     /** @group Credit Cards @authenticated */
-    public function store(StoreCreditCardRequest $request): Response
+    public function store(StoreCreditCardRequest $request): JsonResponse
     {
         $this->authorize('create', CreditCard::class);
 
