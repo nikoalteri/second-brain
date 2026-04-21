@@ -45,11 +45,13 @@ class RevolvingCreditCalculator
         $cycleSpent = (float) ($cycle->total_spent ?? 0);
         $currentBalance = max(0.0, (float) $card->current_balance - $cycleSpent);
         
-        // Group expenses by date
+        // Group expenses by their posting date (posted_at) when available,
+        // otherwise fall back to transaction date (spent_at).
+        // Amex uses the contabilization/posting date for daily balance interest calculations.
         $expensesByDate = $cycle->expenses()
             ->orderBy('spent_at')
             ->get()
-            ->groupBy(fn($e) => $e->spent_at->toDateString())
+            ->groupBy(fn($e) => ($e->posted_at ?? $e->spent_at)->toDateString())
             ->map(fn($expenses) => $expenses->sum('amount'))
             ->toArray();
         

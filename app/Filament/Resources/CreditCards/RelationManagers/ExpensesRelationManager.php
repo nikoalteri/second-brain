@@ -24,9 +24,12 @@ class ExpensesRelationManager extends RelationManager
         return $schema
             ->components([
                 DatePicker::make('spent_at')
-                    ->label('Spent at')
+                    ->label('Transaction date')
                     ->required()
                     ->default(now()),
+                DatePicker::make('posted_at')
+                    ->label('Posted date (contabilizzazione)')
+                    ->helperText('Leave blank if same as transaction date. Used for interest calculation (Amex-style).'),
                 TextInput::make('amount')
                     ->label('Amount')
                     ->numeric()
@@ -50,9 +53,14 @@ class ExpensesRelationManager extends RelationManager
             ->defaultSort('spent_at', 'desc')
             ->columns([
                 TextColumn::make('spent_at')
-                    ->label('Date')
+                    ->label('Transaction date')
                     ->date('d/m/Y')
                     ->sortable(),
+                TextColumn::make('posted_at')
+                    ->label('Posted date')
+                    ->date('d/m/Y')
+                    ->placeholder('= Transaction date')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('amount')
                     ->label('Amount')
                     ->money('EUR')

@@ -14,6 +14,7 @@ class CreditCardExpense extends Model
         'credit_card_id',
         'credit_card_cycle_id',
         'spent_at',
+        'posted_at',
         'amount',
         'description',
         'notes',
@@ -21,6 +22,7 @@ class CreditCardExpense extends Model
 
     protected $casts = [
         'spent_at' => 'date',
+        'posted_at' => 'date',
         'amount' => 'decimal:2',
     ];
 
