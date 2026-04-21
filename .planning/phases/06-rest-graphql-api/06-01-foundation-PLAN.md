@@ -2,7 +2,7 @@
 plan: 1
 phase: 6
 title: "API Foundation — Config Fixes, Package Installation, Rate Limiters"
-wave: 0
+wave: 1
 depends_on: []
 requirements: [API-05]
 files_modified:

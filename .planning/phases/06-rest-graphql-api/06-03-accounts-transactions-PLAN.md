@@ -2,7 +2,7 @@
 plan: 3
 phase: 6
 title: "Accounts + Transactions REST Controllers"
-wave: 1
+wave: 2
 depends_on: [1]
 requirements: [API-06, API-07, API-11, API-12, API-13, API-20]
 files_modified:

@@ -2,7 +2,7 @@
 plan: 6
 phase: 6
 title: "Scribe API Documentation — OpenAPI 3.0 at /api/docs"
-wave: 2
+wave: 3
 depends_on: [1, 2, 3, 4]
 requirements: [API-19]
 files_modified:

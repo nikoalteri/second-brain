@@ -1,0 +1,294 @@
+================================================================================
+STACK RESEARCH SUMMARY: v3.0 Mobile APIs & Health Integration
+================================================================================
+
+Analysis Date: 2026-04-12
+Target Version: Laravel 12 + Filament 4 → v3.0
+Location: .planning/research/STACK.md (1,045 lines, 30KB)
+
+================================================================================
+QUICK ANSWER: What Stack Additions Are Needed?
+================================================================================
+
+REQUIRED PACKAGES (Add these):
+  1. tymon/jwt-auth ^2.1                    ✅ CRITICAL
+     - Mobile JWT authentication with refresh tokens
+     - Works alongside Sanctum (no conflicts)
+     - Setup time: 30 minutes
+     
+  2. vyuldashev/laravel-openapi ^3.0        ✅ RECOMMENDED
+     - Auto-generates OpenAPI 3.0 spec from routes
+     - Mobile devs get /api/docs for self-service
+     - Setup time: 15 minutes
+
+OPTIONAL PACKAGES:
+  3. spatie/laravel-fractal ^6.1            ⚠️ NICE-TO-HAVE
+     - Consistent JSON transformation
+     - Not required (can use manual formatting)
+     
+  4. predis/predis ^2.0                     ⚠️ PRODUCTION-ONLY
+     - Redis client for distributed caching
+     - Dev: Use file cache (built-in)
+     - Production: Redis (distributed)
+
+PACKAGES TO KEEP (Already have):
+  ✅ nuwave/lighthouse 6.65          (GraphQL - already solid)
+  ✅ laravel/sanctum 4.0             (Token auth - keep for web)
+  ✅ spatie/laravel-permission 7.2   (RBAC - proven & working)
+  ✅ laravel/framework 12            (Core - extend with APIs)
+  ✅ phpunit/phpunit 11.5.3          (Testing - excellent)
+
+PACKAGES TO AVOID:
+  ❌ laravel/passport                (Overkill for single-user app)
+  ❌ barryvdh/laravel-cors           (Laravel 12 has built-in CORS)
+  ❌ Custom JWT library              (Use tymon/jwt-auth instead)
+  ❌ rebing/graphql-laravel          (Lighthouse is better)
+
+================================================================================
+NEW CODE STRUCTURE (What to Build)
+================================================================================
+
+Routes:
+  routes/api.php                     (Main API group middleware)
+  routes/api/v1/auth.php             (Login, refresh, logout)
+  routes/api/v1/finance.php          (Accounts, transactions, cards)
+  routes/api/v1/travel.php           (Trips, itineraries, expenses)
+  routes/api/v1/health.php           (Health records, medical, meds)
+  routes/api/v1/home.php             (Properties, maintenance)
+
+Controllers:
+  app/Http/Controllers/Api/ApiController.php        (Base response helpers)
+  app/Http/Controllers/Api/V1/AuthController.php    (JWT auth endpoints)
+  app/Http/Controllers/Api/V1/TripController.php    (Trip CRUD)
+  app/Http/Controllers/Api/V1/HealthController.php  (Health metrics)
+  app/Http/Controllers/Api/V1/TransactionController.php (Finance)
+  app/Http/Controllers/Api/V1/PropertyController.php (Home)
+
+Migrations:
+  Create api_token_blacklist table   (For JWT token blacklist)
+  Extend medical_records table       (Add FHIR fields)
+
+Tests:
+  tests/Feature/Api/                 (~100 tests for REST)
+  tests/Feature/GraphQL/             (~50 tests for mutations)
+
+Enums (Extend existing):
+  HealthMetricType                   (Blood pressure, heart rate, etc.)
+  MedicationDosageUnit               (mg, ml, etc.)
+
+================================================================================
+KEY DECISIONS & RATIONALE
+================================================================================
+
+1. JWT over Sanctum for Mobile
+   ❌ Sanctum tokens are opaque UUIDs (not JWTs)
+   ✅ JWT enables standard refresh token cycle
+   ✅ Mobile apps need access + refresh tokens (separated)
+   ✅ tymon/jwt-auth is battle-tested
+
+2. REST + GraphQL (Both!)
+   ✅ REST for simple CRUD (mobile apps prefer simplicity)
+   ✅ GraphQL for complex queries (avoid N+1 problems)
+   ✅ OpenAPI docs for REST, Lighthouse schema for GraphQL
+
+3. FHIR Support (Not Full HIPAA/GDPR Compliance in v3.0)
+   ✅ Store medical data in structured schema
+   ✅ Export as FHIR on-demand (for doctor sharing)
+   ✅ Add FHIR codes/payloads to medical_records model
+   ❌ Skip encryption/audit logging for now (v3.0 scope)
+
+4. Reuse Existing Services/Policies
+   ✅ API controllers call existing TripService, HealthService
+   ✅ Policies work for both Filament + API
+   ✅ No code duplication = less bugs
+
+5. Rate Limiting Strategy
+   ✅ Keep ApiRateLimitMiddleware (per-user by ID, or per-IP)
+   ✅ Tune per-route: writes stricter than reads
+   ✅ Use built-in Laravel throttle (no new package)
+
+================================================================================
+INTEGRATION WITH EXISTING CODE (What Changes)
+================================================================================
+
+Database:
+  ✅ No breaking changes to existing 50+ tables
+  ✅ Add 1 new table: api_token_blacklist
+  ✅ Add 4 columns to medical_records: fhir_type, fhir_code, fhir_payload, is_external
+
+Models:
+  ✅ Existing models unaffected (User, Trip, MedicalRecord, etc.)
+  ✅ Add FHIR export methods to MedicalRecord
+  ✅ Reuse HasUserScoping trait for API queries
+
+Services:
+  ✅ Existing services reused (TripService, HealthService)
+  ✅ No new patterns needed (already follow single-responsibility)
+
+Policies:
+  ✅ Existing policies work for API (authorization reused)
+  ✅ Just call authorize($user, $model) in API controllers
+
+Testing:
+  ✅ Existing 143 tests (v2.0) remain unchanged
+  ✅ Add ~100 API tests (REST endpoints)
+  ✅ Add ~50 GraphQL tests (mutations)
+  ✅ Target: 80%+ coverage on API layer (critical for mobile)
+
+================================================================================
+EFFORT & TIMELINE
+================================================================================
+
+Phase 0: JWT Foundation (2 days)
+  - Install tymon/jwt-auth
+  - Config guards + middleware
+  - Build AuthController (login, refresh, logout)
+
+Phase 1: REST Endpoints (5 days, 1 week)
+  - Finance: accounts, transactions, subscriptions
+  - Travel: trips, itineraries, expenses
+  - Home: properties, maintenance
+  - All with pagination + validation
+
+Phase 2: GraphQL Mutations (3 days)
+  - Health: createHealthRecord, updateMedicalRecord, scheduleAppointment
+  - Extend schema.graphql
+  - Test mutations
+
+Phase 3: API Documentation (2 days)
+  - Install vyuldashev/laravel-openapi
+  - Add OpenAPI annotations to controllers
+  - Deploy Swagger UI at /api/docs
+
+Phase 4: API Tests (4 days, 1 week)
+  - REST endpoint tests
+  - GraphQL mutation tests
+  - Rate limiting tests
+  - Auth/authorization tests
+
+Phase 5: Health Integration FHIR (2 days)
+  - Extend MedicalRecord model
+  - Add FHIR export/import
+  - Map health metrics to FHIR codes
+
+Phase 6: Polish (1 day)
+  - Caching optimization
+  - Rate limit tuning
+  - Environment variable setup
+
+TOTAL BACKEND: ~3 weeks
+MOBILE APP: Can start after Phase 1 (REST endpoints done)
+
+Risk Level: 🟢 LOW (additive, no breaking changes, incremental deploy)
+
+================================================================================
+ANTI-PATTERNS TO AVOID
+================================================================================
+
+❌ Don't use Sanctum tokens for JWT flow
+   → Use tymon/jwt-auth instead
+
+❌ Don't expose raw Eloquent models
+   → Use ApiResource/Fractal transformers
+
+❌ Don't store medical records unencrypted
+   → Use encrypt() on file storage (HIPAA requirement)
+
+❌ Don't build custom JWT
+   → Use battle-tested tymon/jwt-auth
+
+❌ Don't commit secrets
+   → Use .env (already in .gitignore)
+
+❌ Don't skip rate limiting on writes
+   → Throttle POST/PATCH endpoints strictly
+
+❌ Don't return paginated data without meta+links
+   → Mobile clients need explicit structure
+
+❌ Don't skip API auth tests
+   → APIs are invisible to manual testing
+
+❌ Don't ignore CORS
+   → Mobile apps need cross-origin access
+
+❌ Don't duplicate health models
+   → Extend existing (MedicalRecord, HealthRecord, Medication)
+
+================================================================================
+DEPLOYMENT CHECKLIST
+================================================================================
+
+Before v3.0 Release:
+  [ ] JWT_SECRET generated (openssl rand -hex 32)
+  [ ] Environment variables added (.env + .env.example)
+  [ ] JWT config file published (php artisan vendor:publish --provider=tymon)
+  [ ] API token blacklist table migrated
+  [ ] Medical records FHIR columns added
+  [ ] OpenAPI endpoint tested (/api/docs)
+  [ ] All 100+ API tests passing
+  [ ] Rate limits tested (manual: 61 requests should get 429)
+  [ ] CORS configured for mobile domain
+  [ ] Redis configured (if using for cache)
+  [ ] GitHub Actions updated (API tests in CI/CD)
+  [ ] Mobile app team has access to API docs
+
+================================================================================
+COMPARISON: REST vs GraphQL (When to Use Each)
+================================================================================
+
+REST (/api/v1/trips):
+  ✅ Simple CRUD (create, read, list, update, delete)
+  ✅ Mobile apps prefer simplicity
+  ✅ Standard HTTP verbs (GET, POST, PATCH, DELETE)
+  ✅ Easier caching (CDN-friendly, ETag support)
+  ⚠️ Requires pagination + filtering design
+  ⚠️ Can have N+1 problems with deep includes
+
+GraphQL (/graphql):
+  ✅ Complex queries (fetch exactly what you need)
+  ✅ Solves N+1 problems
+  ✅ Single endpoint (simpler mobile SDK)
+  ✅ Self-documenting (schema is contract)
+  ⚠️ Steeper learning curve
+  ⚠️ Requires extra caching strategy (no HTTP caching)
+
+Your Strategy: Offer Both
+  - REST for mobile: simpler endpoints
+  - GraphQL for complex: trips with nested itineraries + participants
+  - Document both in /api/docs + Lighthouse schema
+
+================================================================================
+FILE LOCATION
+================================================================================
+
+Main Document: /Users/nikoalteri/Documents/Dev/second-brain/.planning/research/STACK.md
+
+Table of Contents (STACK.md):
+  1. Executive Summary
+  2. GraphQL Implementation (Lighthouse)
+  3. REST API Standards & Best Practices
+  4. Authentication & Authorization for Mobile (JWT)
+  5. Health Data Standards (FHIR, HL7)
+  6. Rate Limiting, Caching, Pagination
+  7. Validation & Error Handling
+  8. API Documentation (OpenAPI/Swagger)
+  9. Testing Frameworks for APIs
+  10. Required Packages Summary
+  11. Integration Points with Existing Code
+  12. What NOT to Add (Anti-Patterns)
+  13. Setup Complexity & Migration Effort
+  14. Deployment & Infrastructure Changes
+  15. Recommended Implementation Order
+  16. Conclusion
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Review STACK.md (this file points to full research)
+2. Schedule team discussion on API design + spec-first approach
+3. Phase 0 kickoff: JWT setup + AuthController
+4. Parallel: Mobile team waits for Phase 1 (REST endpoints)
+5. Optimize based on actual mobile usage patterns
+

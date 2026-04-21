@@ -2,9 +2,9 @@
 plan: 7
 phase: 6
 title: "Feature Tests — Auth, REST CRUD, User Scoping, GraphQL"
-wave: 3
+wave: 4
 depends_on: [2, 3, 4, 5]
-requirements: [API-01, API-02, API-03, API-04, API-05, API-06, API-07, API-08, API-09, API-10, API-11, API-12, API-13, API-14, API-15, API-16, API-17, API-20]
+requirements: [API-01, API-02, API-03, API-04, API-06, API-07, API-08, API-09, API-10, API-11, API-12, API-13, API-14, API-15, API-16, API-17, API-20]
 files_modified:
   - tests/Feature/Api/AuthApiTest.php
   - tests/Feature/Api/AccountApiTest.php
@@ -424,11 +424,10 @@ class AccountApiTest extends TestCase
   </action>
   <acceptance_criteria>
   - `tests/Feature/Api/AccountApiTest.php` exists with at least 8 test methods
-  - `tests/Feature/Api/TransactionApiTest.php` exists with `transactions_can_be_filtered_by_date_from`
   - `AccountApiTest.php` contains `create_account_does_not_accept_user_id_from_request`
   - `AccountApiTest.php` contains `accounts_index_sorts_by_balance_descending`
   - `AccountApiTest.php` contains `assertCreated()` (verifies HTTP 201 on store)
-  - `php artisan test tests/Feature/Api/AccountApiTest.php tests/Feature/Api/TransactionApiTest.php` exits 0
+  - `php artisan test tests/Feature/Api/AccountApiTest.php` exits 0
   </acceptance_criteria>
 </task>
 

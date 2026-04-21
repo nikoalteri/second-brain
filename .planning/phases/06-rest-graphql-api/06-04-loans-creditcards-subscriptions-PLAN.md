@@ -2,7 +2,7 @@
 plan: 4
 phase: 6
 title: "Loans + Credit Cards + Subscriptions REST Controllers"
-wave: 1
+wave: 2
 depends_on: [1]
 requirements: [API-04, API-08, API-09, API-10]
 files_modified:

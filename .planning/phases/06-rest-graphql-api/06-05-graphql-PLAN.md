@@ -2,7 +2,7 @@
 plan: 5
 phase: 6
 title: "GraphQL Schema — Types, Queries, Mutations, Aggregated Resolvers"
-wave: 2
+wave: 3
 depends_on: [1, 2, 3, 4]
 requirements: [API-15, API-16, API-17, API-18]
 files_modified:

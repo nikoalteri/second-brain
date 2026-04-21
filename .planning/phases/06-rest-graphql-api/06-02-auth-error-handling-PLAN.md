@@ -2,7 +2,7 @@
 plan: 2
 phase: 6
 title: "Authentication Endpoints + Error Handling + API Route Structure"
-wave: 1
+wave: 2
 depends_on: [1]
 requirements: [API-01, API-02, API-03, API-14]
 files_modified:
