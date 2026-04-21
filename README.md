@@ -1,76 +1,51 @@
 <p align="center">
-  <h1>🧠 Second Brain</h1>
-  <p><strong>Comprehensive Personal Life Management Platform</strong></p>
-  <p>Finance · Health · Productivity · Relationships · Home · Cooking · Travel</p>
+  <h1>💸 Fluxa</h1>
+  <p><strong>Personal Finance Tracker</strong></p>
+  <p>Accounts · Transactions · Loans · Credit Cards · Subscriptions</p>
 </p>
 
 ---
 
 ## 📋 Project Overview
 
-**Second Brain** is a comprehensive Laravel-based personal life management platform designed to help users organize and track all aspects of their life in one unified system.
+**Fluxa** is a Laravel-based personal finance tracker designed to help users monitor and manage all aspects of their financial life in one unified system.
 
-### Current Status: Phase 1 Complete ✅
+### Current Status: Backend Foundation Complete ✅
 
-- **Phases Implemented:** 0-9 (Backend Foundation)
-- **Models:** 39 user-owned entities
-- **Filament Resources:** 43 CRUD interfaces  
-- **Tests:** 157 passing (80/80 Phase 6-9 = 100%)
-- **Dummy Data:** 299 records across all modules
-
-### Next: Phase 2 (Frontend + GraphQL + i18n)
-
-- Vue.js 3 Single Page Application
-- GraphQL API integration
-- Multi-language support (English + Italian)
-- Form enhancements with richer data capture
+- **Phases Implemented:** 0-5 (Finance Backend)
+- **Models:** 16 finance entities
+- **Filament Resources:** 14 CRUD interfaces
+- **Tests:** 80+ passing
 
 ---
 
 ## 🎯 Key Features
 
-### Finance Module
-- Account management with balance tracking
-- Transaction categorization and tagging
-- Subscription and recurring payment tracking
-- Loan management with interest calculations
-- Credit card expense tracking
-- Financial dashboards with KPI widgets
-- Reports and export functionality
+### Accounts
+- Multiple account types (bank, cash, investment, emergency fund)
+- Real-time balance tracking with opening balance support
+- Soft deletes to preserve history
 
-### Health Module
-- Health record tracking (BP, cholesterol, weight)
-- Workout logging with intensity and duration
-- Medical record storage
-- Medication tracking with reminders
-- Blood test results management
+### Transactions
+- Income, expense, transfer and cashback types
+- Hierarchical category system (categories + subcategories)
+- Transfer pairs with automatic dual-entry bookkeeping
 
-### Productivity Module
-- Habit tracking with frequency monitoring
-- Goal setting and progress tracking
-- Project management
-- Journal entries with mood tracking
-- Note-taking with pinning and archiving
+### Loans
+- Loan schedule generation with fixed and variable rates
+- Payment posting with automatic transaction creation
+- Interest calculation (simple, compound, French amortization)
 
-### Relationships Module
-- Contact management with relationship types
-- Message organization by importance
-- Event tracking (birthdays, anniversaries)
+### Credit Cards
+- Cycle-based expense tracking
+- Credit limit and available credit management
+- Payment posting with revolving credit support
+- KPI widgets (utilization, debt ratio, daily balance)
 
-### Home Module
-- Vehicle tracking and maintenance logs
-- Document storage and management
-- Property/home records
-
-### Cooking Module
-- Recipe collection by cuisine
-- Meal planning and tracking
-- Ingredient management
-
-### Travel Module
-- Trip planning and itinerary management
-- Flight booking tracker
-- Hotel reservation management
+### Subscriptions
+- Recurring payment tracking (monthly, yearly, etc.)
+- Automatic renewal reminders
+- Active/paused/cancelled status management
 
 ### Settings & Admin
 - User preference management
@@ -88,26 +63,22 @@
 Framework:      Laravel 12
 Database:       MySQL 8.0+
 ORM:            Eloquent
-Admin UI:       Filament 3 (Phase 1)
+Admin UI:       Filament 4
 Testing:        PHPUnit + Pest
 ```
 
-### Phase 2 Stack (Coming Soon)
+### Next: API Layer (Coming Soon)
 ```
-Frontend:       Vue.js 3 (Composition API)
-Routing:        Vue Router 4
-State:          Pinia
-API Layer:      GraphQL (+ REST fallback)
-Build Tool:     Vite
-Styling:        Tailwind CSS
-i18n:           vue-i18n
+API:            GraphQL (Lighthouse) + REST fallback
+Auth:           JWT with token refresh
+Docs:           API documentation
 ```
 
 ### Database Architecture
-- **Tables:** 50+
+- **Tables:** 15 finance tables
 - **User Scoping:** HasUserScoping trait on all user-owned models
 - **Soft Deletes:** Enabled on all entities
-- **Relationships:** 39 models with proper foreign keys and cascading deletes
+- **Relationships:** 16 models with proper foreign keys and cascading deletes
 
 ---
 
@@ -124,7 +95,7 @@ i18n:           vue-i18n
 1. **Clone and install dependencies:**
    ```bash
    git clone <repository>
-   cd second-brain
+   cd fluxa
    composer install
    npm install
    ```
@@ -148,19 +119,17 @@ i18n:           vue-i18n
 
 5. **Access admin panel:**
    - URL: http://localhost:8000/admin
-   - Email: `admin@secondbrain.local`
+   - Email: `admin@fluxa.local`
    - Password: `password`
 
 ### Database Statistics
 
 | Category | Count |
 |----------|-------|
-| Models | 39 |
-| Resources | 43 |
-| Database Tables | 50+ |
-| Dummy Records | 299 |
-| Test Cases | 157 (80 Phase 6-9) |
-| Assertions | 361+ |
+| Models | 16 |
+| Resources | 14 |
+| Database Tables | 15 |
+| Test Cases | 80+ |
 
 ---
 
@@ -168,32 +137,22 @@ i18n:           vue-i18n
 
 ```
 app/
-├── Models/              (39 models with scoping)
-├── Filament/Resources/  (43 CRUD interfaces)
-├── Http/
-│   ├── Requests/        (validation)
-│   └── Middleware/
-├── Traits/              (HasUserScoping, etc)
-└── Providers/
+├── Models/              (16 finance models)
+├── Filament/Resources/  (14 CRUD interfaces)
+├── Services/            (finance business logic)
+├── Enums/               (finance type definitions)
+├── Observers/           (event handling)
+├── Policies/            (authorization)
+└── Traits/              (HasUserScoping, etc)
 
 database/
-├── migrations/          (50+ tables)
-├── seeders/             (8 data seeders)
+├── migrations/          (15 finance tables)
+├── seeders/             (roles, permissions, transaction types)
 └── factories/
 
 tests/
-├── Feature/             (80+ tests)
-│   ├── Health/          (11 tests)
-│   ├── Productivity/    (16 tests)
-│   ├── Relationships/   (34 tests)
-│   └── Settings/        (19 tests)
-└── Unit/
-
-resources/
-├── lang/                (i18n - Phase 2)
-│   ├── en/
-│   └── it/
-└── js/                  (Vue.js - Phase 2)
+├── Feature/             (authorization & integration tests)
+└── Unit/                (service & model unit tests)
 ```
 
 ---
@@ -207,16 +166,11 @@ php artisan test
 
 ### Run Specific Test Suite
 ```bash
-php artisan test tests/Feature/Health/HealthModuleTest.php
-php artisan test tests/Feature/Productivity/ProductivityModuleTest.php
-php artisan test tests/Feature/Relationships/RelationshipsModuleTest.php
-php artisan test tests/Feature/Settings/SettingsModuleTest.php
+php artisan test tests/Feature/AccountAuthorizationTest.php
+php artisan test tests/Feature/TransactionAuthorizationTest.php
+php artisan test tests/Unit/CreditCardBalanceServiceTest.php
+php artisan test tests/Unit/LoanScheduleServiceTest.php
 ```
-
-### Test Results (Current)
-- **Total:** 157 passing ✅
-- **Phase 6-9:** 80/80 (100% pass rate)
-- **Assertions:** 361+
 
 ---
 
@@ -226,10 +180,7 @@ php artisan test tests/Feature/Settings/SettingsModuleTest.php
 |----------|---------|
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design and patterns |
 | [PROJECT_ROADMAP_EN.md](docs/PROJECT_ROADMAP_EN.md) | Project phases and timeline |
-| [PHASE_2_PLAN.md](.planning/PHASE_2_PLAN.md) | Frontend + GraphQL implementation plan |
-| [DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md) | Database entity relationships |
-| [API.md](docs/API.md) | GraphQL API documentation (Phase 2) |
-| [I18N.md](docs/I18N.md) | Internationalization guide (Phase 2) |
+| [API.md](docs/API.md) | GraphQL API documentation |
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines |
 
 ---
@@ -237,47 +188,35 @@ php artisan test tests/Feature/Settings/SettingsModuleTest.php
 ## 🔐 Security Features
 
 - **User Data Isolation:** Global scopes ensure users only see their own data
-- **Authentication:** JWT-based token system
-- **Authorization:** Role-based access control (RBAC)
+- **Authentication:** Laravel Sanctum / JWT
+- **Authorization:** Role-based access control (RBAC) via Spatie Permission
 - **Soft Deletes:** No permanent data loss
 - **Database Constraints:** Cascading deletes, unique indexes
 - **CSRF Protection:** Built-in Laravel protection
 
 ---
 
-## 🌍 Internationalization
-
-Current Phase 1 is in English. Phase 2 will add:
-- Complete Italian (it) translation
-- Easy language switching in UI
-- Per-user language preference
-- Ready for future language additions
-
----
-
 ## 🛣️ Roadmap
 
-### Phase 1 - Backend Foundation ✅
+### Phase 1 — Finance Backend ✅
 - Core infrastructure and authentication
-- Finance module (5 entities)
-- Health module (5 entities)
-- Productivity module (5 entities)
-- Relationships/Home/Cooking/Travel (12 entities)
-- Settings/Notifications (4 entities)
+- Accounts & Transactions (dual-entry bookkeeping)
+- Loans with amortization schedules
+- Credit cards with cycle management
+- Subscriptions with renewal tracking
+- Filament admin panel
 
-### Phase 2 - Frontend & GraphQL (Current)
-- Vue.js 3 SPA
-- GraphQL API
-- Form enhancements
-- Internationalization (EN + IT)
-- Dashboard & advanced features
+### Phase 2 — API Layer (Next)
+- GraphQL schema + REST endpoints
+- JWT authentication with token refresh
+- Rate limiting and API documentation
 
-### Phase 3+ - Enhancements
-- Mobile app (React Native)
-- Advanced analytics
-- Collaboration features
-- Integrations (Gmail, Google Calendar, etc)
-- Cloud sync
+### Phase 3+ — Enhancements
+- Mobile-friendly frontend (Vue.js or React Native)
+- Advanced analytics and reporting
+- CSV/PDF export
+- Budget planning & alerts
+- Integrations (bank feeds, etc.)
 
 ---
 
@@ -299,19 +238,5 @@ This project is open source and available under the [MIT license](LICENSE).
 
 ---
 
-## 👤 Author
-
-Created as a comprehensive personal life management platform.
-
----
-
-## 📞 Support
-
-- 📖 See [documentation](docs/) for detailed guides
-- 🐛 Report bugs via GitHub Issues
-- 💬 Join discussions for feature requests
-
----
-
-**Last Updated:** 2026-03-31  
-**Version:** 1.0.0 (Phase 1 Complete)
+**Last Updated:** 2026-04-21  
+**Version:** 1.0.0

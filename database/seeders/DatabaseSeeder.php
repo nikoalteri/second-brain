@@ -19,9 +19,6 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             SuperAdminSeeder::class,
             TransactionTypeSeeder::class,
-            CompleteDummyDataSeeder::class,
-            Phase8DataSeeder::class,
-            Phase9DataSeeder::class,
         ]);
 
         User::factory()->create([
