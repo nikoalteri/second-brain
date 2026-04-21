@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: — Finance Backend ✅
 current_plan: 5 of 7
 status: executing
-stopped_at: Completed 06-04 loans-creditcards-subscriptions plan
-last_updated: "2026-04-21T21:40:19.640Z"
+stopped_at: Completed 06-05-graphql plan
+last_updated: "2026-04-21T21:48:21.664Z"
 progress:
   total_phases: 6
   completed_phases: 0
@@ -60,8 +60,10 @@ All finance backend phases delivered:
 - **2026-04-21:** Set Sanctum token expiration to 30 minutes (security default)
 - **2026-04-21:** Named rate limiters registered in AppServiceProvider: api-read (100/min), api-write (20/min)
 - **2026-04-21:** Lighthouse guards set to ['sanctum'] for Bearer token auth in GraphQL
+- [Phase 06]: Renamed Subscription type to ServiceSubscription to avoid Lighthouse built-in Subscription conflict
+- [Phase 06]: Replaced @scope directive with HasUserScoping global scope on all 5 finance models (Lighthouse 6 @scope is argument-only)
 
 ## Last Session
 
-**Stopped at:** Completed 06-04 loans-creditcards-subscriptions plan
+**Stopped at:** Completed 06-05-graphql plan
 **Timestamp:** 2026-04-21T21:30:00Z
