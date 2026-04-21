@@ -42,6 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->brandName('Fluxa')
             ->login()
             ->topNavigation()
             ->renderHook('panels::body.end', fn() => '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>')
