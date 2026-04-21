@@ -1,217 +1,269 @@
 # Architecture
 
-**Analysis Date:** 2024-12-19
+**Analysis Date:** 2025-04-21
 
 ## Pattern Overview
 
-**Overall:** Layered architecture with domain-driven organization and service extraction
+**Overall:** Event-Driven MVC with Domain-Driven Service Layer
 
 **Key Characteristics:**
-- **Filament-first UI** - Admin panel is primary interface (not traditional MVC)
-- **Service layer abstraction** - Business logic extracted from models into services
-- **Observer pattern** - Model lifecycle hooks trigger side effects (balance updates, postings)
-- **Policy-based authorization** - User scoping via policies and traits
-- **Enum-driven types** - Type-safe enums for domain values (CreditCardStatus, CreditCardType, etc.)
-- **Multi-domain application** - Financial, health, lifestyle, travel domains coexist
-- **GraphQL-ready** - Lighthouse GraphQL schema defined but minimally used
-- **User-scoped data** - Global scope on models ensures user isolation via `HasUserScoping` trait
+- Eloquent models with observer pattern for business logic triggering
+- Dedicated service layer for complex financial calculations and state management
+- Filament 3 admin panel as primary UI (no separate frontend)
+- User-scoped multi-tenancy via traits and policies
+- Transactional financial operations with balance consistency
+- Domain-specific enums for financial states and calculations
 
 ## Layers
 
-**Models Layer:**
-- Purpose: Data persistence and relationship definition
+**Presentation Layer (Filament):**
+- Purpose: Admin dashboard and data management UI
+- Location: `app/Filament/`
+- Contains: Resources (CRUD pages), custom Pages, Widgets (KPI dashboards)
+- Depends on: Models, Services, Policies
+- Used by: End users via web browser
+
+**HTTP Layer:**
+- Purpose: Request handling, validation, middleware
+- Location: `app/Http/`
+- Contains: Controllers (minimal), Requests (form validation), Middleware
+- Depends on: Models, Services
+- Used by: Routes and API endpoints
+
+**Domain Model Layer:**
+- Purpose: Data representation and relationships
 - Location: `app/Models/`
-- Contains: 40 Eloquent models with relationships, casts, appended attributes
-- Depends on: Eloquent traits, Enums, Carbon for dates
-- Used by: Services, Observers, Policies, Filament Resources
-- Key pattern: Uses trait `HasUserScoping` to automatically scope queries to authenticated user
-- Relationships: Properly typed (BelongsTo, HasMany, HasManyThrough where applicable)
+- Contains: 16 core models (Account, Transaction, CreditCard, Loan, Subscription, etc.)
+- Depends on: Enums, Traits, Observers (via boot)
+- Used by: Services, Observers, Filament Resources
 
 **Service Layer:**
-- Purpose: Encapsulate business logic, calculations, and domain operations
+- Purpose: Business logic, financial calculations, state synchronization
 - Location: `app/Services/`
-- Contains: 15 concrete service classes handling domain operations
-- Depends on: Models, Enums, Carbon, Laravel facades (DB, Auth)
-- Used by: Observers, Filament Resources, Controllers (when REST API used)
-- Key pattern: Constructor dependency injection with optional fallback to container
-- Example: `CreditCardCycleService` orchestrates cycle issuance, payment application, balance updates
+- Contains: RevolvingCreditCalculator, CreditCardCycleService, CreditCardExpenseService, etc.
+- Depends on: Models, Enums, Support concerns
+- Used by: Observers, Filament resources, other services
 
-**Observer Layer:**
-- Purpose: Trigger side effects on model lifecycle events
+**Observer Layer (Event Handlers):**
+- Purpose: Reactive business logic triggered by model lifecycle events
 - Location: `app/Observers/`
-- Contains: 6 observers registered in `AppServiceProvider`
-- Depends on: Models, Services, Enums
-- Used by: Eloquent ORM (automatic)
-- Key pattern: Each observer hooks `created()`, `updated()`, `deleted()` events
-- Example: `CreditCardCycleObserver` creates payment records when cycle marked PAID
+- Contains: TransactionObserver, CreditCardExpenseObserver, CreditCardCycleObserver, etc.
+- Depends on: Models, Services
+- Used by: AppServiceProvider (registered boot)
 
-**Policy Layer:**
-- Purpose: Define authorization rules
+**Authorization Layer:**
+- Purpose: Access control and resource authorization
 - Location: `app/Policies/`
-- Contains: 11 policies for user-scoped models
-- Depends on: Models, auth() helper
-- Used by: Filament, middleware (canViewAny, can, etc.)
-- Key pattern: User ID matching - `$user->id === $model->user_id`
-- Registered in: `app/Providers/AuthServiceProvider.php`
+- Contains: Policies for each major model
+- Depends on: Models, User roles (via Spatie Permission)
+- Used by: Filament resources, controllers
 
-**Filament Admin Layer:**
-- Purpose: CRUD interface for all domain entities
-- Location: `app/Filament/`
-- Contains: 36 resources with Pages, Forms, Tables, Relation Managers, 14 Widgets
-- Depends on: Models, Policies, Services
-- Used by: Web browsers (admin users only)
-- Key pattern: Resource generates full CRUD, with customization via Schema (Forms) and Tables
-- Dashboard: `/app/Filament/Pages/Dashboard.php`, FinanceReport: `/app/Filament/Pages/FinanceReport.php` (326 lines)
+**Support Layer:**
+- Purpose: Reusable traits and concerns
+- Location: `app/Support/`, `app/Traits/`
+- Contains: HasWorkdayCalculation (weekend/holiday skipping), HasUserScoping (multi-tenancy)
+- Depends on: Carbon for date manipulation
+- Used by: Models, Services
 
-**Request Validation Layer:**
-- Purpose: Validate incoming HTTP requests
-- Location: `app/Http/Requests/`
-- Contains: 4 request classes (Account, Transaction, TransactionCategory, Loan)
-- Depends on: Illuminate\Foundation\Http\FormRequest
-- Used by: Controllers (when REST API endpoints exist)
-- Key pattern: `rules()` method defines validation, can reference other fields
-
-**Enum Layer:**
-- Purpose: Type-safe enum values for domain concepts
-- Location: `app/Enums/`
-- Contains: 30+ enums with backed values (string or int)
-- Used by: Models (via `$casts`), Services, Forms, Policies
-- Example: `CreditCardType::REVOLVING`, `CreditCardStatus::ACTIVE`
+**Repository Layer:**
+- Purpose: Data access abstraction (minimal usage)
+- Location: `app/Repositories/`
+- Contains: LoanRepository (basic CRUD, not widely adopted)
+- Depends on: Models
+- Used by: Services (rarely)
 
 ## Data Flow
 
-**Credit Card Cycle Issuance (Complex Example):**
+**Transaction Creation Flow:**
 
-1. Scheduled job or manual action triggers `CreditCardCycleService::issueCycle($cycle)`
-2. Service validates cycle status is OPEN and card exists
-3. Service calculates payments via `RevolvingCreditCalculator` or manual breakdown
-4. Service creates `CreditCardPayment` records for principal, interest, stamp duty
-5. Service updates `CreditCardCycle::status` to ISSUED
-6. Service updates `CreditCard::current_balance` via `CreditCardBalanceService`
-7. `CreditCardCycleObserver::updated()` fires, detects status change to ISSUED, may log or trigger notifications
-8. `CreditCardPaymentObserver::created()` fires when payment records created
+1. User creates Transaction via Filament
+2. TransactionResource validates via StoreTransactionRequest
+3. Transaction model created (via Eloquent)
+4. TransactionObserver::created() fires
+5. AccountBalanceService::handleCreated() increments account balance
+6. Observer may trigger paired transaction if transfer
 
-**Payment Posting (Multi-Step):**
+**Credit Card Expense Flow:**
 
-1. Filament form receives payment_date and status update to PAID
-2. `CreditCardPaymentObserver::updated()` fires, calls `CreditCardPaymentPostingService`
-3. Service creates `Transaction` record with debit (-) amount
-4. Service updates related `CreditCardCycle::paid_amount` and `status`
-5. Service calls `CreditCardBalanceService::applyPrincipalPayment()` to reduce card balance
-6. Service updates `Account::balance` to reflect payment received
-7. `TransactionObserver::created()` logs transaction and may trigger notifications
-8. UI refreshes via Filament, shows updated balances
+1. User creates CreditCardExpense via Filament
+2. CreditCardExpenseObserver::creating() validates via CreditCardExpenseService
+3. CreditCardExpenseObserver::created() calls syncExpense()
+4. CreditCardExpenseService::syncExpense():
+   - Determines cycle via resolveCycle()
+   - Updates cycle assignment
+   - Updates card current_balance via CreditCardBalanceService
+   - Recomputes cycle total_spent
+5. Card balance updates trigger downstream cycle calculations
+
+**Credit Card Cycle Issuance Flow:**
+
+1. User marks cycle as ISSUED via Filament
+2. CreditCardCycleService::issueCycle() called
+3. RevolvingCreditCalculator::calculatePaymentBreakdown():
+   - Calculates daily balances for interest
+   - Applies interest calculation method (daily balance or direct monthly)
+   - Splits fixed payment into interest + principal
+4. CreditCardPayment created with breakdown
+5. Cycle status set to ISSUED
+6. CreditCardCycleObserver::updated() may trigger payment sync
+
+**Credit Card Payment Processing Flow:**
+
+1. User marks CreditCardPayment as PAID
+2. CreditCardPaymentObserver fires (status change)
+3. CreditCardCycleService::syncCycleAndCardFromPayment():
+   - Updates cycle paid_amount
+   - Determines cycle status (PAID if fully paid, OVERDUE if past due)
+   - Applies principal payment to card balance via CreditCardBalanceService
+4. Card current_balance decremented
+5. Cycle status updated
+6. Related cycles refreshed
 
 **State Management:**
-- **Database transactions** - Complex operations wrapped in `DB::transaction()` to ensure atomicity
-- **Model relationships** - Eager loaded via `loadMissing()` to avoid N+1 queries
-- **Balance calculations** - Computed via services, cached in model attributes
-- **Authorization** - Checked at Filament resource level via policies
-- **User scoping** - Applied via global scope in trait, enforced on all queries
+
+- **Account Balance:** Incremented/decremented by Transaction observer
+- **Card Current Balance:** Updated by CreditCardExpenseService and CreditCardPaymentObserver
+- **Cycle Total Spent:** Sum of related expenses, updated by CreditCardExpenseService
+- **Cycle Status:** OPEN → ISSUED → PAID/OVERDUE, managed by CreditCardCycleService
+- **Payment Status:** PENDING → PAID, updates card debt via principal payment
 
 ## Key Abstractions
 
-**Service Abstractions:**
-- `CreditCardCycleService` - Manages cycle lifecycle: creation, issuance, payment posting, status transitions
-- `RevolvingCreditCalculator` - Pure calculation logic for payment breakdowns (interest, principal, stamp duty)
-- `CreditCardBalanceService` - Updates card balance atomically, validates credit limit
-- `LoanScheduleService` - Generates amortization schedules, calculates payment amounts
-- `SubscriptionService` - Renewal logic, frequency-based payment generation
+**RevolvingCreditCalculator:**
+- Purpose: Encapsulates complex interest calculation logic
+- Location: `app/Services/RevolvingCreditCalculator.php`
+- Examples: `calculateDailyBalances()`, `calculatePaymentBreakdown()`, `calculateChargePaymentBreakdown()`
+- Pattern: Accepts cycle/card data, returns calculation arrays
+- Used by: CreditCardCycleService::issueCycle()
 
-**Model Abstractions:**
-- `HasUserScoping` trait - Automatically applies user filter to all queries
-- Model attributes - Appended calculated fields: `available_credit`, `is_unlimited`, `net_worth`
-- Model casts - Type conversion: `'amount' => 'decimal:2'`, `'status' => CreditCardStatus::class`
+**CreditCardCycleService:**
+- Purpose: Orchestrates cycle lifecycle and payment synchronization
+- Location: `app/Services/CreditCardCycleService.php`
+- Examples: `issueCycle()`, `ensureCurrentMonthCycle()`, `syncCycleAndCardFromPayment()`, `refreshCycleStatuses()`
+- Pattern: Orchestrator service with transaction boundaries
+- Coordinates: RevolvingCreditCalculator, CreditCardBalanceService, database locks
 
-**Repository Pattern:**
-- Minimal use: Only `LoanRepository` exists
-- Purpose: Encapsulate complex query logic
-- Location: `app/Repositories/LoanRepository.php`
+**CreditCardExpenseService:**
+- Purpose: Manages expense-to-cycle assignment and balance updates
+- Location: `app/Services/CreditCardExpenseService.php`
+- Examples: `syncExpense()`, `removeExpense()`, `validateExpenseChange()`
+- Pattern: Validates before sync, handles card moves and amount changes
+- Uses: CreditCardCycleService::ensureCurrentMonthCycle(), CreditCardBalanceService
+
+**CreditCardBalanceService:**
+- Purpose: Encapsulates credit card debt calculation
+- Location: `app/Services/CreditCardBalanceService.php`
+- Examples: `addExpense()`, `removeExpense()`, `applyPrincipalPayment()`, `reversePrincipalPayment()`
+- Pattern: Direct current_balance manipulation with balance checks
+- Constraints: Prevents balance going below zero
+
+**AccountBalanceService:**
+- Purpose: Simple account balance synchronization
+- Location: `app/Services/AccountBalanceService.php`
+- Examples: `handleCreated()`, `handleUpdated()`, `handleDeleted()`
+- Pattern: Observer callbacks, handles account transfers
+- Used by: TransactionObserver
+
+**LoanScheduleService:**
+- Purpose: Loan payment schedule generation and calculations
+- Location: `app/Services/LoanScheduleService.php`
+- Pattern: Calculates monthly installments, interest, remaining balance
+- Used by: Loan CRUD operations
+
+**SubscriptionService:**
+- Purpose: Subscription frequency and renewal calculations
+- Location: `app/Services/SubscriptionService.php`
+- Examples: `calculateMonthlyCost()`, `getUpcomingRenewals()`, `processRenewal()`
+- Pattern: Frequency-aware calculations (monthly/annual/biennial)
+- Used by: SubscriptionObserver, Filament widgets
 
 ## Entry Points
 
-**Web Application:**
+**Web Entry:**
 - Location: `routes/web.php`
-- Triggers: Any request to `/`
-- Responsibilities: Redirects to Filament admin login (`route('filament.admin.auth.login')`)
-- No traditional web routes - everything goes through Filament admin panel
+- Triggers: Browser requests to `/` or `/admin`
+- Responsibilities: Redirects to Filament login (primary interface)
 
-**GraphQL API:**
-- Location: `/graphql` route (from Lighthouse config)
-- Schema: `graphql/schema.graphql` (41 lines, minimal)
-- Triggers: POST requests to `/graphql`
-- Responsibilities: Query users, paginated user lists (basic queries only)
-- Status: Configured but not heavily used
+**Admin Panel:**
+- Location: `app/Providers/Filament/AdminPanelProvider.php`
+- Triggers: All authenticated requests under `/admin/*`
+- Responsibilities: Configures navigation, resources, dashboard, themes
 
-**REST API:**
+**API Routes:**
 - Location: `routes/api.php`
-- Triggers: Any request to `/api/*`
-- Middleware: API rate limiting, CORS
-- Responsibilities: Empty - no endpoints defined
-- Status: Infrastructure in place but unused
+- Triggers: Requests to `/api/*`
+- Responsibilities: Rate limiting via ApiRateLimitMiddleware
+- Status: Framework in place, no endpoints currently implemented
 
 **Console Commands:**
 - Location: `routes/console.php`
-- Triggers: `php artisan` CLI
-- Responsibilities: Job scheduling, command registration
-- Example: `GenerateLoanPaymentsJob` - generates loan payment schedules
+- Examples: Potential scheduled jobs for loan payments, subscription renewals
+- Status: Framework in place, specific commands to be added
 
 ## Error Handling
 
-**Strategy:** Laravel exception handling with policy/authorization checks
+**Strategy:** Exceptions propagate to Filament UI validation
 
 **Patterns:**
-- **Authorization errors** - Policies throw `AuthorizationException` when policy methods return false
-- **Validation errors** - Form requests throw `ValidationException` with field-level error messages
-- **Database errors** - Transactions rolled back on exception, caught and logged
-- **Soft deletes** - Models use soft deletes, observers handle cleanup
-- **Observable failures** - Observers do not throw; failures logged silently to avoid cascade
+
+- **Validation Exceptions:** Form request validation in HTTP layer via `app/Http/Requests/*.php`
+- **Business Logic Exceptions:** Services throw catchable exceptions (e.g., insufficient credit limit)
+- **Transaction Rollback:** DB::transaction() wraps critical operations in CreditCardCycleService, CreditCardExpenseService
+- **Observer Failures:** If observer throws during save, transaction rolls back and user sees Filament notification
+- **Foreign Key Constraints:** Database-level integrity via foreign key constraints with cascading actions
+
+**Example patterns:**
+```php
+// In service
+if ($amount > $card->available_credit) {
+    throw new \Exception('Insufficient credit limit');
+}
+
+// In observer
+DB::transaction(function () {
+    // Locked queries, atomic updates
+    $card->lockForUpdate()->find($id);
+});
+```
 
 ## Cross-Cutting Concerns
 
-**Logging:** 
-- Framework default: Stack driver (single log file) or multiple channels
-- Services log complex operations via `Log::info()`, `Log::error()`
-- Observers log model changes via `AuditLog` model
-- Config: `config/logging.php`
+**Logging:**
+- Framework: Laravel's Log facade
+- Usage: TransactionObserver logs transaction creation events
+- Location: Configured in `config/logging.php`
+- Standard: Minimal logging, primarily for audit trail
 
-**Validation:** 
-- Form requests: `app/Http/Requests/` define rules for stored models
-- Service-level: Validators in services check business logic (e.g., credit limit validation)
-- Policy-level: Authorization checks in `app/Policies/`
-- Eloquent: Mutators/casts ensure type safety
+**Validation:**
+- Framework: Laravel Form Requests
+- Location: `app/Http/Requests/`
+- Examples: StoreTransactionRequest, StoreAccountRequest, StoreLoanRequest
+- Pattern: Centralized rules with custom messages
 
-**Authentication:** 
-- Laravel Sanctum for API tokens (configured in `config/sanctum.php`)
-- Filament authentication: Built-in user/password via standard Laravel auth
-- User model: `Illuminate\Foundation\Auth\User` with Spatie permissions
-- Session-based: `SESSION_DRIVER=database` for persistent sessions
+**Authentication:**
+- Framework: Laravel Fortify via Filament login
+- Location: Built into Filament AdminPanelProvider
+- Mechanism: Session-based authentication with remember token
 
 **Authorization:**
-- Spatie Laravel Permission package: Roles and permissions
-- Policies: User-scoped access checks via `$user->id === $model->user_id`
-- Gates: Defined in `AuthServiceProvider` via `$policies` mapping
-- Filament enforcement: Resource authorization via policy methods
+- Framework: Spatie Permission + Laravel Policies
+- Location: `app/Policies/`, registered in `app/Providers/AuthServiceProvider.php`
+- Pattern: Gate::before() for superadmin bypass, policy checks per resource
+- User Scoping: HasUserScoping trait enforces global scope for multi-tenancy
 
-**Permissions:**
-- Spatie integration: `spatie/laravel-permission` v7.2
-- Config: `config/permission.php`
-- Service: `PermissionService` (62 lines) - Role and permission management
-- Models use `HasRoles` trait from Spatie
+**Multi-Tenancy (User Scoping):**
+- Mechanism: Global query scope via HasUserScoping trait
+- Location: `app/Traits/HasUserScoping.php`
+- Applied to: Account, Transaction, Loan, CreditCard, Subscription, etc.
+- Effect: All queries automatically filtered by authenticated user_id
+- Removal: scopeWithoutUserScope() for admin operations
 
-**Queue & Jobs:**
-- Driver: Database-backed (`QUEUE_CONNECTION=database`)
-- Job example: `GenerateLoanPaymentsJob` - generates scheduled payments
-- Execution: Via `php artisan queue:listen` (in dev environment)
-- Timeout: Default 0 (unlimited) for long-running jobs
-
-**Database:**
-- Connection: SQLite by default, configurable to MySQL, PostgreSQL
-- Transactions: Used in services for multi-step operations
-- Global scopes: User scoping via `HasUserScoping` trait
-- Relationships: Typed with proper return types
-- Migrations: 63 migrations in `database/migrations/`
+**Financial Precision:**
+- Decimal Casts: All monetary fields use `decimal:2` casts
+- Rounding: Explicit round() calls in services (RevolvingCreditCalculator, etc.)
+- Transactions: DB::transaction() for atomic multi-table updates
+- Locks: lockForUpdate() in critical paths (CreditCardExpenseService)
 
 ---
 
-*Architecture analysis: 2024-12-19*
+*Architecture analysis: 2025-04-21*

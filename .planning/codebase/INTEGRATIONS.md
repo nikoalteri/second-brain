@@ -1,242 +1,232 @@
 # External Integrations
 
-**Analysis Date:** 2024-12-19
+**Analysis Date:** 2025-04-21
 
 ## APIs & External Services
 
-**Payment Processing:**
-- No payment gateway integration detected (Stripe, PayPal not configured)
-- Application models finances locally (credit cards, loans, transactions)
-- PDF export: `barryvdh/laravel-dompdf` 3.1 available but not implemented (TODO in code)
+**Email Services:**
+- Postmark - Optional email delivery service
+  - SDK/Client: Built-in via `config/services.php`
+  - Auth: `POSTMARK_API_KEY` environment variable
+  - Usage: Alternative to log-based mail for production
 
-**Authentication:**
-- No OAuth/social login detected
-- Standard Laravel authentication with email/password
-- API tokens via Laravel Sanctum (configured but not actively used)
+- Resend - Optional email delivery service
+  - SDK/Client: Built-in via `config/services.php`
+  - Auth: `RESEND_API_KEY` environment variable
+  - Usage: Alternative email provider
 
-**GraphQL API:**
-- Lighthouse 6.65 - GraphQL server at `/graphql` endpoint
-- Schema: `graphql/schema.graphql` (41 lines, minimal implementation)
-- Current queries: User lookup by ID or email, paginated user lists
-- Status: Configured but not heavily integrated with frontend
+**Cloud Messaging:**
+- Slack - Notifications capability
+  - SDK/Client: Built-in via `config/services.php`
+  - Auth: `SLACK_BOT_USER_OAUTH_TOKEN`, `SLACK_BOT_USER_DEFAULT_CHANNEL`
+  - Usage: Optional integration for notifications
+
+**Cloud Storage (Conditional):**
+- AWS S3 - File storage option
+  - SDK/Client: AWS SDK via Laravel's S3 filesystem driver
+  - Auth: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+  - Region: `AWS_DEFAULT_REGION` (default: us-east-1)
+  - Bucket: `AWS_BUCKET`
+  - Note: Currently `FILESYSTEM_DISK=local` in default config
 
 ## Data Storage
 
 **Databases:**
+- SQLite (default development)
+  - Connection: `DB_CONNECTION=sqlite`
+  - File: `database/database.sqlite`
+  - Client: Laravel Eloquent ORM
+  - Foreign key constraints: Enabled
 
-**Primary:**
-- Type/Provider: SQLite (default, configurable)
-- Default Path: `database/database.sqlite`
-- Connection: `sqlite` driver in `config/database.php`
-- Client: Laravel Eloquent ORM
-- Migrations: 63 migrations in `database/migrations/`
+- MySQL 8.0+ (production option)
+  - Connection: `DB_CONNECTION=mysql`
+  - Client: Laravel Eloquent ORM via PDO
+  - Configuration: `config/database.php`
 
-**Alternative Databases (configured but not active):**
-- MySQL 5.7+ support (connection defined in `config/database.php`)
-- PostgreSQL support (connection defined)
-- Configure via `.env` file: `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`
+- MariaDB (production option)
+  - Connection: `DB_CONNECTION=mariadb`
+  - Client: Laravel Eloquent ORM via PDO
+  - Configuration: `config/database.php`
+
+- PostgreSQL (production option)
+  - Connection: `DB_CONNECTION=pgsql`
+  - Client: Laravel Eloquent ORM via PDO
+  - Configuration: `config/database.php`
+
+- SQL Server (production option)
+  - Connection: `DB_CONNECTION=sqlsrv`
+  - Client: Laravel Eloquent ORM via PDO
+  - Configuration: `config/database.php`
 
 **File Storage:**
-- Default: Local filesystem only
-- Location: `storage/app/` directory
-- Configuration: `FILESYSTEM_DISK=local` in `.env`
-- AWS S3 support configured but not enabled (`AWS_*` env vars optional)
-- No file upload/retrieval UI integrated yet
+- Local filesystem (default: `storage/app/`)
+  - `FILESYSTEM_DISK=local`
+  - Can be switched to AWS S3 via environment configuration
 
 **Caching:**
-- Driver: Database-backed (`CACHE_STORE=database`)
-- Connection: Uses default database connection
-- Configuration: `config/cache.php`
-- Cache table: `cache` and `cache_locks` created by migrations
-- TTL: Configurable per cache operation
+- Database cache (default)
+  - `CACHE_STORE=database`
+  - Stores cache in database table
+  - Optional: Redis, Memcached configured but not default
 
-**Sessions:**
-- Driver: Database-backed (`SESSION_DRIVER=database`)
-- Connection: Uses default database connection
-- Lifetime: 120 minutes (`SESSION_LIFETIME=120`)
-- Table: `sessions` created by migration
-- Configuration: `config/session.php`
+- Redis (optional)
+  - `REDIS_HOST=127.0.0.1`
+  - `REDIS_PORT=6379`
+  - `REDIS_PASSWORD=null` (default)
+  - Client: phpredis
+  - Separate cache database: `REDIS_CACHE_DB=1`
+  - Default database: `REDIS_DB=0`
 
-**Queue:**
-- Driver: Database-backed (`QUEUE_CONNECTION=database`)
-- Connection: Uses default database connection
-- Table: `jobs` and `failed_jobs` created by migrations
-- Job example: `GenerateLoanPaymentsJob`
-- Execution: Via `php artisan queue:listen`
-- Configuration: `config/queue.php`
+- Memcached (optional)
+  - `MEMCACHED_HOST=127.0.0.1`
+  - Not enabled by default
 
 ## Authentication & Identity
 
 **Auth Provider:**
-- Type: Custom (Laravel's built-in)
-- Implementation:
-  - Guard: `web` (session-based for Filament)
-  - Guard: `api` (token-based via Sanctum, not used)
-  - Provider: `users` (Eloquent model provider)
-  - User model: `App\Models\User` extends `Illuminate\Foundation\Auth\User`
+- Laravel Session-based Authentication (custom)
+  - Implementation: Filament's built-in authentication with Laravel Sanctum
+  - Guards: `web` (session-based)
+  - User model: `App\Models\User`
+  - Provider: Eloquent with users table
 
-**User Roles & Permissions:**
-- Package: `spatie/laravel-permission` 7.2
-- Implementation: Role-based access control (RBAC)
-- Models: User, Role, Permission with pivot tables
-- Service: `PermissionService` (62 lines) - Role and permission management
-- Trait: User model uses `HasRoles` from Spatie
-- Configuration: `config/permission.php`
+**Authorization:**
+- Spatie/Laravel-Permission
+  - Roles and permissions stored in database
+  - Tables: `roles`, `permissions`, `role_has_permissions`, `model_has_permissions`, `model_has_roles`
+  - Policies: `app/Policies/` for resource authorization
 
-**Filament Authentication:**
-- Built-in: Filament admin panel includes user/password login
-- Redirect: Root path `/` redirects to `filament.admin.auth.login`
-- Database-backed user accounts
-- Password hashing: bcrypt (BCRYPT_ROUNDS=12, or 4 in tests)
+**Session Management:**
+- Driver: Database (`SESSION_DRIVER=database`)
+- Lifetime: 120 minutes (`SESSION_LIFETIME=120`)
+- Encryption: Disabled (`SESSION_ENCRYPT=false`)
+- Storage table: `sessions`
+
+**API Authentication:**
+- Laravel Sanctum (installed but not actively used in web routes)
+  - Available for token-based API authentication if needed
+  - Can issue API tokens for external API consumers
 
 ## Monitoring & Observability
 
 **Error Tracking:**
-- Not integrated (no Sentry, Rollbar, etc.)
-- Default: PHP errors logged to files
-- Configuration: `config/logging.php`
-- Channels: Stack driver (combines multiple loggers)
+- Not configured/integrated
+- Application relies on Laravel's default exception handling
 
 **Logs:**
-- Approach: File-based logging
-- Location: `storage/logs/` directory
-- Driver: Single channel `single` (one log file per day)
-- Level: `debug` in development (can be adjusted)
-- Stack configuration: Combines multiple log channels
-- Audit logging: `AuditLog` model tracks important events
+- Driver: Stack (`LOG_CHANNEL=stack`)
+- Configuration: `config/logging.php`
+- Default: Single log file with debug level
+- Available: Syslog, errorlog, and other drivers configurable
 
-**Blade Template Caching:**
-- Compiled: `storage/framework/views/`
-- Configuration: `config/view.php`
+**Debug Tools (Development Only):**
+- Laravel Pail - Console log monitoring
+  - Run: `php artisan pail --timeout=0`
+  - Shows real-time logs and exceptions
 
-**Model Events:**
-- Observed: 6 model observers track create/update/delete events
-- Logged: `AuditLog` model captures model changes
-- Side effects: Observers trigger service logic (balance updates, postings)
+## Queue & Job Processing
 
-## CI/CD & Deployment
+**Queue Connection:**
+- Default: Database (`QUEUE_CONNECTION=database`)
+- Storage table: `jobs` (configurable via `DB_QUEUE_TABLE`)
+- Retry after: 90 seconds (configurable via `DB_QUEUE_RETRY_AFTER`)
 
-**Hosting:**
-- Not configured (no .github/workflows, no CI pipeline)
-- Manual deployment approach
-- Docker support: Laravel Sail available (`laravel/sail` 1.41)
-- Deployment target: Any server supporting PHP 8.2+ with web server (Apache/Nginx)
+**Implemented Jobs:**
+- `App\Jobs\GenerateLoanPaymentsJob` - Generates scheduled loan payment records
+  - Dispatched for loan management workflows
+  - Implements `ShouldQueue` interface
 
-**CI Pipeline:**
-- Not implemented
-- No GitHub Actions workflows
-- Manual testing via `php artisan test` command
+**Async Operations:**
+- Model observers trigger on create/update/delete:
+  - `App\Observers\TransactionObserver` - Transaction lifecycle
+  - `App\Observers\LoanPaymentObserver` - Loan payment lifecycle
+  - `App\Observers\CreditCardCycleObserver` - Credit card cycle lifecycle
+  - `App\Observers\CreditCardPaymentObserver` - Credit card payment lifecycle
+  - `App\Observers\CreditCardExpenseObserver` - Credit card expense lifecycle
+  - `App\Observers\SubscriptionObserver` - Subscription lifecycle
 
-**Deployment Checklist (inferred from composer.json):**
-1. Clone repository
-2. `composer install --no-dev` (production)
-3. `.env` configuration (APP_KEY, DB_*, MAIL_*, etc.)
-4. `php artisan key:generate` (if APP_KEY not set)
-5. `php artisan migrate` (apply database migrations)
-6. `npm install && npm run build` (build assets)
-7. Point web server to `public/` directory
-8. Set permissions: `storage/` and `bootstrap/cache/` writable
+**Queue Workers (Development):**
+- Run via: `php artisan queue:listen --tries=1 --timeout=0`
+- Part of dev server startup in composer script
+
+## Broadcasting & Real-time
+
+**Broadcast Driver:**
+- Log driver (`BROADCAST_CONNECTION=log`)
+- No real-time WebSocket implementation configured
 
 ## Environment Configuration
 
-**Required env vars:**
-- `APP_NAME` - Application name (default: Laravel)
-- `APP_ENV` - Environment: local, testing, production
-- `APP_DEBUG` - Debug mode: true or false
-- `APP_KEY` - 32-character encryption key (generated via `php artisan key:generate`)
-- `APP_URL` - Application URL for link generation
-- `DB_CONNECTION` - Database driver: sqlite, mysql, pgsql
-- `DB_DATABASE` - Database name (for mysql/pgsql)
-- `DB_USERNAME` - Database user (for mysql/pgsql)
-- `DB_PASSWORD` - Database password (for mysql/pgsql)
+**Required env vars (from `.env.example`):**
+- `APP_NAME=Fluxa` - Application name
+- `APP_ENV=local` - Environment (local/production)
+- `APP_KEY` - Laravel encryption key (generated on setup)
+- `APP_DEBUG=true` - Debug mode (false in production)
+- `APP_URL=http://localhost` - Application URL
+- `DB_CONNECTION=sqlite` - Database driver
+- `SESSION_DRIVER=database` - Session storage
+- `QUEUE_CONNECTION=database` - Queue driver
+- `CACHE_STORE=database` - Cache driver
+- `MAIL_MAILER=log` - Mail driver (log in development)
+- `FILESYSTEM_DISK=local` - File storage disk
 
-**Optional env vars:**
-- `DB_HOST`, `DB_PORT` - Database connection details
-- `MAIL_MAILER` - Mail driver: log, smtp, sendmail, etc.
-- `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` - Email sender
-- `AWS_*` - AWS S3 credentials (if using file storage)
-- `QUEUE_CONNECTION` - Queue driver: database, redis, sync
-- `CACHE_STORE` - Cache driver: database, redis, array, file
-- `SESSION_DRIVER` - Session driver: database, cookie, array
-- `BROADCAST_CONNECTION` - Broadcast driver: log, null, redis
-- `REDIS_HOST`, `REDIS_PORT` - Redis connection (if using Redis)
+**Email Configuration (if using external services):**
+- `MAIL_FROM_ADDRESS` - Sender email address
+- `MAIL_FROM_NAME` - Sender name
+- Optional: `POSTMARK_API_KEY`, `RESEND_API_KEY`, `SLACK_BOT_USER_OAUTH_TOKEN`
+
+**Cloud Storage (if using S3):**
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_DEFAULT_REGION` (default: us-east-1)
+- `AWS_BUCKET`
 
 **Secrets location:**
-- `.env` file (git-ignored, never committed)
-- Environment variables on production server
-- No `.env.production` file - same template everywhere, different values
-- Database: `APP_KEY` most critical (encrypts cookies, cache, etc.)
+- `.env` file (Git-ignored, created from `.env.example` during setup)
+- Environment variables for deployed instances
+- Set via deployment platform (Heroku, Laravel Forge, etc.) in production
 
 ## Webhooks & Callbacks
 
 **Incoming:**
-- Filament resources handle form submissions (no third-party webhooks)
-- GraphQL endpoint at `/graphql` accepts queries (minimal use)
-- No payment gateway webhooks configured
-- No external API callbacks implemented
+- API routes available at `/api/*` (see `routes/api.php`)
+- Rate limited via `ApiRateLimitMiddleware`
+- Currently no specific webhook endpoints implemented for external services
 
 **Outgoing:**
-- No third-party API calls detected (no HTTP client usage in code)
-- Email notifications: Via mail driver (local logging in dev)
-- Potential: Subscription service may send emails (not confirmed)
+- No configured outgoing webhooks to external services
+- Email notifications via configured mail driver (Postmark/Resend optional)
+- Slack notifications capability available if configured
 
-## Email Configuration
+## GraphQL API
 
-**Provider:**
-- Driver: Log (saves to `storage/logs/` in dev)
-- Configurable: SMTP, Sendmail, native, etc. via `MAIL_MAILER` env var
-- From address: `MAIL_FROM_ADDRESS` and `MAIL_FROM_NAME`
+**Schema:**
+- Location: `graphql/schema.graphql`
+- Framework: Lighthouse 6.65
+- Endpoint: `/graphql` (configured in `config/lighthouse.php`)
+- Authentication: Supports token/session-based auth via Lighthouse middleware
 
-**Notifications:**
-- No notification classes found in codebase
-- Models have `Notifiable` trait available
-- Potential: Subscription renewals, loan payment reminders (not implemented)
+**Middleware:**
+- `Nuwave\Lighthouse\Http\Middleware\AcceptJson` - Ensures JSON responses
+- `Nuwave\Lighthouse\Http\Middleware\AttemptAuthentication` - Attempts to authenticate user
+- CORS and XHR middleware available but disabled by default
 
-## API Rate Limiting
+**Client Library:**
+- Axios 1.11.0 - JavaScript HTTP client available for frontend GraphQL queries
 
-**Middleware:** `ApiRateLimitMiddleware` in `app/Http/Middleware/`
-- Applied to API routes group in `routes/api.php`
-- Implementation: Custom rate limiter (throttle rules)
-- Config: Likely in middleware or Laravel's `ThrottleRequests` class
+## Module/Feature Flags
 
-## Storage & CDN
+**Checked Modules:**
+- Permissions system (Spatie/Laravel-Permission) - ENABLED
+- Filament admin interface - ENABLED
+- Queue processing - DATABASE-BACKED
+- Session management - DATABASE-BACKED
 
-**Local:**
-- Path: `storage/app/` (configurable via Filesystem config)
-- No CDN integration
-- No image resizing or optimization
-- File upload UI: Not visible in admin (likely manual seeding)
-
-**Public Assets:**
-- Built by Vite: `public/build/` directory
-- Generated from: `resources/css/app.css`, `resources/js/` (if any)
-- Manifest: `public/build/manifest.json` generated by Vite
-- Served: Via web server directly from `public/`
-
-## Third-Party Libraries
-
-**Web Framework:**
-- Laravel 12.0 - Application framework
-- Filament 4.0 - Admin UI builder
-
-**Database:**
-- Eloquent ORM - Laravel's ORM
-- Illuminate Database - Query builder
-
-**GraphQL:**
-- Lighthouse 6.65 - GraphQL server
-
-**Authorization:**
-- Spatie Laravel Permission 7.2 - RBAC
-
-**Utilities:**
-- Ziggy 2.0 - JavaScript route generation from Laravel routes
-- Faker 1.23 - Fake data generation for testing
-- Mockery 1.6 - Mocking for tests
-
-**PDF:**
-- Barryvdh Laravel DomPDF 3.1 - PDF generation (not yet implemented)
+**Middleware:**
+- `App\Http\Middleware\CheckModuleEnabled` - Module availability checking
+- `App\Http\Middleware\ApiRateLimitMiddleware` - API rate limiting
+- Filament-specific middleware: Authentication, CSRF token, session handling
 
 ---
 
-*Integration audit: 2024-12-19*
+*Integration audit: 2025-04-21*

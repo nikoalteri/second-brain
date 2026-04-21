@@ -4,353 +4,317 @@
 
 ## Tech Debt
 
-**Unimplemented PDF Export:**
-- Issue: `FinanceReport` page (326 lines) has TODO comment for PDF export using `barryvdh/laravel-dompdf`
-- Files: `app/Filament/Pages/FinanceReport.php` (line 51)
-- Impact: Finance reports can only be viewed in browser, not downloaded
-- Fix approach: Implement PDF generation using DomPDF, add download action to Filament page, handle large dataset export performance
+**Deprecated Payment Calculation Method:**
+- Issue: `CreditCardCycleService::calculateRevolvingPaymentBreakdown()` marked `@deprecated` but still exists at line 34
+- Files: `app/Services/CreditCardCycleService.php`
+- Impact: Legacy code kept for backward compatibility with existing tests may confuse future developers; creates duplicate logic with `RevolvingCreditCalculator`
+- Fix approach: Migrate all callers to use `RevolvingCreditCalculator` directly, then remove deprecated method and update tests
 
-**Observer Exception Handling:**
-- Issue: Observers (`app/Observers/*.php`) swallow exceptions silently - no logging on failure
-- Files: All 6 observer files (CreditCardCycleObserver, CreditCardExpenseObserver, etc.)
-- Impact: Silent failures in side effects (balance updates, payment postings) - user won't know if operation failed
-- Fix approach: Add try-catch with logging to each observer hook, surface errors to Filament notifications
+**TODO Comment Without Implementation:**
+- Issue: PDF export functionality not implemented
+- Files: `app/Filament/Pages/FinanceReport.php:323`
+- Impact: Users cannot generate PDF reports despite UI action being available
+- Fix approach: Implement PDF export using `barryvdh/laravel-dompdf` or alternative; add tests for export functionality
 
-**GraphQL Minimal Implementation:**
-- Issue: Lighthouse GraphQL configured but schema only defines basic User queries (41 lines)
-- Files: `graphql/schema.graphql`, `config/lighthouse.php`
-- Impact: GraphQL API not usable for application features (no mutations, limited queries)
-- Fix approach: Either fully implement GraphQL schema for all entities or remove/disable Lighthouse entirely
+**Irreversible Migration:**
+- Issue: `2026_04_21_000001_drop_non_finance_tables.php` migration has no rollback (`down()` method intentionally irreversible)
+- Files: `database/migrations/2026_04_21_000001_drop_non_finance_tables.php`
+- Impact: Cannot rollback legacy table cleanup; data loss is permanent if migration runs
+- Fix approach: Consider implementing proper `down()` migration or document requirement for database backup before running; add warning to migration comment
 
-**Bare Metal Transaction Management:**
-- Issue: Manual `DB::transaction()` calls throughout services instead of using Eloquent transactions
-- Files: `app/Services/CreditCardCycleService.php`, `app/Services/CreditCardPaymentPostingService.php`, etc.
-- Impact: Easy to forget transaction wrapper, no automatic rollback on observer failures
-- Fix approach: Create service base class with automatic transaction wrapping, or use event-sourcing pattern
+## Critical Logic Issues
 
-**API Routes Empty:**
-- Issue: `routes/api.php` configured with middleware but no actual endpoints defined
-- Files: `routes/api.php`
-- Impact: Infrastructure for REST API in place but unused, confusing for developers
-- Fix approach: Either fully implement API endpoints or remove the route file and middleware
+**Revolving Credit Calculation Complexity:**
+- Issue: Credit card interest calculation spans multiple classes with subtle behavioral differences:
+  - `RevolvingCreditCalculator`: First-cycle detection, daily balance vs direct monthly methods
+  - `CreditCardCycleService::calculateRevolvingPaymentBreakdown()`: Deprecated duplicate logic with different formula (line 75: monthly = annual/100 vs 74 comment says "14% annual = 14% monthly")
+  - Interest calculation method selection at `RevolvingCreditCalculator::calculatePaymentBreakdown()` line 175 uses enum `InterestCalculationMethod`
+- Files: `app/Services/RevolvingCreditCalculator.php`, `app/Services/CreditCardCycleService.php`, `app/Models/CreditCard.php:51`
+- Impact: Two different interest calculations exist; risk of incorrect interest charged depending on which path is used
+- Fix approach: 
+  1. Remove deprecated method from `CreditCardCycleService` entirely
+  2. Verify all callers use `RevolvingCreditCalculator::calculatePaymentBreakdown()`
+  3. Add integration tests showing both interest methods produce expected results
+  4. Document when first-cycle detection applies (line 15-23 in RevolvingCreditCalculator)
 
-## Known Bugs
+**Daily Balance Calculation Edge Case:**
+- Issue: `RevolvingCreditCalculator::calculateDailyBalances()` assumes `posted_at` falls back to `spent_at` but doesn't validate these dates exist
+- Files: `app/Services/RevolvingCreditCalculator.php:48-56`
+- Impact: If both dates are null, `toDateString()` call will fail silently or group incorrectly
+- Fix approach: Add null coalescing with a default date; add test case for expenses missing both posted_at and spent_at
 
-**Interest Calculation Edge Cases:**
-- Symptoms: Test suite validates specific interest calculations but edge cases around rounding may exist
-- Files: `app/Services/RevolvingCreditCalculator.php` (221 lines), `tests/Unit/RevolvingCreditCalculatorTest.php`
-- Trigger: High-interest rates or unusual decimal amounts
-- Workaround: Always round to 2 decimal places (currently implemented), validate against bank statements
-- Risk: Financial calculations must be precisely accurate
+**Payment Breakdown Negative Balance Risk:**
+- Issue: `RevolvingCreditCalculator::calculatePaymentBreakdown()` line 154-158 uses `max(0.0, currentDebt)` to prevent negative, but relies on observers to keep `card->current_balance` synced
+- Files: `app/Services/RevolvingCreditCalculator.php`, `app/Observers/CreditCardExpenseObserver.php`
+- Impact: If observer fails to sync, calculated principal could exceed actual balance
+- Fix approach: Add defensive checks in observer; add integration test verifying balance stays non-negative through create/update/delete cycles
 
-**CreditCard::available_credit Null Return:**
-- Symptoms: Attribute returns null for unlimited cards, which may not be handled everywhere
-- Files: `app/Models/CreditCard.php`, `app/Services/CreditCardBalanceService.php`
-- Trigger: Using unlimited credit card type
-- Workaround: Always check `is_unlimited` attribute first, handle null in UI
-- Risk: Calculations using available_credit may fail if null not handled
+**First Cycle Interest Exemption Without Documentation:**
+- Issue: First billing cycle always has 0 interest (line 134-135, 186 in RevolvingCreditCalculator) but this rule is buried in logic with no clear specification
+- Files: `app/Services/RevolvingCreditCalculator.php:15-23, 134-135, 186`
+- Impact: Users may not understand why first statement has no interest; easy to change accidentally
+- Fix approach: Add comprehensive docstring explaining business rule; consider moving to enum or configuration
+
+## Missing Test Coverage
+
+**Account Balance Service:**
+- What's not tested: Core transaction balance updates and handling
+- Files: `app/Services/AccountBalanceService.php` - only 1,243 lines but no dedicated test file found
+- Risk: Created/updated/deleted/restored observer hooks for transactions have no explicit tests; only tested through integration tests
+- Priority: High - this directly impacts user financial data accuracy
+
+**Transaction Observer Edge Cases:**
+- What's not tested: Transfer pair recursion prevention (`transfer_direction !== 'in'` at line 32 in `TransactionObserver`)
+- Files: `app/Observers/TransactionObserver.php`
+- Risk: Transfer pair deletion could create orphaned transactions if flag logic breaks
+- Priority: High - data integrity issue
+
+**CreditCardExpenseService Lock and Transaction Isolation:**
+- What's not tested: Race conditions in pessimistic locking scenarios
+- Files: `app/Services/CreditCardExpenseService.php:24, 67, 78, 117` uses `lockForUpdate()`
+- Risk: No tests verify that locked rows prevent concurrent updates
+- Priority: Medium - edge case that would manifest under load
+
+**Filament Relation Manager Queries:**
+- What's not tested: N+1 query prevention in relation managers
+- Files: `app/Filament/Resources/CreditCards/RelationManagers/CyclesRelationManager.php`, `ExpensesRelationManager.php`, `PaymentsRelationManager.php`
+- Risk: Loading cycles/expenses/payments without eager loading relationships (creditCard, cycle parent) could cause N+1 queries
+- Priority: Medium - performance issue, not correctness
+
+**Subscription Service:**
+- What's not tested: Auto-transaction creation and category handling
+- Files: `app/Services/SubscriptionService.php:108 lines` with only `SubscriptionServiceTest.php`
+- Risk: Missing coverage for subscription renewal transaction creation workflow
+- Priority: Medium
 
 ## Security Considerations
 
-**User Data Isolation:**
-- Risk: User-scoped data relies entirely on `HasUserScoping` trait and policies
-- Files: `app/Traits/HasUserScoping.php`, `app/Policies/*.php`
-- Current mitigation: Global scope applies automatically on model queries, policies enforce user ID matching
-- Recommendations: 
-  - Add integration test verifying one user cannot access another's data
-  - Audit all direct SQL queries for user filtering
-  - Consider role-based access levels (readonly, admin, etc.)
-
-**Authentication:**
-- Risk: Password reset flow not visible in code
-- Files: Standard Laravel auth, Filament auth
-- Current mitigation: Laravel's built-in password reset middleware
+**Authorization Policy N+1 Query:**
+- Risk: Policies access relationships without eager loading (`payment->creditCard->user_id` in `CreditCardPaymentPolicy:17, 27, 32, 37, 42`)
+- Files: `app/Policies/CreditCardPaymentPolicy.php`, also affects `LoanPaymentPolicy`
+- Current mitigation: None; relies on request scope being single resource
 - Recommendations:
-  - Enable email verification for new accounts
-  - Implement rate limiting on login attempts
-  - Add two-factor authentication for sensitive operations
+  1. Add database indexes on `user_id` columns
+  2. Consider eager loading policies with relationships where possible
+  3. Profile policy calls in list views to measure impact
 
-**Authorization Gaps:**
-- Risk: Not all models have policies (no policies for: AuditLog, Backup, Contact, Document, Event, etc.)
-- Files: `app/Policies/` (only 11 out of 40 models have policies)
-- Current mitigation: Filament resources enforce authorization, can authorize at page/resource level
+**Form Options Query Every Render:**
+- Risk: `TransactionForm::configure()` executes `Account::where()` and `TransactionCategory::query()` on every form render
+- Files: `app/Filament/Resources/Transactions/Schemas/TransactionForm.php:24-29, 42-48, 59-70`
+- Current mitigation: Authorization check at form level (`auth()->user()?->hasRole('superadmin')`)
 - Recommendations:
-  - Create policies for all user-scoped models
-  - Enforce in Filament resources if not already
-  - Add authorization checks to API endpoints (if REST API is used)
+  1. Cache form options for authenticated user
+  2. Consider implementing form field caching for Filament
+  3. Add test to verify superadmin sees all accounts, non-admin sees own only
 
-**Sensitive Data in Logs:**
-- Risk: Amount, balance, and personal data may be logged without sanitization
-- Files: Observers, Services, Filament pages
-- Current mitigation: Logs directed to storage/logs/, not exposed publicly
-- Recommendations:
-  - Implement sensitive data masking in AuditLog
-  - Never log full amounts or balances, use ranges instead
-  - Use structured logging to mark sensitive fields
+**Similar Security Issue in Loan and Credit Card Forms:**
+- Risk: Multiple forms repeat account/category queries without optimization
+- Files: `app/Filament/Resources/Loans/Schemas/LoanForm.php:99-102`, `app/Filament/Resources/CreditCards/Schemas/CreditCardForm.php:34-37`
+- Recommendations: Create shared helper for form options with caching
 
-**Enum Backing Values:**
-- Risk: Enum values stored as strings in database, could be exposed in API responses
-- Files: All 30+ enum definitions
-- Current mitigation: Enums used internally, JSON responses currently minimal
+**Cascading Deletes Not Audited:**
+- Risk: Cascading foreign keys delete data silently without audit trail
+- Files: All migrations with `cascadeOnDelete()`: `credit_card_expenses`, `credit_card_payments`, `credit_cards`, etc.
+- Current mitigation: SoftDeletes on some models but not all
 - Recommendations:
-  - Validate enum backing values before saving to database
-  - Consider using integer backing values for smaller payload
+  1. Ensure all financial data models use SoftDeletes
+  2. Log cascade deletions through audit system
+  3. Consider moving from cascade deletes to soft-delete-aware cleanup jobs
 
 ## Performance Bottlenecks
 
-**Finance Report Page (326 lines):**
-- Problem: Single page builds complex report with nested arrays, multiple queries
-- Files: `app/Filament/Pages/FinanceReport.php`
-- Cause: Month-by-category aggregations done in PHP (likely N+1 queries)
-- Improvement path: 
-  - Move aggregations to database (raw queries or Eloquent groupBy)
-  - Implement pagination for large datasets
-  - Cache report results with 1-hour TTL
-  - Add query profiling to identify slow queries
-
-**CreditCardCycleService (307 lines):**
-- Problem: Potentially large number of payment records created in `issueCycle()`
-- Files: `app/Services/CreditCardCycleService.php`
-- Cause: No batch insert, individual create() calls in loop
+**Missing Database Indexes:**
+- Problem: No indexes found on commonly filtered columns
+- Files: Database migrations lack indexes for:
+  - `credit_card_expenses.spent_at`, `posted_at`
+  - `credit_card_cycles.period_month`
+  - `transactions.date`, `competence_month`
+  - `subscription.next_renewal_date`
+- Cause: Current data volume may be low, but filtering by these columns will slow as data grows
 - Improvement path:
-  - Use `insertOrIgnore()` for bulk operations
-  - Defer observer notifications until batch complete
-  - Profile with large dataset (1000+ expenses)
+  1. Add migration for composite indexes on commonly filtered columns
+  2. Profile queries with Laravel Debugbar in development
+  3. Add slow query logging to detect N+1 queries in production
 
-**Model Eager Loading:**
-- Problem: Potential N+1 queries if relationships not eager-loaded
-- Files: All controllers/services querying models
-- Cause: Lazy loading default in Eloquent
+**Daily Balance Calculation in Loop:**
+- Problem: `RevolvingCreditCalculator::calculateDailyBalances()` iterates through date range in PHP (line 59-71) instead of querying grouped by date
+- Files: `app/Services/RevolvingCreditCalculator.php:59-71`
+- Cause: Flexibility needed for complex business rules; can't easily express in pure SQL
 - Improvement path:
-  - Audit common query paths
-  - Use `loadMissing()` in services
-  - Add query logging in tests
+  1. Optimize expense grouping at line 51-56 to reduce in-memory processing
+  2. Consider materializing daily balance calculations when cycle is issued (line 115)
+  3. Cache calculated balances in column to avoid recalculation
 
-**Database Transactions:**
-- Problem: Nested transactions or long-running operations may lock tables
-- Files: Services using `DB::transaction()`
-- Cause: SQLite has limited concurrency, MySQL/PostgreSQL less so
-- Improvement path:
-  - Profile transaction duration
-  - Consider event-sourcing for audit trail instead of observers
-  - Use database-level locks only when necessary
-
-**Filament Resource Pagination:**
-- Problem: Default 10 items per page may cause many page requests
-- Files: All Filament resources
-- Cause: Large tables (500+ transactions) require pagination
-- Improvement path:
-  - Increase default per-page to 25-50 based on usage
-  - Implement search/filter to reduce result sets
-  - Add bulk actions for common operations
+**FinanceReport Page No Pagination:**
+- Problem: Page returns empty result sets without pagination mechanism
+- Files: `app/Filament/Pages/FinanceReport.php:69` returns `[]`
+- Cause: Report generation logic incomplete
+- Improvement path: Implement proper report service with pagination support
 
 ## Fragile Areas
 
-**CreditCardCycleService Complex Logic:**
-- Files: `app/Services/CreditCardCycleService.php` (307 lines), `app/Services/RevolvingCreditCalculator.php` (221 lines)
-- Why fragile: Interest calculations, payment breakdowns, multiple status transitions
-- Safe modification: 
-  - Add tests for edge cases before refactoring
-  - Extract pure functions (no model mutation) from calculator
-  - Consider state machine pattern for cycle status transitions
-- Test coverage: 2 test files (CreditCardCycleServiceTest, RevolvingCreditCalculatorTest) with good coverage
-
-**Observer Chain Reactions:**
-- Files: `app/Observers/` (6 observers with interdependencies)
-- Why fragile: CreditCardCycleObserver creates CreditCardPayments, which triggers CreditCardPaymentObserver, which creates Transactions and triggers TransactionObserver
+**CreditCardCycle Status Transitions:**
+- Files: `app/Services/CreditCardCycleService.php`, `app/Models/CreditCardCycle.php`
+- Why fragile: Status flows from OPEN → ISSUED → PAID/OVERDUE but no explicit state machine; transitions happen implicitly in payment posting (line 195-200)
 - Safe modification:
-  - Document observer order and dependencies
-  - Add integration tests for full chains
-  - Avoid adding new observers without tests
-- Test coverage: Integration test covers full cycle
+  1. Document valid status transitions in comment block
+  2. Create explicit status transition methods instead of inline updates
+  3. Add validation that prevents invalid transitions
+- Test coverage: `CreditCardCycleServiceTest.php` covers happy paths but not invalid transitions
 
-**Database Migrations:**
-- Files: `database/migrations/` (63 migrations)
-- Why fragile: Down migrations may not fully reverse schema changes
+**Observer Coupling and Silent Failures:**
+- Files: `app/Observers/CreditCardExpenseObserver.php`, `app/Observers/TransactionObserver.php`, `app/Observers/CreditCardPaymentObserver.php`
+- Why fragile: Static $originalPointers array at class level (line 15) could cause issues in concurrent requests or tests
 - Safe modification:
-  - Test rollback on duplicate database
-  - Keep migrations small and single-purpose
-  - Avoid data migrations in down() methods
-- Test coverage: Schema validated in tests via migrations
+  1. Use event properties instead of static class variables
+  2. Add error handling that logs rather than silently fails
+  3. Test observer behavior in isolation with mock objects
+- Test coverage: Observers tested through integration tests, not unit tested
 
-**Enum Usage:**
-- Files: All models and services using 30+ enums
-- Why fragile: If enum values change, database records become invalid
+**CreditCardCycle Unique Constraints:**
+- Files: `database/migrations/2026_03_19_091000_update_credit_card_cycles_unique_index_for_date_ranges.php`
+- Why fragile: Unique index on (credit_card_id, period_month, period_start_date, statement_date) is strict but doesn't prevent race conditions in `firstOrCreate` at `CreditCardCycleService:156`
 - Safe modification:
-  - Never remove enum cases (mark as deprecated instead)
-  - Add database migration to change existing values
-  - Test enum-to-database synchronization
-- Test coverage: Some tests validate enum values
+  1. Verify transaction scope in `ensureCurrentMonthCycle()` wraps the entire `firstOrCreate` call (currently not wrapped)
+  2. Add test for concurrent cycle creation
+  3. Document expected behavior when duplicate cycle attempted
+
+**Transfer Pair Logic Without Strong Typing:**
+- Files: `app/Models/Transaction.php` (fillable: transfer_pair_id, transfer_direction)
+- Why fragile: transfer_direction is string ('in'/'out') with comparison at line 32 of observer; no enum or validation
+- Safe modification:
+  1. Create `TransferDirection` enum like other domain enums
+  2. Update model cast to use enum
+  3. Update observer to use enum comparison
+- Test coverage: `TransactionAuthorizationTest.php` exists but transfer pair logic untested
 
 ## Scaling Limits
 
-**SQLite Concurrency:**
-- Current capacity: Single writer at a time (locks database)
-- Limit: More than 5-10 concurrent users will experience lock waits
+**Daily Balance Calculations for Large Cycles:**
+- Current capacity: Works for cycles with <1000 expenses (daily iteration in PHP)
+- Limit: Breaks when > 1000 expense transactions per statement cycle
 - Scaling path:
-  - Migrate to MySQL (simple ALTER DATABASE) or PostgreSQL
-  - No application code changes needed (Eloquent handles it)
-  - Update DB_CONNECTION in .env, credentials, and run migrations
+  1. Move calculation to raw SQL for large datasets
+  2. Implement batch processing for expense grouping
+  3. Cache calculated balances on cycle issue
 
-**Filament Resource UI:**
-- Current capacity: Works well with <10,000 records per resource
-- Limit: Table loading slows significantly at 50,000+ records
+**Global Scope on All Models:**
+- Current capacity: Works for single user with UserScoping trait
+- Limit: Multi-user queries without proper scoping could leak data
 - Scaling path:
-  - Implement search/filter on large tables
-  - Add pagination (already there, increase per-page limit if needed)
-  - Implement lazy loading for relationship columns
+  1. Verify UserScoping trait applied to all user-scoped models
+  2. Add test suite checking any query without explicit auth check fails
+  3. Consider audit logging for scope violations
 
-**Financial Calculations:**
-- Current capacity: Real-time calculations for single user
-- Limit: Dashboard with 100+ accounts/cards may have slow report generation
-- Scaling path:
-  - Cache report results (1 hour TTL)
-  - Queue background report generation
-  - Use database aggregations instead of PHP loops
+**Transaction Pair Recursion:**
+- Current capacity: Safe for normal transfers (max 2 transactions)
+- Limit: If transfer_direction comparison fails, infinite recursion in observer delete handler
+- Scaling path: Replace recursive observer with explicit pair handling via transactions
 
-**Database Migrations:**
-- Current capacity: 63 migrations run in seconds
-- Limit: If adding 1 migration per day, migration time may become noticeable after 1000+
-- Scaling path:
-  - Squash old migrations periodically (every 100 migrations)
-  - Avoid data-heavy migrations in up() methods
+## Missing Validations
 
-## Dependencies at Risk
+**Amount Fields Missing Min/Max Constraints:**
+- Problem: Numeric amount fields have minimal validation
+- Files: 
+  - `app/Filament/Resources/CreditCards/Schemas/CreditCardForm.php:68, 75, 83, 91` - no minValue on numeric fields
+  - `app/Filament/Resources/Loans/Schemas/LoanForm.php:118, 140, 149, 156, 183, 193` - numeric() without constraints
+  - Transaction form validates minValue(0.01) at line 79 but others don't
+- Risk: Negative or zero amounts could be entered for credit limits, interest rates, payments
+- Fix approach:
+  1. Add minValue(0.01) to all monetary fields
+  2. Add maxValue() constraints to interest rates (e.g., max 50%)
+  3. Create shared FormField helpers to enforce consistent validation
 
-**PHP Version 8.2 Requirement:**
-- Risk: Laravel 12 requires PHP 8.2, no backwards compatibility
-- Impact: Cannot run on older servers, need to upgrade PHP
-- Migration plan: Upgrade server PHP version, no code changes needed
+**Transfer Validation Missing:**
+- Problem: No validation preventing transfer to same account
+- Files: `app/Filament/Resources/Transactions/Schemas/TransactionForm.php`
+- Risk: Users could transfer account to itself, creating duplicate balance entries
+- Fix approach:
+  1. Add visible/required condition to to_account_id
+  2. Add custom validation rule: `different:account_id`
 
-**Laravel 12:**
-- Risk: Major framework version, breaking changes from Laravel 11
-- Impact: Dependency updates may require code changes
-- Migration plan: Monitor Laravel security updates, plan annual upgrades
+**Subscription Day of Month Boundary:**
+- Problem: `Subscription` model accepts `day_of_month` without validating it's 1-31
+- Files: `app/Models/Subscription.php:22`, `app/Filament/Resources/Subscriptions/Schemas/SubscriptionForm.php`
+- Risk: Invalid days (0, 32+) could cause renewal date calculation failures
+- Fix approach:
+  1. Add validation rule: `between:1,31`
+  2. Add helper to adjust dates that don't exist (e.g., Feb 31 → Feb 28)
+  3. Test with boundary dates
 
-**Filament 4.0:**
-- Risk: Heavy dependency, major UI updates between versions
-- Impact: Admin UI changes, custom resources may need refactoring
-- Migration plan: Test minor/patch updates before applying, monitor release notes
+**Credit Card Cycle Date Logic:**
+- Problem: `CreditCardCycleService::ensureCurrentMonthCycle()` uses `min()` to handle day overflow (line 146, 152) but doesn't validate period_start_date <= statement_date
+- Files: `app/Services/CreditCardCycleService.php:145-154`
+- Risk: Invalid date ranges could pass validation
+- Fix approach:
+  1. Add assertion: `statement_date > period_start_date`
+  2. Add test cases for month boundaries (Jan 31 → Feb 28)
 
-**Lighthouse GraphQL 6.65:**
-- Risk: Minimal usage, may have security vulnerabilities
-- Impact: API endpoint could be exploited if schema is extended
-- Migration plan: Either fully implement or remove package to reduce attack surface
+## Leftover References
 
-## Missing Critical Features
+**Activities Table Migration Exists But Not Used:**
+- Issue: Migration `2026_04_10_000003_create_activities_table.php` creates table but model/usage not found
+- Files: Migration exists but likely leftover from old "Second Brain" app
+- Impact: Dead migration creates unused database table
+- Fix approach: Check if activities table is actually needed; if not, remove migration and reassess drop_non_finance_tables.php order
 
-**Automated Backups:**
-- Problem: No automatic backup mechanism, manual database export only
-- Blocks: Cannot recover from data loss or corruption
-- Recommendation: Implement daily backup to storage/backups/ or cloud (S3)
+**Drop Non-Finance Tables Migration Incompleteness:**
+- Issue: Migration drops 59 tables but doesn't verify all related code is removed
+- Files: `database/migrations/2026_04_21_000001_drop_non_finance_tables.php`
+- Impact: Models, policies, resources, observers might reference deleted tables
+- Fix approach:
+  1. Search codebase for `$table->references()` or `belongsTo()` to deleted tables
+  2. Verify no Filament resources exist for dropped tables
+  3. Check ServiceProviders for observers on deleted models
 
-**Report Scheduling:**
-- Problem: Finance reports generated on-demand, no automated email delivery
-- Blocks: Cannot subscribe to recurring reports, manual exports only
-- Recommendation: Implement job scheduling (Laravel scheduler in console.php)
+## Concurrency & Race Conditions
 
-**Payment Reminders:**
-- Problem: No notifications for upcoming due dates or loan payments
-- Blocks: Users must manually check deadlines
-- Recommendation: Implement notification system using Laravel Notifications package
+**CreditCardCycleService::ensureCurrentMonthCycle Not Transactional:**
+- Problem: `firstOrCreate()` at line 156 is not wrapped in DB transaction despite needing atomic operation
+- Files: `app/Services/CreditCardCycleService.php:139-176`
+- Risk: Race condition if two requests call ensureCurrentMonthCycle simultaneously with same card
+- Fix approach:
+  1. Wrap entire method in `DB::transaction(function() { ... })`
+  2. Add retry logic for Illuminate\Database\QueryException
+  3. Test with concurrent requests using PHP fixtures
 
-**Data Export:**
-- Problem: No CSV/Excel export for transactions, reports
-- Blocks: Cannot easily share data with accountants or other tools
-- Recommendation: Implement Maatwebsite Excel integration
+**Expense Service Validation Then Creation Race:**
+- Problem: `CreditCardExpenseService::validateExpenseChange()` validates at line 23-57, but actual sync happens later in `created()` observer hook
+- Files: `app/Observers/CreditCardExpenseObserver.php:17-20, 37-39`
+- Risk: Balance could exceed limit between validation and creation if another expense created
+- Fix approach:
+  1. Move validation into expense model rule or move sync into same DB transaction
+  2. Ensure credit card is locked during entire create flow
+  3. Add test simulating concurrent expense creation
 
-**Audit Trail:**
-- Problem: `AuditLog` model exists but not populated (no observers logging to it)
-- Blocks: Cannot track who changed what data or when
-- Recommendation: Add audit logging to observers or use Laravel Auditable package
+## Database Issues
 
-## Test Coverage Gaps
+**Soft Deletes Incomplete:**
+- Problem: Some financial models use SoftDeletes (`Account`, `Transaction`) but others don't (`CreditCard`, `CreditCardPayment`, `Loan`)
+- Files: 
+  - Have SoftDeletes: `app/Models/Account.php:12`
+  - Missing SoftDeletes: `app/Models/CreditCard.php`, `app/Models/CreditCardPayment.php`, `app/Models/Loan.php`
+- Impact: Deleting credit card or loan deletes all associated data permanently
+- Fix approach:
+  1. Add SoftDeletes to `CreditCard`, `CreditCardPayment`, `CreditCardCycle`, `Loan`, `LoanPayment`
+  2. Add `whereNotNull('deleted_at')` or `withoutTrashed()` to relevant queries
+  3. Update policies to check `trashed()` status
 
-**Filament Resources:**
-- What's not tested: Filament form validation, table filtering, bulk actions
-- Files: `app/Filament/Resources/*/` (36 resources)
-- Risk: UI changes may break without testing, authorization gaps may exist
-- Priority: High (Filament is primary interface)
-- Recommendation: Add feature tests for CRUD operations on critical resources
+**Missing Composite Indexes:**
+- Problem: No indexes for common filter combinations
+- Files: All migration files
+- Current impact: Sequential scans on growing tables
+- Fix approach:
+  1. Add `index(['user_id', 'created_at'])` on user-scoped models
+  2. Add `index(['credit_card_id', 'statement_date'])` on cycles
+  3. Add `index(['user_id', 'status'])` on payments
 
-**Observer Side Effects:**
-- What's not tested: What happens when observer fails or throws exception
-- Files: `app/Observers/*.php` (6 observers)
-- Risk: Silent failures in balance updates or payment postings
-- Priority: High (financial data integrity)
-- Recommendation: Add error scenarios to integration tests
+## Test Data Factories Issues
 
-**Service Exception Handling:**
-- What's not tested: What services do when validation fails or database errors occur
-- Files: `app/Services/` (15 services)
-- Risk: Unhandled exceptions in production
-- Priority: Medium (currently caught by Laravel exception handler)
-- Recommendation: Add negative test cases for each service method
-
-**Authorization Policies:**
-- What's not tested: Cross-user access (policy methods returning false)
-- Files: `app/Policies/*.php` (11 policies)
-- Risk: User might access another user's data
-- Priority: High (security)
-- Recommendation: Add tests verifying unauthorized access is blocked
-
-**Email Notifications:**
-- What's not tested: Email content, recipient addresses, scheduling
-- Files: None (feature not implemented)
-- Risk: When implemented, may send emails to wrong address or with wrong content
-- Priority: Medium (future feature)
-- Recommendation: Add mail fakes and assertion tests when notifications are added
-
-**GraphQL API:**
-- What's not tested: GraphQL queries, mutations, error responses
-- Files: `graphql/schema.graphql`
-- Risk: API may return incorrect data or expose sensitive information
-- Priority: Low (currently minimal usage)
-- Recommendation: When API is expanded, add GraphQL query tests
-
-## Code Quality Issues
-
-**Large Files:**
-- `FinanceReport.php` - 326 lines (exceeds 300-line recommendation)
-- `CreditCardCycleService.php` - 307 lines (boundary, borderline)
-- `RevolvingCreditCalculator.php` - 221 lines (acceptable but could be split)
-- Recommendation: Extract methods or break into smaller services
-
-**Duplicate Code:**
-- Multiple observers follow same pattern (check status, do something, log)
-- Recommendation: Create observer base class or trait
-
-**Magic Numbers:**
-- Interest rates, installment calculations have hardcoded numbers
-- Recommendation: Move to configuration or Enum
-
-**Comments in Italian:**
-- `Transaction` model has Italian comments ("RELAZIONI")
-- Recommendation: Standardize on English for consistency
-
-**No Type Hints on Properties:**
-- Some model properties lack type hints
-- Recommendation: Add return types to property accessors
-
-## Dependency Management
-
-**Outdated Dependencies:**
-- Check: Run `composer outdated` to see available updates
-- Recommendation: Plan quarterly dependency updates
-
-**Unused Dependencies:**
-- Check: Run `composer unused` (requires symfony/console)
-- Recommendation: Remove unused packages to reduce attack surface
-
-## Configuration
-
-**Environment Variables Not Validated:**
-- Problem: No validation of required env vars at startup
-- Recommendation: Add config validation in AppServiceProvider
-
-**Hardcoded Values:**
-- Interest rates, payment amounts in factories
-- Recommendation: Move to config/finance.php or .env variables
+**Incomplete Factory Coverage:**
+- Files: `database/factories/` has 4 factories for 12+ main models
+- Missing factories: CreditCardFactory, CreditCardPaymentFactory, CreditCardCycleFactory, SubscriptionFactory (exists but not comprehensive), TransactionFactory (basic)
+- Impact: Tests must manually create complex relationships, leading to fragile test setup
 
 ---
 
