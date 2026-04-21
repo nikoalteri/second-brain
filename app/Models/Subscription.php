@@ -64,4 +64,13 @@ class Subscription extends Model
     {
         return $query->whereBetween('next_renewal_date', [now(), now()->addDays($days)]);
     }
+
+    /**
+     * Scope: filter to records belonging to the authenticated user.
+     * Used by Lighthouse @scope(name: "belongsToAuthUser") on GraphQL paginated queries.
+     */
+    public function scopeBelongsToAuthUser($query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('user_id', auth()->id());
+    }
 }

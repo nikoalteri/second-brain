@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
 use App\Enums\InterestCalculationMethod;
+use App\Traits\HasUserScoping;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CreditCard extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUserScoping;
 
     protected $appends = [
         'available_credit',
@@ -88,5 +89,14 @@ class CreditCard extends Model
         }
 
         return round(max(0.0, (float) $this->credit_limit - (float) $this->current_balance), 2);
+    }
+
+    /**
+     * Scope: filter to records belonging to the authenticated user.
+     * Used by Lighthouse @scope(name: "belongsToAuthUser") on GraphQL paginated queries.
+     */
+    public function scopeBelongsToAuthUser($query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('user_id', auth()->id());
     }
 }

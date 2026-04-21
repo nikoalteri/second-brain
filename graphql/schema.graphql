@@ -1,22 +1,424 @@
 "A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
 scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
 
-"Indicates what fields are available at the top level of a query operation."
+"A date string with format `Y-m-d`, e.g. `2019-01-01`."
+scalar Date @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\Date")
+
+# ─── FINANCE TYPES ────────────────────────────────────────────────────────────
+
+"A bank account belonging to the authenticated user."
+type Account {
+    "Unique identifier."
+    id: ID!
+    "Display name of the account."
+    name: String!
+    "Account type (e.g. checking, savings, investment)."
+    type: String!
+    "Current balance in the account's currency."
+    balance: Float!
+    "Balance when the account was first created."
+    opening_balance: Float!
+    "ISO 4217 currency code, e.g. EUR."
+    currency: String!
+    "Whether the account is currently active."
+    is_active: Boolean!
+    "Transactions linked to this account (N+1 safe via @hasMany)."
+    transactions: [Transaction!]! @hasMany
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+"A financial transaction."
+type Transaction {
+    id: ID!
+    account_id: ID!
+    amount: Float!
+    date: Date!
+    description: String
+    notes: String
+    is_transfer: Boolean!
+    "The account this transaction belongs to."
+    account: Account! @belongsTo
+    "Optional spending category."
+    category: TransactionCategory @belongsTo(relation: "category")
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+"A transaction spending category."
+type TransactionCategory {
+    id: ID!
+    name: String!
+    color: String
+}
+
+"A loan with amortization schedule."
+type Loan {
+    id: ID!
+    name: String!
+    account_id: ID!
+    total_amount: Float!
+    monthly_payment: Float!
+    interest_rate: Float!
+    is_variable_rate: Boolean!
+    remaining_amount: Float!
+    total_installments: Int!
+    paid_installments: Int!
+    status: String!
+    start_date: Date
+    end_date: Date
+    "Scheduled payment installments."
+    payments: [LoanPayment!]! @hasMany
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+"A single loan payment installment."
+type LoanPayment {
+    id: ID!
+    loan_id: ID!
+    due_date: Date
+    actual_date: Date
+    amount: Float!
+    interest_rate: Float
+    status: String!
+    notes: String
+}
+
+"A credit card with revolving or charge-card billing."
+type CreditCard {
+    id: ID!
+    account_id: ID!
+    name: String!
+    "Card type: revolving or charge."
+    type: String!
+    credit_limit: Float
+    fixed_payment: Float!
+    interest_rate: Float!
+    stamp_duty_amount: Float!
+    statement_day: Int!
+    due_day: Int!
+    skip_weekends: Boolean!
+    current_balance: Float!
+    available_credit: Float
+    status: String!
+    start_date: Date
+    interest_calculation_method: String
+    "Billing cycles for this card."
+    cycles: [CreditCardCycle!]! @hasMany
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+"A monthly billing cycle for a credit card."
+type CreditCardCycle {
+    id: ID!
+    credit_card_id: ID!
+    period_month: String
+    period_start_date: Date
+    statement_date: Date
+    due_date: Date
+    total_spent: Float!
+    total_due: Float!
+    interest_amount: Float!
+    principal_amount: Float!
+    status: String!
+    expenses: [CreditCardExpense!]! @hasMany
+}
+
+"A single expense charged to a credit card."
+type CreditCardExpense {
+    id: ID!
+    credit_card_id: ID!
+    credit_card_cycle_id: ID
+    amount: Float!
+    description: String
+    notes: String
+    spent_at: Date
+    posted_at: Date
+}
+
+"A recurring subscription (software, services, etc.)."
+type ServiceSubscription {
+    id: ID!
+    name: String!
+    account_id: ID!
+    monthly_cost: Float!
+    annual_cost: Float!
+    "Billing frequency: monthly, annual, or biennial."
+    frequency: String!
+    day_of_month: Int!
+    next_renewal_date: Date
+    auto_create_transaction: Boolean!
+    status: String!
+    notes: String
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+"Monthly income vs expense summary for a given year/month."
+type MonthlyCashflow {
+    "Year of the cashflow period."
+    year: Int!
+    "Month of the cashflow period (1-12)."
+    month: Int!
+    "Total income transactions amount."
+    total_income: Float!
+    "Total expense transactions amount."
+    total_expense: Float!
+    "Net cashflow (income minus expense)."
+    net: Float!
+}
+
+"Spending total for a single category."
+type CategoryTotal {
+    "Category name."
+    category: String!
+    "Total amount spent in this category."
+    total: Float!
+    "Number of transactions in this category."
+    count: Int!
+}
+
+# ─── QUERIES ──────────────────────────────────────────────────────────────────
+
 type Query {
-    "Find a single user by an identifying attribute."
-    user(
-      "Search by primary key."
-      id: ID @eq @rules(apply: ["prohibits:email", "required_without:email"])
+    "List the authenticated user's accounts. Requires Bearer token."
+    accounts(
+        "Filter by active status."
+        is_active: Boolean @eq
+        "Filter by account type."
+        type: String @eq
+    ): [Account!]! @paginate(defaultCount: 20) @guard
 
-      "Search by email address."
-      email: String @eq @rules(apply: ["prohibits:id", "required_without:id", "email"])
-    ): User @find
+    "Get a single account by ID."
+    account(id: ID! @eq): Account @find @guard
 
-    "List multiple users."
-    users(
-      "Filters by name. Accepts SQL LIKE wildcards `%` and `_`."
-      name: String @where(operator: "like")
-    ): [User!]! @paginate(defaultCount: 10)
+    "List transactions for the authenticated user."
+    transactions(
+        account_id: ID @eq
+        is_transfer: Boolean @eq
+    ): [Transaction!]! @paginate(defaultCount: 20) @guard
+
+    "Get a single transaction by ID."
+    transaction(id: ID! @eq): Transaction @find @guard
+
+    "List loans for the authenticated user."
+    loans(
+        status: String @eq
+    ): [Loan!]! @paginate(defaultCount: 20) @guard
+
+    "Get a single loan by ID."
+    loan(id: ID! @eq): Loan @find @guard
+
+    "List credit cards for the authenticated user."
+    creditCards(
+        status: String @eq
+        type: String @eq
+    ): [CreditCard!]! @paginate(defaultCount: 20) @guard
+
+    "Get a single credit card by ID."
+    creditCard(id: ID! @eq): CreditCard @find @guard
+
+    "List subscriptions for the authenticated user."
+    subscriptions(
+        status: String @eq
+        frequency: String @eq
+    ): [ServiceSubscription!]! @paginate(defaultCount: 20, model: "Subscription") @guard
+
+    "Get a single subscription by ID."
+    subscription(id: ID! @eq): ServiceSubscription @find(model: "Subscription") @guard
+
+    "Monthly cashflow summary: total income and expense for the given year/month."
+    monthlyCashflow(year: Int!, month: Int!): MonthlyCashflow!
+        @guard
+        @field(resolver: "App\\GraphQL\\Queries\\MonthlyCashflow")
+
+    "Total spending grouped by category for the given year/month."
+    totalByCategory(year: Int!, month: Int!): [CategoryTotal!]!
+        @guard
+        @field(resolver: "App\\GraphQL\\Queries\\TotalByCategory")
+}
+
+# ─── INPUT TYPES ──────────────────────────────────────────────────────────────
+
+input CreateAccountInput {
+    name: String!
+    type: String!
+    opening_balance: Float
+    currency: String!
+    is_active: Boolean
+}
+
+input UpdateAccountInput {
+    name: String
+    type: String
+    currency: String
+    is_active: Boolean
+}
+
+input CreateTransactionInput {
+    account_id: ID!
+    transaction_type_id: ID!
+    transaction_category_id: ID
+    amount: Float!
+    date: Date!
+    description: String!
+    notes: String
+    is_transfer: Boolean
+    to_account_id: ID
+}
+
+input UpdateTransactionInput {
+    account_id: ID
+    transaction_type_id: ID
+    transaction_category_id: ID
+    amount: Float
+    date: Date
+    description: String
+    notes: String
+}
+
+input CreateLoanInput {
+    account_id: ID!
+    name: String!
+    total_amount: Float!
+    monthly_payment: Float!
+    interest_rate: Float
+    is_variable_rate: Boolean
+    withdrawal_day: Int!
+    skip_weekends: Boolean
+    start_date: Date!
+    end_date: Date
+    total_installments: Int!
+    paid_installments: Int!
+    remaining_amount: Float
+    status: String!
+}
+
+input UpdateLoanInput {
+    name: String
+    total_amount: Float
+    monthly_payment: Float
+    interest_rate: Float
+    is_variable_rate: Boolean
+    status: String
+}
+
+input CreateCreditCardInput {
+    account_id: ID!
+    name: String!
+    type: String!
+    credit_limit: Float
+    fixed_payment: Float
+    interest_rate: Float
+    stamp_duty_amount: Float
+    statement_day: Int!
+    due_day: Int!
+    skip_weekends: Boolean
+    status: String!
+    start_date: Date!
+    interest_calculation_method: String
+}
+
+input UpdateCreditCardInput {
+    name: String
+    credit_limit: Float
+    fixed_payment: Float
+    interest_rate: Float
+    statement_day: Int
+    due_day: Int
+    skip_weekends: Boolean
+    status: String
+}
+
+input CreateSubscriptionInput {
+    account_id: ID!
+    name: String!
+    monthly_cost: Float
+    annual_cost: Float
+    frequency: String!
+    day_of_month: Int!
+    next_renewal_date: Date!
+    category_id: ID
+    auto_create_transaction: Boolean
+    status: String!
+    notes: String
+}
+
+input UpdateSubscriptionInput {
+    name: String
+    monthly_cost: Float
+    annual_cost: Float
+    frequency: String
+    day_of_month: Int
+    next_renewal_date: Date
+    status: String
+    notes: String
+}
+
+# ─── MUTATIONS ────────────────────────────────────────────────────────────────
+
+type Mutation {
+    "Create a new bank account."
+    createAccount(input: CreateAccountInput! @spread): Account!
+        @create @guard @inject(context: "user.id", name: "user_id")
+
+    "Update an existing account."
+    updateAccount(id: ID!, input: UpdateAccountInput! @spread): Account!
+        @update @guard
+
+    "Delete an account by ID."
+    deleteAccount(id: ID!): Account
+        @delete @guard
+
+    "Create a new transaction."
+    createTransaction(input: CreateTransactionInput! @spread): Transaction!
+        @create @guard @inject(context: "user.id", name: "user_id")
+
+    "Update an existing transaction."
+    updateTransaction(id: ID!, input: UpdateTransactionInput! @spread): Transaction!
+        @update @guard
+
+    "Delete a transaction by ID."
+    deleteTransaction(id: ID!): Transaction
+        @delete @guard
+
+    "Create a new loan."
+    createLoan(input: CreateLoanInput! @spread): Loan!
+        @create @guard @inject(context: "user.id", name: "user_id")
+
+    "Update an existing loan."
+    updateLoan(id: ID!, input: UpdateLoanInput! @spread): Loan!
+        @update @guard
+
+    "Delete a loan by ID."
+    deleteLoan(id: ID!): Loan
+        @delete @guard
+
+    "Create a new credit card."
+    createCreditCard(input: CreateCreditCardInput! @spread): CreditCard!
+        @create @guard @inject(context: "user.id", name: "user_id")
+
+    "Update an existing credit card."
+    updateCreditCard(id: ID!, input: UpdateCreditCardInput! @spread): CreditCard!
+        @update @guard
+
+    "Delete a credit card by ID."
+    deleteCreditCard(id: ID!): CreditCard
+        @delete @guard
+
+    "Create a new subscription."
+    createSubscription(input: CreateSubscriptionInput! @spread): ServiceSubscription!
+        @create(model: "Subscription") @guard @inject(context: "user.id", name: "user_id")
+
+    "Update an existing subscription."
+    updateSubscription(id: ID!, input: UpdateSubscriptionInput! @spread): ServiceSubscription!
+        @update(model: "Subscription") @guard
+
+    "Delete a subscription by ID."
+    deleteSubscription(id: ID!): ServiceSubscription
+        @delete(model: "Subscription") @guard
 }
 
 "Account of a person who uses this application."

@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Enums\LoanStatus;
+use App\Traits\HasUserScoping;
 
 class Loan extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUserScoping;
 
     protected $fillable = [
         'user_id',
@@ -55,5 +56,14 @@ class Loan extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(LoanPayment::class);
+    }
+
+    /**
+     * Scope: filter to records belonging to the authenticated user.
+     * Used by Lighthouse @scope(name: "belongsToAuthUser") on GraphQL paginated queries.
+     */
+    public function scopeBelongsToAuthUser($query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('user_id', auth()->id());
     }
 }
