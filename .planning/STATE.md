@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: — Finance Backend ✅
 current_plan: 5 of 7
 status: executing
-stopped_at: Completed 06-05-graphql plan
-last_updated: "2026-04-21T21:48:21.664Z"
+stopped_at: Completed 06-06-api-docs plan
+last_updated: "2026-04-21T21:52:55.817Z"
 progress:
   total_phases: 6
   completed_phases: 0
@@ -62,8 +62,9 @@ All finance backend phases delivered:
 - **2026-04-21:** Lighthouse guards set to ['sanctum'] for Bearer token auth in GraphQL
 - [Phase 06]: Renamed Subscription type to ServiceSubscription to avoid Lighthouse built-in Subscription conflict
 - [Phase 06]: Replaced @scope directive with HasUserScoping global scope on all 5 finance models (Lighthouse 6 @scope is argument-only)
+- [Phase 06]: Used type=laravel for Scribe so /docs route is served via Blade; copied openapi.yaml to public/docs/ for static access
 
 ## Last Session
 
-**Stopped at:** Completed 06-05-graphql plan
+**Stopped at:** Completed 06-06-api-docs plan
 **Timestamp:** 2026-04-21T21:30:00Z
