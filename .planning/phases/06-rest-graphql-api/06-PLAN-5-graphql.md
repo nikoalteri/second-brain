@@ -9,6 +9,11 @@ files_modified:
   - graphql/schema.graphql
   - app/GraphQL/Queries/MonthlyCashflow.php
   - app/GraphQL/Queries/TotalByCategory.php
+  - app/Models/Account.php
+  - app/Models/Transaction.php
+  - app/Models/Loan.php
+  - app/Models/CreditCard.php
+  - app/Models/Subscription.php
 autonomous: true
 
 must_haves:
@@ -261,7 +266,7 @@ type Query {
         is_active: Boolean @eq
         "Filter by account type."
         type: String @eq
-    ): [Account!]! @paginate(defaultCount: 20) @guard
+    ): [Account!]! @paginate(defaultCount: 20) @guard @scope(name: "belongsToAuthUser")
 
     "Get a single account by ID."
     account(id: ID! @eq): Account @find @guard @can(ability: "view", find: "id", model: "App\\Models\\Account")
@@ -270,7 +275,7 @@ type Query {
     transactions(
         account_id: ID @eq
         is_transfer: Boolean @eq
-    ): [Transaction!]! @paginate(defaultCount: 20) @guard @with(["account", "category"])
+    ): [Transaction!]! @paginate(defaultCount: 20) @guard @with(["account", "category"]) @scope(name: "belongsToAuthUser")
 
     "Get a single transaction by ID."
     transaction(id: ID! @eq): Transaction @find @guard
@@ -278,7 +283,7 @@ type Query {
     "List loans for the authenticated user."
     loans(
         status: String @eq
-    ): [Loan!]! @paginate(defaultCount: 20) @guard @with(["payments"])
+    ): [Loan!]! @paginate(defaultCount: 20) @guard @with(["payments"]) @scope(name: "belongsToAuthUser")
 
     "Get a single loan by ID."
     loan(id: ID! @eq): Loan @find @guard
@@ -287,7 +292,7 @@ type Query {
     creditCards(
         status: String @eq
         type: String @eq
-    ): [CreditCard!]! @paginate(defaultCount: 20) @guard
+    ): [CreditCard!]! @paginate(defaultCount: 20) @guard @scope(name: "belongsToAuthUser")
 
     "Get a single credit card by ID."
     creditCard(id: ID! @eq): CreditCard @find @guard
@@ -296,7 +301,7 @@ type Query {
     subscriptions(
         status: String @eq
         frequency: String @eq
-    ): [Subscription!]! @paginate(defaultCount: 20) @guard
+    ): [Subscription!]! @paginate(defaultCount: 20) @guard @scope(name: "belongsToAuthUser")
 
     "Get a single subscription by ID."
     subscription(id: ID! @eq): Subscription @find @guard
@@ -322,6 +327,7 @@ type Query {
   - `graphql/schema.graphql` contains `type MonthlyCashflow`
   - `graphql/schema.graphql` contains `type CategoryTotal`
   - `graphql/schema.graphql` contains `@guard` (at least 8 occurrences for the query fields)
+  - `graphql/schema.graphql` contains `@scope(name: "belongsToAuthUser")` on ALL 5 list queries (accounts, transactions, loans, creditCards, subscriptions)
   - `graphql/schema.graphql` contains `@with(["account", "category"])` on transactions query
   - `graphql/schema.graphql` contains `@paginate(defaultCount: 20)`
   - `graphql/schema.graphql` contains `monthlyCashflow(year: Int!, month: Int!)`
@@ -466,7 +472,7 @@ input UpdateSubscriptionInput {
 type Mutation {
     "Create a new bank account."
     createAccount(input: CreateAccountInput! @spread): Account!
-        @create @guard
+        @create @guard @inject(context: "user.id", name: "user_id")
 
     "Update an existing account."
     updateAccount(id: ID!, input: UpdateAccountInput! @spread): Account!
@@ -478,7 +484,7 @@ type Mutation {
 
     "Create a new transaction."
     createTransaction(input: CreateTransactionInput! @spread): Transaction!
-        @create @guard
+        @create @guard @inject(context: "user.id", name: "user_id")
 
     "Update an existing transaction."
     updateTransaction(id: ID!, input: UpdateTransactionInput! @spread): Transaction!
@@ -490,7 +496,7 @@ type Mutation {
 
     "Create a new loan."
     createLoan(input: CreateLoanInput! @spread): Loan!
-        @create @guard
+        @create @guard @inject(context: "user.id", name: "user_id")
 
     "Update an existing loan."
     updateLoan(id: ID!, input: UpdateLoanInput! @spread): Loan!
@@ -502,7 +508,7 @@ type Mutation {
 
     "Create a new credit card."
     createCreditCard(input: CreateCreditCardInput! @spread): CreditCard!
-        @create @guard
+        @create @guard @inject(context: "user.id", name: "user_id")
 
     "Update an existing credit card."
     updateCreditCard(id: ID!, input: UpdateCreditCardInput! @spread): CreditCard!
@@ -514,7 +520,7 @@ type Mutation {
 
     "Create a new subscription."
     createSubscription(input: CreateSubscriptionInput! @spread): Subscription!
-        @create @guard
+        @create @guard @inject(context: "user.id", name: "user_id")
 
     "Update an existing subscription."
     updateSubscription(id: ID!, input: UpdateSubscriptionInput! @spread): Subscription!
@@ -618,7 +624,7 @@ class TotalByCategory
   <acceptance_criteria>
   - `graphql/schema.graphql` contains `type Mutation`
   - `graphql/schema.graphql` contains `createAccount(input: CreateAccountInput! @spread): Account!`
-  - `graphql/schema.graphql` contains `@create @guard` (for Account, Transaction, Loan, CreditCard, Subscription mutations)
+  - `graphql/schema.graphql` contains `@create @guard @inject(context: "user.id", name: "user_id")` for ALL 5 create mutations (createAccount, createTransaction, createLoan, createCreditCard, createSubscription)
   - `graphql/schema.graphql` contains `@delete @guard`
   - `graphql/schema.graphql` contains `input CreateAccountInput`
   - `graphql/schema.graphql` contains `input CreateTransactionInput`
@@ -630,6 +636,51 @@ class TotalByCategory
   - `app/GraphQL/Queries/TotalByCategory.php` exists and contains `groupBy(`
   - `app/GraphQL/Queries/TotalByCategory.php` contains `where('t.user_id', $user->id)`
   - `php artisan config:clear` exits 0
+  </acceptance_criteria>
+</task>
+
+<task id="T2b" wave="2">
+  <title>Add scopeBelongsToAuthUser to All 5 Finance Models</title>
+  <read_first>
+    - app/Models/Account.php
+    - app/Models/Transaction.php
+    - app/Models/Loan.php
+    - app/Models/CreditCard.php
+    - app/Models/Subscription.php
+  </read_first>
+  <action>
+**WHY:** The GraphQL schema uses `@scope(name: "belongsToAuthUser")` on all 5 `@paginate` queries. Lighthouse resolves this directive by calling the named scope on the model's Eloquent builder. Without this scope defined on each model, all 5 list queries will throw a `BadMethodCallException` at runtime and the security isolation (API-04) will be broken.
+
+For each of the 5 models, open the file and add the following scope method inside the class body (after the existing fillable/casts properties, before any existing scope methods):
+
+```php
+/**
+ * Scope: filter to records belonging to the authenticated user.
+ * Used by Lighthouse @scope(name: "belongsToAuthUser") on GraphQL paginated queries.
+ */
+public function scopeBelongsToAuthUser($query): \Illuminate\Database\Eloquent\Builder
+{
+    return $query->where('user_id', auth()->id());
+}
+```
+
+Apply this to:
+1. `app/Models/Account.php`
+2. `app/Models/Transaction.php`
+3. `app/Models/Loan.php`
+4. `app/Models/CreditCard.php`
+5. `app/Models/Subscription.php`
+
+**IMPORTANT:** Do NOT add this scope if a model already defines `scopeBelongsToAuthUser`. Check first with `grep -n "scopeBelongsToAuthUser"` on each file.
+  </action>
+  <acceptance_criteria>
+  - `grep -n "scopeBelongsToAuthUser" app/Models/Account.php` finds a match
+  - `grep -n "scopeBelongsToAuthUser" app/Models/Transaction.php` finds a match
+  - `grep -n "scopeBelongsToAuthUser" app/Models/Loan.php` finds a match
+  - `grep -n "scopeBelongsToAuthUser" app/Models/CreditCard.php` finds a match
+  - `grep -n "scopeBelongsToAuthUser" app/Models/Subscription.php` finds a match
+  - Each scope contains `where('user_id', auth()->id())`
+  - `php artisan inspire` exits 0 (no syntax errors in any model)
   </acceptance_criteria>
 </task>
 

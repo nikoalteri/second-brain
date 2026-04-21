@@ -210,7 +210,7 @@ class AccountController extends Controller
      * @group Accounts
      * @authenticated
      */
-    public function store(StoreAccountRequest $request): AccountResource
+    public function store(StoreAccountRequest $request): Response
     {
         $this->authorize('create', Account::class);
 
@@ -219,7 +219,7 @@ class AccountController extends Controller
             'balance'         => $request->validated('opening_balance', 0),
         ]));
 
-        return new AccountResource($account);
+        return (new AccountResource($account))->response()->setStatusCode(201);
     }
 
     /**
@@ -280,6 +280,7 @@ class AccountController extends Controller
   - `AccountController.php` contains `cursorPaginate(`
   - `AccountController.php` contains `$this->authorize(` (at least once per write method)
   - `AccountController.php` contains `'user_id' => $request->user()->id` in store()
+  - `AccountController.php` store() returns HTTP 201: contains `->response()->setStatusCode(201)` (NOT `return new AccountResource`)
   - `app/Http/Resources/Api/AccountResource.php` exists and contains `toArray`
   - `app/Http/Requests/Api/StoreAccountRequest.php` contains `'currency'` rule
   - `app/Http/Requests/Api/UpdateAccountRequest.php` contains `'sometimes'`
@@ -450,7 +451,7 @@ class TransactionController extends Controller
      * @group Transactions
      * @authenticated
      */
-    public function store(StoreTransactionRequest $request): TransactionResource
+    public function store(StoreTransactionRequest $request): Response
     {
         $this->authorize('create', Transaction::class);
 
@@ -460,7 +461,7 @@ class TransactionController extends Controller
 
         $transaction->load(['account', 'category']);
 
-        return new TransactionResource($transaction);
+        return (new TransactionResource($transaction))->response()->setStatusCode(201);
     }
 
     /**
@@ -527,6 +528,7 @@ public function scopeDateTo($query, string $date)
   - `TransactionController.php` contains `->with(['account', 'category'])`
   - `TransactionController.php` contains `AllowedFilter::scope('date_from'`
   - `TransactionController.php` contains `cursorPaginate(`
+  - `TransactionController.php` store() returns HTTP 201: contains `->response()->setStatusCode(201)` (NOT `return new TransactionResource`)
   - `app/Http/Resources/Api/TransactionResource.php` contains `whenLoaded('account'`
   - `app/Models/Transaction.php` contains `scopeDateFrom`
   - `app/Models/Transaction.php` contains `scopeDateTo`

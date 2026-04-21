@@ -228,7 +228,7 @@ class LoanController extends Controller
     }
 
     /** @group Loans @authenticated */
-    public function store(StoreLoanRequest $request): LoanResource
+    public function store(StoreLoanRequest $request): Response
     {
         $this->authorize('create', Loan::class);
 
@@ -236,7 +236,7 @@ class LoanController extends Controller
             'user_id' => $request->user()->id,
         ]));
 
-        return new LoanResource($loan);
+        return (new LoanResource($loan))->response()->setStatusCode(201);
     }
 
     /** @group Loans @authenticated */
@@ -409,7 +409,7 @@ class SubscriptionController extends Controller
     }
 
     /** @group Subscriptions @authenticated */
-    public function store(StoreSubscriptionRequest $request): SubscriptionResource
+    public function store(StoreSubscriptionRequest $request): Response
     {
         $this->authorize('create', Subscription::class);
 
@@ -417,7 +417,7 @@ class SubscriptionController extends Controller
             'user_id' => $request->user()->id,
         ]));
 
-        return new SubscriptionResource($subscription);
+        return (new SubscriptionResource($subscription))->response()->setStatusCode(201);
     }
 
     /** @group Subscriptions @authenticated */
@@ -452,7 +452,9 @@ class SubscriptionController extends Controller
   </action>
   <acceptance_criteria>
   - `app/Http/Controllers/Api/V1/LoanController.php` contains `QueryBuilder::for(Loan::class)` and `->where('user_id', $request->user()->id)`
+  - `LoanController.php` store() returns HTTP 201: contains `->response()->setStatusCode(201)` (NOT `return new LoanResource`)
   - `app/Http/Controllers/Api/V1/SubscriptionController.php` contains `QueryBuilder::for(Subscription::class)` and `->where('user_id', $request->user()->id)`
+  - `SubscriptionController.php` store() returns HTTP 201: contains `->response()->setStatusCode(201)` (NOT `return new SubscriptionResource`)
   - `app/Http/Resources/Api/LoanResource.php` contains `whenLoaded('payments'`
   - `app/Http/Resources/Api/SubscriptionResource.php` contains `next_renewal_date`
   - `LoanController.php` show() contains `$loan->load('payments')`
@@ -627,7 +629,7 @@ class CreditCardController extends Controller
     }
 
     /** @group Credit Cards @authenticated */
-    public function store(StoreCreditCardRequest $request): CreditCardResource
+    public function store(StoreCreditCardRequest $request): Response
     {
         $this->authorize('create', CreditCard::class);
 
@@ -635,7 +637,7 @@ class CreditCardController extends Controller
             'user_id' => $request->user()->id,
         ]));
 
-        return new CreditCardResource($card);
+        return (new CreditCardResource($card))->response()->setStatusCode(201);
     }
 
     /** @group Credit Cards @authenticated */
@@ -680,6 +682,7 @@ Update `Rule::in([...])` arrays to match actual enum case values if they differ 
   <acceptance_criteria>
   - `app/Http/Controllers/Api/V1/CreditCardController.php` exists and contains `QueryBuilder::for(CreditCard::class)`
   - `CreditCardController.php` contains `->where('user_id', $request->user()->id)`
+  - `CreditCardController.php` store() returns HTTP 201: contains `->response()->setStatusCode(201)` (NOT `return new CreditCardResource`)
   - `CreditCardController.php` show() contains `$creditCard->load('cycles')`
   - `app/Http/Resources/Api/CreditCardResource.php` contains `whenLoaded('cycles'`
   - `app/Http/Resources/Api/CreditCardResource.php` contains `available_credit`

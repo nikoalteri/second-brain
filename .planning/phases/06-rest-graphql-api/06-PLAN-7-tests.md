@@ -232,15 +232,12 @@ class AuthApiTest extends TestCase
   </acceptance_criteria>
 </task>
 
-<task id="T2" wave="3">
-  <title>REST CRUD + Scoping + Pagination + Filter Tests</title>
+<task id="T2a" wave="3">
+  <title>REST CRUD + Scoping + Pagination + Filter Tests — Accounts + Transactions</title>
   <read_first>
     - tests/Feature/Api/AuthApiTest.php
     - database/factories/AccountFactory.php
     - database/factories/TransactionFactory.php
-    - database/factories/LoanFactory.php
-    - database/factories/CreditCardFactory.php
-    - database/factories/SubscriptionFactory.php
   </read_first>
   <action>
 **Create `tests/Feature/Api/AccountApiTest.php`:**
@@ -424,6 +421,26 @@ class AccountApiTest extends TestCase
     }
 }
 ```
+  </action>
+  <acceptance_criteria>
+  - `tests/Feature/Api/AccountApiTest.php` exists with at least 8 test methods
+  - `tests/Feature/Api/TransactionApiTest.php` exists with `transactions_can_be_filtered_by_date_from`
+  - `AccountApiTest.php` contains `create_account_does_not_accept_user_id_from_request`
+  - `AccountApiTest.php` contains `accounts_index_sorts_by_balance_descending`
+  - `AccountApiTest.php` contains `assertCreated()` (verifies HTTP 201 on store)
+  - `php artisan test tests/Feature/Api/AccountApiTest.php tests/Feature/Api/TransactionApiTest.php` exits 0
+  </acceptance_criteria>
+</task>
+
+<task id="T2b" wave="3">
+  <title>REST CRUD + Scoping + Filter Tests — Loans, Credit Cards, Subscriptions, Transactions</title>
+  <read_first>
+    - tests/Feature/Api/AccountApiTest.php
+    - database/factories/LoanFactory.php
+    - database/factories/CreditCardFactory.php
+    - database/factories/SubscriptionFactory.php
+  </read_first>
+  <action>
 
 **Create `tests/Feature/Api/LoanApiTest.php`:**
 ```php
@@ -498,6 +515,33 @@ class LoanApiTest extends TestCase
             ->assertOk()
             ->assertJsonFragment(['id' => $active->id])
             ->assertJsonMissing(['id' => $completed->id]);
+    }
+
+    /** @test */
+    public function user_can_create_loan(): void
+    {
+        $user    = User::factory()->create();
+        $account = \App\Models\Account::factory()->create(['user_id' => $user->id]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/loans', [
+            'name'               => 'Home Loan',
+            'account_id'         => $account->id,
+            'total_amount'       => 50000.00,
+            'monthly_payment'    => 1000.00,
+            'withdrawal_day'     => 5,
+            'start_date'         => '2026-01-01',
+            'total_installments' => 50,
+            'paid_installments'  => 0,
+            'status'             => 'active',
+        ])->assertCreated()
+          ->assertJsonPath('data.name', 'Home Loan');
+
+        $this->assertDatabaseHas('loans', [
+            'user_id' => $user->id,
+            'name'    => 'Home Loan',
+        ]);
     }
 }
 ```
@@ -680,14 +724,12 @@ class TransactionApiTest extends TestCase
 ```
   </action>
   <acceptance_criteria>
-  - `tests/Feature/Api/AccountApiTest.php` exists with at least 8 test methods
   - `tests/Feature/Api/LoanApiTest.php` exists with `loan_show_includes_payments`
   - `tests/Feature/Api/CreditCardApiTest.php` exists with `credit_card_show_includes_cycles`
-  - `tests/Feature/Api/SubscriptionApiTest.php` exists
+  - `tests/Feature/Api/SubscriptionApiTest.php` exists with `subscriptions_can_be_filtered_by_status`
   - `tests/Feature/Api/TransactionApiTest.php` exists with `transactions_can_be_filtered_by_date_from`
-  - `AccountApiTest.php` contains `create_account_does_not_accept_user_id_from_request`
-  - `AccountApiTest.php` contains `accounts_index_sorts_by_balance_descending`
-  - `php artisan test tests/Feature/Api/` exits 0 (all tests pass)
+  - `LoanApiTest.php` contains `assertCreated()` (verifies HTTP 201 on loan store)
+  - `php artisan test tests/Feature/Api/LoanApiTest.php tests/Feature/Api/CreditCardApiTest.php tests/Feature/Api/SubscriptionApiTest.php tests/Feature/Api/TransactionApiTest.php` exits 0
   </acceptance_criteria>
 </task>
 
