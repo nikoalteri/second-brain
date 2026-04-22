@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
@@ -29,9 +30,12 @@ class AuthApiTest extends TestCase
                 'refresh_token',
                 'token_type',
                 'expires_in',
+                'user' => ['id', 'name', 'email', 'roles', 'is_admin'],
             ])
             ->assertJsonPath('token_type', 'Bearer')
-            ->assertJsonPath('expires_in', 1800);
+            ->assertJsonPath('expires_in', 1800)
+            ->assertJsonPath('user.email', $user->email)
+            ->assertJsonPath('user.is_admin', false);
 
         $this->assertNotEmpty($response->json('access_token'));
         $this->assertNotEmpty($response->json('refresh_token'));
@@ -103,6 +107,23 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('expires_in', 1800);
 
         $this->assertNotEmpty($refreshResponse->json('access_token'));
+    }
+
+    public function test_authenticated_user_can_fetch_profile_with_admin_flag(): void
+    {
+        Role::create(['name' => 'superadmin']);
+
+        $user = User::factory()->create();
+        $user->assignRole('superadmin');
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson('/api/v1/auth/me');
+
+        $response->assertOk()
+            ->assertJsonPath('user.email', $user->email)
+            ->assertJsonPath('user.is_admin', true)
+            ->assertJsonPath('user.roles.0', 'superadmin');
     }
 
     public function test_unauthenticated_request_to_protected_route_returns_401_json(): void

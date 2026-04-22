@@ -49,12 +49,12 @@ const paginator = computed(() => result.value?.accounts?.paginatorInfo);
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-white">Accounts</h1>
-                <p class="mt-1 text-sm text-gray-400">All your bank accounts</p>
+                <h1 class="text-xl font-semibold text-gray-900">Accounts</h1>
+                <p class="mt-1 text-sm text-gray-500">All your bank accounts</p>
             </div>
             <router-link
                 to="/accounts/new"
-                class="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors duration-150 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-950"
+                class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-gray-900 transition-colors duration-150 hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white"
             >
                 Add account
             </router-link>
@@ -76,17 +76,17 @@ const paginator = computed(() => result.value?.accounts?.paginatorInfo);
                 <div
                     v-for="account in accounts"
                     :key="account.id"
-                    class="cursor-pointer rounded-xl border border-gray-700 bg-gray-800 p-4 transition-colors duration-150 hover:border-gray-600"
+                    class="cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition-colors duration-150 hover:border-gray-300"
                     @click="router.push(`/accounts/${account.id}`)"
                 >
                     <div class="mb-3 flex items-start justify-between">
                         <div>
-                            <h3 class="text-base font-normal text-white">{{ account.name }}</h3>
-                            <span class="text-sm text-gray-400">{{ accountTypeLabels[account.type] ?? account.type }}</span>
+                            <h3 class="text-base font-normal text-gray-900">{{ account.name }}</h3>
+                            <span class="text-sm text-gray-500">{{ accountTypeLabels[account.type] ?? account.type }}</span>
                         </div>
                         <span
                             class="rounded px-2 py-0.5 text-sm"
-                            :class="account.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-400'"
+                            :class="account.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-500'"
                         >
                             {{ account.is_active ? 'Active' : 'Inactive' }}
                         </span>
@@ -101,19 +101,19 @@ const paginator = computed(() => result.value?.accounts?.paginatorInfo);
 
             <div
                 v-if="paginator?.lastPage > 1"
-                class="mt-6 flex items-center justify-between border-t border-gray-700 pt-4"
+                class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4"
             >
                 <p class="text-sm text-gray-500">Page {{ paginator.currentPage }} of {{ paginator.lastPage }}</p>
                 <div class="flex gap-2">
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="page <= 1"
                         @click="page--"
                     >
                         Prev
                     </button>
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="page >= paginator.lastPage"
                         @click="page++"
                     >

@@ -33,4 +33,13 @@ const app = createApp(App);
 app.use(pinia);
 app.use(router);
 app.provide(DefaultApolloClient, apolloClient);
-app.mount('#app');
+
+const auth = useAuthStore(pinia);
+
+if (auth.isAuthenticated) {
+    auth.fetchCurrentUser().finally(() => {
+        app.mount('#app');
+    });
+} else {
+    app.mount('#app');
+}

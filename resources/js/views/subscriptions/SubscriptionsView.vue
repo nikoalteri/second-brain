@@ -49,27 +49,27 @@ function isRenewingSoon(dateString) {
 }
 
 function renewalDateClass(dateString) {
-    return isRenewingSoon(dateString) ? 'text-red-400' : 'text-gray-400';
+    return isRenewingSoon(dateString) ? 'text-red-400' : 'text-gray-500';
 }
 
 function statusBadgeClass(status) {
     const map = {
         active: 'bg-emerald-500/10 text-emerald-400',
-        inactive: 'bg-gray-500/10 text-gray-400',
-        cancelled: 'bg-gray-500/10 text-gray-400',
-        trial: 'bg-blue-500/10 text-blue-400',
+        inactive: 'bg-gray-500/10 text-gray-500',
+        cancelled: 'bg-gray-500/10 text-gray-500',
     };
 
-    return map[status?.toLowerCase()] ?? 'bg-gray-500/10 text-gray-400';
+    return map[status?.toLowerCase()] ?? 'bg-gray-500/10 text-gray-500';
 }
 
 function frequencyLabel(frequency) {
-    const map = { monthly: 'Monthly', annual: 'Yearly', biennial: 'Biennial', weekly: 'Weekly' };
+    const map = { monthly: 'Monthly', annual: 'Annual', biennial: 'Every 2 Years' };
     return map[frequency?.toLowerCase()] ?? frequency;
 }
 
 function displayCost(subscription) {
     if (subscription.frequency === 'annual') return `${formatCurrency(subscription.annual_cost)}/yr`;
+    if (subscription.frequency === 'biennial') return `${formatCurrency(subscription.annual_cost)}/2 yr`;
     return `${formatCurrency(subscription.monthly_cost)}/mo`;
 }
 </script>
@@ -78,12 +78,12 @@ function displayCost(subscription) {
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-white">Subscriptions</h1>
-                <p class="mt-1 text-sm text-gray-400">Keep tabs on recurring costs</p>
+                <h1 class="text-xl font-semibold text-gray-900">Subscriptions</h1>
+                <p class="mt-1 text-sm text-gray-500">Keep tabs on recurring costs</p>
             </div>
             <router-link
                 to="/subscriptions/new"
-                class="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-950 hover:bg-blue-700"
+                class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white hover:bg-amber-600"
             >
                 Add subscription
             </router-link>
@@ -105,14 +105,14 @@ function displayCost(subscription) {
                 <div
                     v-for="subscription in subscriptions"
                     :key="subscription.id"
-                    class="cursor-pointer rounded-xl border border-gray-700 bg-gray-800 p-4 transition-colors duration-150 hover:border-gray-600"
+                    class="cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition-colors duration-150 hover:border-gray-300"
                     @click="router.push(`/subscriptions/${subscription.id}/edit`)"
                 >
                     <div class="mb-3 flex items-start justify-between">
                         <div class="min-w-0 flex-1 pr-2">
-                            <h3 class="truncate text-base font-normal text-white">{{ subscription.name }}</h3>
+                            <h3 class="truncate text-base font-normal text-gray-900">{{ subscription.name }}</h3>
                             <div class="mt-1 flex items-center gap-2">
-                                <span class="rounded bg-gray-700 px-2 py-0.5 text-sm text-gray-300">
+                                <span class="rounded bg-gray-100 px-2 py-0.5 text-sm text-gray-700">
                                     {{ frequencyLabel(subscription.frequency) }}
                                 </span>
                             </div>
@@ -137,19 +137,19 @@ function displayCost(subscription) {
 
             <div
                 v-if="paginator?.lastPage > 1"
-                class="mt-6 flex items-center justify-between border-t border-gray-700 pt-4"
+                class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4"
             >
                 <p class="text-sm text-gray-500">Page {{ paginator.currentPage }} of {{ paginator.lastPage }}</p>
                 <div class="flex gap-2">
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="page <= 1"
                         @click="page--"
                     >
                         Prev
                     </button>
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="page >= paginator.lastPage"
                         @click="page++"
                     >

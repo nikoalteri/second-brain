@@ -6,7 +6,7 @@
     <title>Fluxa</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="h-full bg-gray-950 font-sans antialiased">
+<body class="h-full bg-gray-50 font-sans antialiased">
     <div id="app"></div>
 </body>
 </html>

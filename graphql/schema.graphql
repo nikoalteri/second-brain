@@ -12,7 +12,7 @@ type Account {
     id: ID!
     "Display name of the account."
     name: String!
-    "Account type (e.g. checking, savings, investment)."
+    "Account type (e.g. bank, cash, investment, emergency_fund, debt)."
     type: String!
     "Current balance in the account's currency."
     balance: Float!
@@ -32,6 +32,7 @@ type Account {
 type Transaction {
     id: ID!
     account_id: ID!
+    to_account_id: ID
     transaction_type_id: ID!
     transaction_category_id: ID
     amount: Float!
@@ -43,6 +44,8 @@ type Transaction {
     account: Account! @belongsTo
     "Optional spending category."
     category: TransactionCategory @belongsTo(relation: "category")
+    "Optional destination account for transfer transactions."
+    toAccount: Account @belongsTo(relation: "toAccount")
     created_at: DateTime!
     updated_at: DateTime!
 }
@@ -57,8 +60,10 @@ type TransactionType {
 "A transaction spending category."
 type TransactionCategory {
     id: ID!
+    parent_id: ID
     name: String!
     color: String
+    parent: TransactionCategory @belongsTo(relation: "parent")
 }
 
 "A loan with amortization schedule."
@@ -73,6 +78,8 @@ type Loan {
     remaining_amount: Float!
     total_installments: Int!
     paid_installments: Int!
+    withdrawal_day: Int!
+    skip_weekends: Boolean!
     status: String!
     start_date: Date
     end_date: Date
@@ -152,6 +159,7 @@ type ServiceSubscription {
     id: ID!
     name: String!
     account_id: ID!
+    category_id: ID
     monthly_cost: Float!
     annual_cost: Float!
     "Billing frequency: monthly, annual, or biennial."
@@ -292,6 +300,8 @@ input UpdateTransactionInput {
     date: Date
     description: String
     notes: String
+    is_transfer: Boolean
+    to_account_id: ID
 }
 
 input CreateLoanInput {
@@ -312,11 +322,19 @@ input CreateLoanInput {
 }
 
 input UpdateLoanInput {
+    account_id: ID
     name: String
     total_amount: Float
     monthly_payment: Float
     interest_rate: Float
     is_variable_rate: Boolean
+    withdrawal_day: Int
+    skip_weekends: Boolean
+    start_date: Date
+    end_date: Date
+    total_installments: Int
+    paid_installments: Int
+    remaining_amount: Float
     status: String
 }
 
@@ -331,20 +349,27 @@ input CreateCreditCardInput {
     statement_day: Int!
     due_day: Int!
     skip_weekends: Boolean
+    current_balance: Float
     status: String!
     start_date: Date!
     interest_calculation_method: String
 }
 
 input UpdateCreditCardInput {
+    account_id: ID
     name: String
+    type: String
     credit_limit: Float
     fixed_payment: Float
     interest_rate: Float
+    stamp_duty_amount: Float
     statement_day: Int
     due_day: Int
     skip_weekends: Boolean
+    current_balance: Float
     status: String
+    start_date: Date
+    interest_calculation_method: String
 }
 
 input CreateSubscriptionInput {
@@ -362,12 +387,15 @@ input CreateSubscriptionInput {
 }
 
 input UpdateSubscriptionInput {
+    account_id: ID
     name: String
     monthly_cost: Float
     annual_cost: Float
     frequency: String
     day_of_month: Int
     next_renewal_date: Date
+    category_id: ID
+    auto_create_transaction: Boolean
     status: String
     notes: String
 }

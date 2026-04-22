@@ -48,10 +48,11 @@ function availablePct(card) {
 function statusBadgeClass(status) {
     const map = {
         active: 'bg-emerald-500/10 text-emerald-400',
-        closed: 'bg-gray-500/10 text-gray-400',
+        suspended: 'bg-amber-100 text-amber-700',
+        closed: 'bg-gray-500/10 text-gray-500',
     };
 
-    return map[status?.toLowerCase()] ?? 'bg-gray-500/10 text-gray-400';
+    return map[status?.toLowerCase()] ?? 'bg-gray-500/10 text-gray-500';
 }
 </script>
 
@@ -59,12 +60,12 @@ function statusBadgeClass(status) {
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-white">Credit Cards</h1>
-                <p class="mt-1 text-sm text-gray-400">Track your credit card spending cycles</p>
+                <h1 class="text-xl font-semibold text-gray-900">Credit Cards</h1>
+                <p class="mt-1 text-sm text-gray-500">Track your credit card spending cycles</p>
             </div>
             <router-link
                 to="/credit-cards/new"
-                class="flex h-10 items-center rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-950 hover:bg-blue-700"
+                class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white hover:bg-amber-600"
             >
                 Add card
             </router-link>
@@ -86,27 +87,27 @@ function statusBadgeClass(status) {
                 <div
                     v-for="card in cards"
                     :key="card.id"
-                    class="cursor-pointer rounded-xl border border-gray-700 bg-gray-800 p-4 transition-colors duration-150 hover:border-gray-600"
+                    class="cursor-pointer rounded-xl border border-gray-200 bg-white p-4 transition-colors duration-150 hover:border-gray-300"
                     @click="router.push(`/credit-cards/${card.id}`)"
                 >
                     <div class="mb-3 flex items-start justify-between">
                         <div>
-                            <h3 class="text-base font-normal text-white">{{ card.name }}</h3>
-                            <p class="mt-0.5 text-sm capitalize text-gray-400">{{ card.type }}</p>
+                            <h3 class="text-base font-normal text-gray-900">{{ card.name }}</h3>
+                            <p class="mt-0.5 text-sm capitalize text-gray-500">{{ card.type }}</p>
                         </div>
                         <span :class="statusBadgeClass(card.status)" class="rounded px-2 py-0.5 text-sm capitalize">
                             {{ card.status }}
                         </span>
                     </div>
 
-                    <div class="mb-1 h-2 w-full rounded-full bg-gray-700">
+                    <div class="mb-1 h-2 w-full rounded-full bg-gray-100">
                         <div
                             class="h-2 rounded-full bg-purple-500 transition-all duration-300"
                             :style="{ width: `${availablePct(card)}%` }"
                         />
                     </div>
 
-                    <div class="mb-3 flex justify-between text-sm text-gray-400">
+                    <div class="mb-3 flex justify-between text-sm text-gray-500">
                         <span>{{ formatCurrency(card.available_credit ?? 0) }} available</span>
                         <span>{{ formatCurrency(card.credit_limit ?? 0) }} limit</span>
                     </div>
@@ -118,19 +119,19 @@ function statusBadgeClass(status) {
 
             <div
                 v-if="paginator?.lastPage > 1"
-                class="mt-6 flex items-center justify-between border-t border-gray-700 pt-4"
+                class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4"
             >
                 <p class="text-sm text-gray-500">Page {{ paginator.currentPage }} of {{ paginator.lastPage }}</p>
                 <div class="flex gap-2">
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="page <= 1"
                         @click="page--"
                     >
                         Prev
                     </button>
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="page >= paginator.lastPage"
                         @click="page++"
                     >

@@ -98,16 +98,16 @@ const chartOptions = {
     plugins: {
         legend: {
             labels: {
-                color: '#9ca3af',
+                color: '#6b7280',
                 font: { family: 'Figtree, system-ui', size: 13 },
             },
         },
         tooltip: {
-            backgroundColor: '#1f2937',
-            borderColor: '#374151',
+            backgroundColor: '#ffffff',
+            borderColor: '#e5e7eb',
             borderWidth: 1,
-            titleColor: '#f3f4f6',
-            bodyColor: '#9ca3af',
+            titleColor: '#111827',
+            bodyColor: '#4b5563',
             callbacks: {
                 label: (context) => formatCurrency(context.raw),
             },
@@ -115,13 +115,13 @@ const chartOptions = {
     },
     scales: {
         x: {
-            grid: { color: '#374151' },
-            ticks: { color: '#9ca3af', font: { size: 12 } },
+            grid: { color: '#e5e7eb' },
+            ticks: { color: '#6b7280', font: { size: 12 } },
         },
         y: {
-            grid: { color: '#374151' },
+            grid: { color: '#e5e7eb' },
             ticks: {
-                color: '#9ca3af',
+                color: '#6b7280',
                 font: { size: 12 },
                 callback: (value) => `EUR ${value}`,
             },
@@ -134,8 +134,8 @@ const chartOptions = {
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-white">Dashboard</h1>
-                <p class="mt-1 text-sm text-gray-400">Your financial overview for this month</p>
+                <h1 class="text-xl font-semibold text-gray-900">Dashboard</h1>
+                <p class="mt-1 text-sm text-gray-500">Your financial overview for this month</p>
             </div>
         </div>
 
@@ -153,19 +153,19 @@ const chartOptions = {
                 />
             </div>
 
-            <div class="mb-6 h-72 rounded-xl border border-gray-700 bg-gray-800 p-6">
+            <div class="mb-6 h-72 rounded-xl border border-gray-200 bg-white p-6">
                 <Bar :data="chartData" :options="chartOptions" />
             </div>
 
             <div v-if="categories.length" class="mt-6">
-                <h2 class="mb-4 text-xl font-semibold text-white">Spending by Category</h2>
+                <h2 class="mb-4 text-xl font-semibold text-gray-900">Spending by Category</h2>
                 <div class="grid grid-cols-2 gap-3 md:grid-cols-3">
                     <div
                         v-for="category in categories"
                         :key="category.category"
-                        class="rounded-xl border border-gray-700 bg-gray-800 p-4"
+                        class="rounded-xl border border-gray-200 bg-white p-4"
                     >
-                        <p class="truncate text-sm font-normal text-gray-400">{{ category.category }}</p>
+                        <p class="truncate text-sm font-normal text-gray-500">{{ category.category }}</p>
                         <p class="mt-1 font-mono text-xl font-semibold text-red-400">
                             {{ formatCurrency(category.total) }}
                         </p>

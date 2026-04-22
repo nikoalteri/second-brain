@@ -26,7 +26,7 @@ defineEmits(['page-change']);
     <div>
         <div
             v-if="error"
-            class="mb-6 flex items-start gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-4"
+            class="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4"
         >
             <ExclamationTriangleIcon class="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
             <div class="flex-1">
@@ -35,7 +35,7 @@ defineEmits(['page-change']);
             </div>
         </div>
 
-        <div v-else-if="loading" class="flex items-center justify-center py-16 text-gray-400">
+        <div v-else-if="loading" class="flex items-center justify-center py-16 text-gray-500">
             <LoadingSpinner size="sm" />
             <span class="ml-2 text-sm">Loading…</span>
         </div>
@@ -53,11 +53,11 @@ defineEmits(['page-change']);
             <div class="hidden overflow-x-auto sm:block">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="border-b border-gray-700">
+                        <tr class="border-b border-gray-200">
                             <slot name="thead" />
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-700/50">
+                    <tbody class="divide-y divide-gray-200">
                         <slot name="tbody" />
                     </tbody>
                 </table>
@@ -69,21 +69,21 @@ defineEmits(['page-change']);
 
             <div
                 v-if="lastPage > 1"
-                class="mt-4 flex items-center justify-between border-t border-gray-700 pt-4"
+                class="mt-4 flex items-center justify-between border-t border-gray-200 pt-4"
             >
                 <p class="text-sm text-gray-500">
                     Showing {{ (currentPage - 1) * perPage + 1 }}–{{ Math.min(currentPage * perPage, total) }} of {{ total }}
                 </p>
                 <div class="flex gap-2">
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="currentPage <= 1"
                         @click="$emit('page-change', currentPage - 1)"
                     >
                         Prev
                     </button>
                     <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-400 transition-colors hover:bg-gray-800 hover:text-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        class="h-9 rounded-lg px-3 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="currentPage >= lastPage"
                         @click="$emit('page-change', currentPage + 1)"
                     >

@@ -20,13 +20,13 @@ const today = new Date().toISOString().split('T')[0];
 
 const form = ref({
     account_id: '',
+    to_account_id: '',
     transaction_type_id: '',
     transaction_category_id: '',
     amount: '',
     date: today,
     description: '',
     notes: '',
-    is_transfer: false,
 });
 const errors = ref({});
 
@@ -44,7 +44,12 @@ const CATEGORIES_QUERY = gql`
     query GetTransactionCategories {
         transactionCategories {
             id
+            parent_id
             name
+            parent {
+                id
+                name
+            }
         }
     }
 `;
@@ -65,6 +70,7 @@ const TX_QUERY = gql`
         transaction(id: $id) {
             id
             account_id
+            to_account_id
             transaction_type_id
             transaction_category_id
             amount
@@ -116,11 +122,18 @@ const categoryOptions = computed(() => [
     { value: '', label: 'No category' },
     ...(categoriesResult.value?.transactionCategories ?? []).map((category) => ({
         value: category.id,
-        label: category.name,
+        label: category.parent?.name ? `${category.parent.name} › ${category.name}` : category.name,
     })),
 ]);
 const accountOptions = computed(() =>
     (accountsResult.value?.accounts?.data ?? []).map((account) => ({ value: account.id, label: account.name }))
+);
+const selectedTransactionTypeName = computed(() =>
+    (typesResult.value?.transactionTypes ?? []).find((type) => type.id === form.value.transaction_type_id)?.name ?? ''
+);
+const showsDestinationAccount = computed(() => selectedTransactionTypeName.value.toLowerCase().includes('transfer'));
+const destinationAccountOptions = computed(() =>
+    accountOptions.value.filter((account) => account.value !== form.value.account_id)
 );
 
 watch(
@@ -130,18 +143,24 @@ watch(
             const transaction = value.transaction;
             form.value = {
                 account_id: transaction.account_id ?? '',
+                to_account_id: transaction.to_account_id ?? '',
                 transaction_type_id: transaction.transaction_type_id ?? '',
                 transaction_category_id: transaction.transaction_category_id ?? '',
                 amount: Math.abs(transaction.amount),
                 date: transaction.date,
                 description: transaction.description ?? '',
                 notes: transaction.notes ?? '',
-                is_transfer: transaction.is_transfer ?? false,
             };
         }
     },
     { immediate: true }
 );
+
+watch(showsDestinationAccount, (visible) => {
+    if (!visible) {
+        form.value.to_account_id = '';
+    }
+});
 
 const { mutate: createTx, loading: creating } = useMutation(CREATE_TX);
 const { mutate: updateTx, loading: updating } = useMutation(UPDATE_TX);
@@ -158,6 +177,11 @@ async function handleSubmit() {
 
     if (!form.value.transaction_type_id) {
         errors.value.transaction_type_id = 'Transaction type is required';
+        return;
+    }
+
+    if (showsDestinationAccount.value && !form.value.to_account_id) {
+        errors.value.to_account_id = 'Destination account is required';
         return;
     }
 
@@ -179,13 +203,14 @@ async function handleSubmit() {
     try {
         const input = {
             account_id: form.value.account_id,
+            to_account_id: showsDestinationAccount.value ? form.value.to_account_id : undefined,
             transaction_type_id: form.value.transaction_type_id,
             transaction_category_id: form.value.transaction_category_id || undefined,
             amount: parseFloat(form.value.amount),
             date: form.value.date,
             description: form.value.description,
             notes: form.value.notes || undefined,
-            is_transfer: form.value.is_transfer,
+            is_transfer: showsDestinationAccount.value,
         };
 
         if (isEdit.value) {
@@ -216,75 +241,83 @@ async function handleDelete() {
 
 <template>
     <AppLayout>
-        <div class="mb-6 flex items-center justify-between">
-            <div>
-                <h1 class="text-xl font-semibold text-white">{{ isEdit ? 'Edit Transaction' : 'Add Transaction' }}</h1>
-            </div>
+        <div class="mb-6">
+            <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Transaction' : 'Add Transaction' }}</h1>
+            <p class="mt-1 text-sm text-gray-500">Use the same account, type, category, and transfer logic as the Filament transaction form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingTx" class="py-16" />
 
-        <form v-else class="max-w-xl" @submit.prevent="handleSubmit">
-            <div class="flex flex-col gap-4 rounded-xl border border-gray-700 bg-gray-800 p-6">
-                <FormSelect
-                    label="Account *"
-                    v-model="form.account_id"
-                    :options="accountOptions"
-                    placeholder="Select account"
-                    :error="errors.account_id"
-                />
-
-                <FormSelect
-                    label="Transaction Type *"
-                    v-model="form.transaction_type_id"
-                    :options="typeOptions"
-                    placeholder="Select type"
-                    :error="errors.transaction_type_id"
-                />
-
-                <FormSelect
-                    label="Category"
-                    v-model="form.transaction_category_id"
-                    :options="categoryOptions"
-                    placeholder="No category"
-                />
-
-                <div class="flex flex-col gap-1">
-                    <label class="text-sm font-normal text-gray-300">Amount *</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base text-gray-400">EUR</span>
-                        <input
-                            v-model="form.amount"
-                            type="number"
-                            step="0.01"
-                            min="0.01"
-                            placeholder="0.00"
-                            class="h-10 w-full rounded-lg border bg-gray-900 pl-12 pr-3 text-right font-mono text-base text-gray-100 placeholder:text-gray-500 transition-colors focus:outline-none focus:ring-1"
-                            :class="errors.amount
-                                ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                                : 'border-gray-700 focus:border-blue-500 focus:ring-blue-500'"
-                        >
+        <form v-else class="max-w-3xl" @submit.prevent="handleSubmit">
+            <div class="flex flex-col gap-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Transaction details</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormSelect
+                            label="Account *"
+                            v-model="form.account_id"
+                            :options="accountOptions"
+                            placeholder="Select account"
+                            :error="errors.account_id"
+                        />
+                        <FormSelect
+                            label="Type *"
+                            v-model="form.transaction_type_id"
+                            :options="typeOptions"
+                            placeholder="Select type"
+                            :error="errors.transaction_type_id"
+                        />
                     </div>
-                    <p v-if="errors.amount" class="text-sm text-red-400">{{ errors.amount }}</p>
                 </div>
 
-                <FormInput label="Date *" v-model="form.date" type="date" :error="errors.date" />
+                <div class="grid gap-4 md:grid-cols-2">
+                    <FormSelect
+                        label="Category"
+                        v-model="form.transaction_category_id"
+                        :options="categoryOptions"
+                        placeholder="No category"
+                        helper="Categories follow the same parent › child labels as Filament."
+                    />
+                    <FormSelect
+                        v-if="showsDestinationAccount"
+                        label="Destination account *"
+                        v-model="form.to_account_id"
+                        :options="destinationAccountOptions"
+                        placeholder="Select destination account"
+                        :error="errors.to_account_id"
+                        helper="Shown automatically when the selected transaction type is a transfer."
+                    />
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <FormInput
+                        label="Amount *"
+                        v-model="form.amount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="0.00"
+                        helper="Enter a positive amount."
+                        :error="errors.amount"
+                    />
+                    <FormInput label="Date *" v-model="form.date" type="date" :error="errors.date" />
+                </div>
+
                 <FormInput
                     label="Description *"
                     v-model="form.description"
-                    placeholder="e.g. Grocery shopping"
+                    placeholder="e.g. McDonald's"
                     :error="errors.description"
                 />
-                <FormInput label="Notes" v-model="form.notes" placeholder="Optional notes" />
 
-                <div class="flex items-center gap-3">
-                    <input
-                        id="is_transfer"
-                        v-model="form.is_transfer"
-                        type="checkbox"
-                        class="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-600 focus:ring-blue-500"
-                    >
-                    <label for="is_transfer" class="text-sm font-normal text-gray-300">This is a transfer between accounts</label>
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm font-medium text-gray-700">Notes</label>
+                    <textarea
+                        v-model="form.notes"
+                        rows="4"
+                        placeholder="Optional notes"
+                        class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    />
                 </div>
             </div>
 
@@ -292,7 +325,7 @@ async function handleDelete() {
                 <button
                     v-if="isEdit"
                     type="button"
-                    class="text-sm text-red-400 hover:text-red-300 focus:outline-none"
+                    class="text-sm font-medium text-red-500 hover:text-red-600 focus:outline-none"
                     @click="showDeleteModal = true"
                 >
                     Delete transaction
@@ -301,14 +334,14 @@ async function handleDelete() {
                 <div class="ml-auto flex gap-3">
                     <router-link
                         to="/transactions"
-                        class="flex h-10 items-center rounded-lg border border-gray-600 bg-gray-700 px-4 text-sm text-gray-100 transition-colors hover:bg-gray-600"
+                        class="flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                     >
                         Cancel
                     </router-link>
                     <button
                         type="submit"
                         :disabled="saving"
-                        class="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        class="flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-4 text-sm font-medium text-white transition-colors hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {{ saving ? 'Saving…' : (isEdit ? 'Update Transaction' : 'Add Transaction') }}
                     </button>

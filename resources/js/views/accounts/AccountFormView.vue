@@ -13,6 +13,7 @@ import { useToast } from '@/composables/useToast.js';
 const route = useRoute();
 const router = useRouter();
 const { addToast } = useToast();
+
 const accountTypeLabels = {
     bank: 'Bank',
     cash: 'Cash',
@@ -23,7 +24,7 @@ const accountTypeLabels = {
 
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
-const form = ref({ name: '', type: 'bank', opening_balance: 0, currency: 'EUR', is_active: true });
+const form = ref({ name: '', type: 'bank', opening_balance: 0, balance: 0, currency: 'EUR', is_active: true });
 const errors = ref({});
 
 const typeOptions = ['bank', 'cash', 'investment', 'emergency_fund', 'debt'].map((value) => ({
@@ -38,6 +39,7 @@ const ACCOUNT_QUERY = gql`
             id
             name
             type
+            balance
             opening_balance
             currency
             is_active
@@ -59,6 +61,7 @@ watch(
             form.value = {
                 name: account.name,
                 type: account.type,
+                balance: account.balance,
                 opening_balance: account.opening_balance,
                 currency: account.currency,
                 is_active: account.is_active,
@@ -117,8 +120,11 @@ async function handleSubmit() {
         } else {
             await createAccount({
                 input: {
-                    ...form.value,
+                    name: form.value.name,
+                    type: form.value.type,
                     opening_balance: parseFloat(form.value.opening_balance),
+                    currency: form.value.currency,
+                    is_active: form.value.is_active,
                 },
             });
             addToast('Account created successfully.', 'success');
@@ -144,44 +150,46 @@ async function handleDelete() {
 
 <template>
     <AppLayout>
-        <div class="mb-6 flex items-center justify-between">
-            <div>
-                <h1 class="text-xl font-semibold text-white">{{ isEdit ? 'Edit Account' : 'Add Account' }}</h1>
-                <p class="mt-1 text-sm text-gray-400">
-                    {{ isEdit ? 'Update account details' : 'Add a new bank account' }}
-                </p>
-            </div>
+        <div class="mb-6">
+            <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Account' : 'Add Account' }}</h1>
+            <p class="mt-1 text-sm text-gray-500">Use the same account type, balance, currency, and activation fields defined in the Filament account form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingAccount" class="py-16" />
 
-        <form v-else class="max-w-xl" @submit.prevent="handleSubmit">
-            <div class="flex flex-col gap-4 rounded-xl border border-gray-700 bg-gray-800 p-6">
-                <FormInput label="Account Name" v-model="form.name" placeholder="e.g. Main Checking" required :error="errors.name" />
-
-                <div class="grid grid-cols-2 gap-4">
-                    <FormSelect label="Type" v-model="form.type" :options="typeOptions" :error="errors.type" />
-                    <FormSelect label="Currency" v-model="form.currency" :options="currencyOptions" :error="errors.currency" />
+        <form v-else class="max-w-3xl" @submit.prevent="handleSubmit">
+            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="grid gap-4 md:grid-cols-2">
+                    <FormInput label="Name *" v-model="form.name" placeholder="e.g. Main Bank Account" required :error="errors.name" />
+                    <FormSelect label="Type *" v-model="form.type" :options="typeOptions" :error="errors.type" />
+                    <FormInput
+                        label="Current Balance"
+                        v-model="form.balance"
+                        type="number"
+                        step="0.01"
+                        readonly
+                        helper="Calculated automatically by the system."
+                    />
+                    <FormInput
+                        label="Opening Balance"
+                        v-model="form.opening_balance"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        :readonly="isEdit"
+                        helper="Balance at the time of system adoption."
+                    />
+                    <FormSelect label="Currency *" v-model="form.currency" :options="currencyOptions" :error="errors.currency" />
                 </div>
 
-                <FormInput
-                    v-if="!isEdit"
-                    label="Opening Balance"
-                    v-model="form.opening_balance"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    :error="errors.opening_balance"
-                />
-
-                <div class="flex items-center gap-3">
+                <div class="mt-4 flex items-center gap-3">
                     <input
                         id="is_active"
                         v-model="form.is_active"
                         type="checkbox"
-                        class="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-600 focus:ring-blue-500"
+                        class="h-4 w-4 rounded border-gray-300 bg-white text-amber-500 focus:ring-amber-400"
                     >
-                    <label for="is_active" class="text-sm font-normal text-gray-300">Active account</label>
+                    <label for="is_active" class="text-sm font-medium text-gray-700">Active</label>
                 </div>
             </div>
 
@@ -189,7 +197,7 @@ async function handleDelete() {
                 <button
                     v-if="isEdit"
                     type="button"
-                    class="text-sm text-red-400 hover:text-red-300 focus:outline-none"
+                    class="text-sm font-medium text-red-500 hover:text-red-600 focus:outline-none"
                     @click="showDeleteModal = true"
                 >
                     Delete account
@@ -198,14 +206,14 @@ async function handleDelete() {
                 <div class="ml-auto flex gap-3">
                     <router-link
                         to="/accounts"
-                        class="flex h-10 items-center rounded-lg border border-gray-600 bg-gray-700 px-4 text-sm text-gray-100 transition-colors hover:bg-gray-600"
+                        class="flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                     >
                         Cancel
                     </router-link>
                     <button
                         type="submit"
                         :disabled="saving"
-                        class="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        class="flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-4 text-sm font-medium text-white transition-colors hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {{ saving ? 'Saving…' : (isEdit ? 'Update Account' : 'Create Account') }}
                     </button>

@@ -13,12 +13,14 @@ import { useToast } from '@/composables/useToast.js';
 const route = useRoute();
 const router = useRouter();
 const { addToast } = useToast();
+
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
 const defaultRenewal = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 const form = ref({
     account_id: '',
+    category_id: '',
     name: '',
     monthly_cost: '',
     annual_cost: '',
@@ -42,10 +44,21 @@ const ACCOUNTS_QUERY = gql`
     }
 `;
 
+const CATEGORIES_QUERY = gql`
+    query GetTransactionCategories {
+        transactionCategories {
+            id
+            name
+        }
+    }
+`;
+
 const SUB_QUERY = gql`
     query GetSubscription($id: ID!) {
         subscription(id: $id) {
             id
+            account_id
+            category_id
             name
             monthly_cost
             annual_cost
@@ -84,6 +97,7 @@ const DELETE_SUB = gql`
 `;
 
 const { result: accountsResult } = useQuery(ACCOUNTS_QUERY);
+const { result: categoriesResult } = useQuery(CATEGORIES_QUERY);
 const { result: subResult, loading: loadingSub } = useQuery(
     SUB_QUERY,
     () => ({ id: route.params.id }),
@@ -93,17 +107,19 @@ const { result: subResult, loading: loadingSub } = useQuery(
 const accountOptions = computed(() =>
     (accountsResult.value?.accounts?.data ?? []).map((account) => ({ value: account.id, label: account.name }))
 );
+const categoryOptions = computed(() => [
+    { value: '', label: 'No category' },
+    ...(categoriesResult.value?.transactionCategories ?? []).map((category) => ({ value: category.id, label: category.name })),
+]);
 const frequencyOptions = [
     { value: 'monthly', label: 'Monthly' },
-    { value: 'annual', label: 'Yearly' },
-    { value: 'biennial', label: 'Biennial' },
-    { value: 'weekly', label: 'Weekly' },
+    { value: 'annual', label: 'Annual' },
+    { value: 'biennial', label: 'Every 2 Years' },
 ];
 const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
     { value: 'cancelled', label: 'Cancelled' },
-    { value: 'trial', label: 'Trial' },
 ];
 
 watch(
@@ -112,14 +128,15 @@ watch(
         if (value?.subscription) {
             const subscription = value.subscription;
             form.value = {
-                account_id: '',
+                account_id: subscription.account_id ?? '',
+                category_id: subscription.category_id ?? '',
                 name: subscription.name,
                 monthly_cost: subscription.monthly_cost,
                 annual_cost: subscription.annual_cost,
                 frequency: subscription.frequency,
                 day_of_month: subscription.day_of_month,
                 next_renewal_date: subscription.next_renewal_date ?? defaultRenewal,
-                auto_create_transaction: subscription.auto_create_transaction,
+                auto_create_transaction: subscription.auto_create_transaction ?? false,
                 status: subscription.status,
                 notes: subscription.notes ?? '',
             };
@@ -133,6 +150,10 @@ const { mutate: updateSub, loading: updating } = useMutation(UPDATE_SUB);
 const { mutate: deleteSub, loading: deleting } = useMutation(DELETE_SUB);
 const saving = computed(() => creating.value || updating.value);
 
+function parseOptionalFloat(value) {
+    return value === '' || value === null ? null : parseFloat(value);
+}
+
 async function handleSubmit() {
     errors.value = {};
 
@@ -141,47 +162,34 @@ async function handleSubmit() {
         return;
     }
 
-    if (!form.value.frequency) {
-        errors.value.frequency = 'Frequency is required';
+    if (!form.value.account_id) {
+        errors.value.account_id = 'Account is required';
         return;
     }
 
     try {
+        const input = {
+            account_id: form.value.account_id,
+            category_id: form.value.category_id || null,
+            name: form.value.name,
+            monthly_cost: parseOptionalFloat(form.value.monthly_cost),
+            annual_cost: parseOptionalFloat(form.value.annual_cost),
+            frequency: form.value.frequency,
+            day_of_month: parseInt(form.value.day_of_month, 10),
+            next_renewal_date: form.value.next_renewal_date,
+            auto_create_transaction: form.value.auto_create_transaction,
+            status: form.value.status,
+            notes: form.value.notes || null,
+        };
+
         if (isEdit.value) {
             await updateSub({
                 id: route.params.id,
-                input: {
-                    name: form.value.name,
-                    monthly_cost: parseFloat(form.value.monthly_cost) || undefined,
-                    annual_cost: parseFloat(form.value.annual_cost) || undefined,
-                    frequency: form.value.frequency,
-                    day_of_month: parseInt(form.value.day_of_month),
-                    next_renewal_date: form.value.next_renewal_date,
-                    status: form.value.status,
-                    notes: form.value.notes || undefined,
-                },
+                input,
             });
             addToast('Subscription updated successfully.', 'success');
         } else {
-            if (!form.value.account_id) {
-                errors.value.account_id = 'Account is required';
-                return;
-            }
-
-            await createSub({
-                input: {
-                    account_id: form.value.account_id,
-                    name: form.value.name,
-                    monthly_cost: parseFloat(form.value.monthly_cost) || undefined,
-                    annual_cost: parseFloat(form.value.annual_cost) || undefined,
-                    frequency: form.value.frequency,
-                    day_of_month: parseInt(form.value.day_of_month),
-                    next_renewal_date: form.value.next_renewal_date,
-                    auto_create_transaction: form.value.auto_create_transaction,
-                    status: form.value.status,
-                    notes: form.value.notes || undefined,
-                },
-            });
+            await createSub({ input });
             addToast('Subscription saved successfully.', 'success');
         }
 
@@ -205,57 +213,126 @@ async function handleDelete() {
 
 <template>
     <AppLayout>
-        <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-xl font-semibold text-white">{{ isEdit ? 'Edit Subscription' : 'Add Subscription' }}</h1>
+        <div class="mb-6">
+            <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Subscription' : 'Add Subscription' }}</h1>
+            <p class="mt-1 text-sm text-gray-500">Use the same billing, account, category, and automation settings available in the Filament subscription form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingSub" class="py-16" />
 
-        <form v-else class="max-w-xl" @submit.prevent="handleSubmit">
-            <div class="flex flex-col gap-4 rounded-xl border border-gray-700 bg-gray-800 p-6">
-                <FormSelect
-                    v-if="!isEdit"
-                    label="Account *"
-                    v-model="form.account_id"
-                    :options="accountOptions"
-                    placeholder="Select account"
-                    :error="errors.account_id"
-                />
-                <FormInput label="Service Name *" v-model="form.name" placeholder="e.g. Netflix" :error="errors.name" />
+        <form v-else class="max-w-4xl" @submit.prevent="handleSubmit">
+            <div class="space-y-6">
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Subscription Info</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormInput
+                            label="Name *"
+                            v-model="form.name"
+                            placeholder="e.g. Netflix, Spotify"
+                            :error="errors.name"
+                        />
+                        <FormSelect label="Frequency *" v-model="form.frequency" :options="frequencyOptions" />
+                    </div>
+                </section>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <FormSelect label="Billing Frequency *" v-model="form.frequency" :options="frequencyOptions" :error="errors.frequency" />
-                    <FormSelect label="Status *" v-model="form.status" :options="statusOptions" />
-                </div>
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Cost</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormInput
+                            label="Monthly cost"
+                            v-model="form.monthly_cost"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            helper="For monthly subscriptions."
+                        />
+                        <FormInput
+                            label="Annual cost"
+                            v-model="form.annual_cost"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            helper="For annual or biennial subscriptions."
+                        />
+                    </div>
+                </section>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <FormInput label="Monthly Cost (EUR)" v-model="form.monthly_cost" type="number" step="0.01" placeholder="0.00" />
-                    <FormInput label="Annual Cost (EUR)" v-model="form.annual_cost" type="number" step="0.01" placeholder="0.00" />
-                </div>
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Renewal</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormInput
+                            label="Day of month *"
+                            v-model="form.day_of_month"
+                            type="number"
+                            min="1"
+                            max="31"
+                            step="1"
+                            helper="Day of month for renewal."
+                        />
+                        <FormInput
+                            label="Next renewal date *"
+                            v-model="form.next_renewal_date"
+                            type="date"
+                            helper="Next scheduled renewal."
+                        />
+                    </div>
+                </section>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <FormInput label="Day of Month *" v-model="form.day_of_month" type="number" min="1" max="31" placeholder="1" />
-                    <FormInput label="Next Renewal Date *" v-model="form.next_renewal_date" type="date" />
-                </div>
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Account &amp; Category</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormSelect
+                            label="Account *"
+                            v-model="form.account_id"
+                            :options="accountOptions"
+                            placeholder="Select account"
+                            :error="errors.account_id"
+                            helper="Account to debit."
+                        />
+                        <FormSelect
+                            label="Category"
+                            v-model="form.category_id"
+                            :options="categoryOptions"
+                            placeholder="No category"
+                            helper="Transaction category (optional)."
+                        />
+                    </div>
+                </section>
 
-                <FormInput label="Notes" v-model="form.notes" placeholder="Optional notes" />
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Settings</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormSelect label="Status *" v-model="form.status" :options="statusOptions" />
+                    </div>
 
-                <div class="flex items-center gap-3">
-                    <input
-                        id="auto_tx"
-                        v-model="form.auto_create_transaction"
-                        type="checkbox"
-                        class="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-600 focus:ring-blue-500"
-                    >
-                    <label for="auto_tx" class="text-sm text-gray-300">Auto-create transaction on renewal</label>
-                </div>
+                    <div class="mt-4 flex items-center gap-3">
+                        <input
+                            id="auto_tx"
+                            v-model="form.auto_create_transaction"
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 bg-white text-amber-500 focus:ring-amber-400"
+                        >
+                        <label for="auto_tx" class="text-sm font-medium text-gray-700">Auto-create transaction on renewal</label>
+                    </div>
+                </section>
+
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Notes</h2>
+                    <div class="mt-4">
+                        <textarea
+                            v-model="form.notes"
+                            rows="4"
+                            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 transition-colors duration-150 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        />
+                    </div>
+                </section>
             </div>
 
             <div class="mt-6 flex items-center justify-between">
                 <button
                     v-if="isEdit"
                     type="button"
-                    class="text-sm text-red-400 hover:text-red-300 focus:outline-none"
+                    class="text-sm font-medium text-red-500 hover:text-red-600 focus:outline-none"
                     @click="showDeleteModal = true"
                 >
                     Delete subscription
@@ -264,14 +341,14 @@ async function handleDelete() {
                 <div class="ml-auto flex gap-3">
                     <router-link
                         to="/subscriptions"
-                        class="flex h-10 items-center rounded-lg border border-gray-600 bg-gray-700 px-4 text-sm text-gray-100 transition-colors hover:bg-gray-600"
+                        class="flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                     >
                         Cancel
                     </router-link>
                     <button
                         type="submit"
                         :disabled="saving"
-                        class="h-10 rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        class="h-10 rounded-lg bg-amber-500 px-4 text-sm font-medium text-white transition-colors hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {{ saving ? 'Saving…' : (isEdit ? 'Update Subscription' : 'Save Subscription') }}
                     </button>

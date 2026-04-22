@@ -25,15 +25,14 @@ const form = ref({
     interest_rate: '',
     is_variable_rate: false,
     withdrawal_day: 1,
-    skip_weekends: false,
+    skip_weekends: true,
     start_date: today,
     end_date: '',
-    total_installments: '',
+    total_installments: 1,
     paid_installments: 0,
     remaining_amount: '',
     status: 'active',
 });
-const errors = ref({});
 
 const ACCOUNTS_QUERY = gql`
     query GetAccounts {
@@ -50,17 +49,20 @@ const LOAN_QUERY = gql`
     query GetLoan($id: ID!) {
         loan(id: $id) {
             id
+            account_id
             name
             total_amount
             monthly_payment
             interest_rate
             is_variable_rate
-            paid_installments
-            total_installments
-            remaining_amount
-            status
+            withdrawal_day
+            skip_weekends
             start_date
             end_date
+            total_installments
+            paid_installments
+            remaining_amount
+            status
         }
     }
 `;
@@ -99,10 +101,79 @@ const { result: loanResult, loading: loadingLoan } = useQuery(
 const accountOptions = computed(() =>
     (accountsResult.value?.accounts?.data ?? []).map((account) => ({ value: account.id, label: account.name }))
 );
-const statusOptions = ['active', 'paid', 'defaulted'].map((value) => ({
-    value,
-    label: value.charAt(0).toUpperCase() + value.slice(1),
-}));
+const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'completed', label: 'Completed' },
+    { value: 'defaulted', label: 'Defaulted' },
+];
+
+function calcMonthlyPayment(total, rate, installments) {
+    const totalAmount = Number(total || 0);
+    const installmentCount = Number(installments || 0);
+
+    if (installmentCount <= 0 || totalAmount <= 0) {
+        return '';
+    }
+
+    if (rate > 0) {
+        const monthlyRate = (rate / 100) / 12;
+        return Number(((totalAmount * monthlyRate * (1 + monthlyRate) ** installmentCount) / ((1 + monthlyRate) ** installmentCount - 1)).toFixed(2));
+    }
+
+    return Number((totalAmount / installmentCount).toFixed(2));
+}
+
+function calcOutstandingPrincipal(total, rate, monthlyPayment, paidInstallments) {
+    const totalAmount = Number(total || 0);
+    const payment = Number(monthlyPayment || 0);
+    const paid = Number(paidInstallments || 0);
+
+    if (totalAmount <= 0 || payment <= 0) {
+        return totalAmount ? Number(totalAmount.toFixed(2)) : '';
+    }
+
+    if (rate > 0 && paid > 0) {
+        const monthlyRate = (rate / 100) / 12;
+        return Number(Math.max(0, totalAmount * (1 + monthlyRate) ** paid - payment * ((1 + monthlyRate) ** paid - 1) / monthlyRate).toFixed(2));
+    }
+
+    return Number(Math.max(0, totalAmount - paid * payment).toFixed(2));
+}
+
+const effectiveInterestRate = computed(() => form.value.is_variable_rate ? 0 : Number(form.value.interest_rate || 0));
+const totalInterestLabel = computed(() => {
+    const totalAmount = Number(form.value.total_amount || 0);
+    const installmentCount = Number(form.value.total_installments || 0);
+    const monthlyPayment = Number(form.value.monthly_payment || 0);
+
+    if (totalAmount <= 0 || installmentCount <= 0 || monthlyPayment <= 0) {
+        return '€ 0.00';
+    }
+
+    return `€ ${Math.max(0, (monthlyPayment * installmentCount) - totalAmount).toFixed(2)}`;
+});
+
+function recalculateLoan() {
+    const monthlyPayment = calcMonthlyPayment(form.value.total_amount, effectiveInterestRate.value, form.value.total_installments);
+    form.value.monthly_payment = monthlyPayment;
+    form.value.remaining_amount = calcOutstandingPrincipal(
+        form.value.total_amount,
+        effectiveInterestRate.value,
+        monthlyPayment,
+        form.value.paid_installments
+    );
+}
+
+watch(
+    () => [
+        form.value.total_amount,
+        form.value.interest_rate,
+        form.value.is_variable_rate,
+        form.value.total_installments,
+        form.value.paid_installments,
+    ],
+    recalculateLoan
+);
 
 watch(
     loanResult,
@@ -110,14 +181,14 @@ watch(
         if (value?.loan) {
             const loan = value.loan;
             form.value = {
-                account_id: '',
+                account_id: loan.account_id ?? '',
                 name: loan.name,
                 total_amount: loan.total_amount,
                 monthly_payment: loan.monthly_payment,
                 interest_rate: loan.interest_rate,
                 is_variable_rate: loan.is_variable_rate,
-                withdrawal_day: 1,
-                skip_weekends: false,
+                withdrawal_day: loan.withdrawal_day ?? 1,
+                skip_weekends: loan.skip_weekends ?? true,
                 start_date: loan.start_date ?? today,
                 end_date: loan.end_date ?? '',
                 total_installments: loan.total_installments,
@@ -136,41 +207,32 @@ const { mutate: deleteLoan, loading: deleting } = useMutation(DELETE_LOAN);
 const saving = computed(() => creating.value || updating.value);
 
 async function handleSubmit() {
-    errors.value = {};
+    const input = {
+        account_id: form.value.account_id,
+        name: form.value.name,
+        total_amount: parseFloat(form.value.total_amount),
+        monthly_payment: parseFloat(form.value.monthly_payment),
+        interest_rate: form.value.is_variable_rate ? null : (form.value.interest_rate === '' ? null : parseFloat(form.value.interest_rate)),
+        is_variable_rate: form.value.is_variable_rate,
+        withdrawal_day: parseInt(form.value.withdrawal_day, 10),
+        skip_weekends: form.value.skip_weekends,
+        start_date: form.value.start_date,
+        end_date: form.value.end_date || undefined,
+        total_installments: parseInt(form.value.total_installments, 10),
+        paid_installments: parseInt(form.value.paid_installments, 10),
+        remaining_amount: parseFloat(form.value.remaining_amount),
+        status: form.value.status,
+    };
 
     try {
         if (isEdit.value) {
             await updateLoan({
                 id: route.params.id,
-                input: {
-                    name: form.value.name,
-                    total_amount: parseFloat(form.value.total_amount),
-                    monthly_payment: parseFloat(form.value.monthly_payment),
-                    interest_rate: parseFloat(form.value.interest_rate) || undefined,
-                    is_variable_rate: form.value.is_variable_rate,
-                    status: form.value.status,
-                },
+                input,
             });
             addToast('Loan updated successfully.', 'success');
         } else {
-            await createLoan({
-                input: {
-                    account_id: form.value.account_id,
-                    name: form.value.name,
-                    total_amount: parseFloat(form.value.total_amount),
-                    monthly_payment: parseFloat(form.value.monthly_payment),
-                    interest_rate: parseFloat(form.value.interest_rate) || undefined,
-                    is_variable_rate: form.value.is_variable_rate,
-                    withdrawal_day: parseInt(form.value.withdrawal_day),
-                    skip_weekends: form.value.skip_weekends,
-                    start_date: form.value.start_date,
-                    end_date: form.value.end_date || undefined,
-                    total_installments: parseInt(form.value.total_installments),
-                    paid_installments: parseInt(form.value.paid_installments),
-                    remaining_amount: parseFloat(form.value.remaining_amount) || undefined,
-                    status: form.value.status,
-                },
-            });
+            await createLoan({ input });
             addToast('Loan recorded successfully.', 'success');
         }
 
@@ -194,76 +256,121 @@ async function handleDelete() {
 
 <template>
     <AppLayout>
-        <div class="mb-6 flex items-center justify-between">
-            <h1 class="text-xl font-semibold text-white">{{ isEdit ? 'Edit Loan' : 'Record Loan' }}</h1>
+        <div class="mb-6">
+            <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Loan' : 'Record Loan' }}</h1>
+            <p class="mt-1 text-sm text-gray-500">Mirror the same calculated fields and schedule settings used in the Filament loan form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingLoan" class="py-16" />
 
-        <form v-else class="max-w-xl" @submit.prevent="handleSubmit">
-            <div class="flex flex-col gap-4 rounded-xl border border-gray-700 bg-gray-800 p-6">
-                <FormSelect
-                    v-if="!isEdit"
-                    label="Account *"
-                    v-model="form.account_id"
-                    :options="accountOptions"
-                    placeholder="Select account"
-                />
-                <FormInput label="Loan Name *" v-model="form.name" placeholder="e.g. Car Loan" required />
+        <form v-else class="max-w-4xl" @submit.prevent="handleSubmit">
+            <div class="space-y-6">
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Main data</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormInput label="Name *" v-model="form.name" required />
+                        <FormSelect
+                            label="Account *"
+                            v-model="form.account_id"
+                            :options="accountOptions"
+                            placeholder="Select account"
+                        />
+                        <FormInput
+                            label="Total Amount *"
+                            v-model="form.total_amount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="0.00"
+                        />
+                        <FormInput
+                            v-if="!form.is_variable_rate"
+                            label="Interest Rate (%)"
+                            v-model="form.interest_rate"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            placeholder="0.00"
+                        />
+                        <FormInput
+                            label="Total Installments *"
+                            v-model="form.total_installments"
+                            type="number"
+                            min="1"
+                            step="1"
+                        />
+                        <FormInput
+                            label="Paid Installments *"
+                            v-model="form.paid_installments"
+                            type="number"
+                            min="0"
+                            step="1"
+                        />
+                        <FormInput
+                            label="Monthly Payment"
+                            v-model="form.monthly_payment"
+                            type="number"
+                            step="0.01"
+                            readonly
+                            helper="Calculated automatically from amount, rate, and installments."
+                        />
+                        <FormInput
+                            label="Remaining Amount"
+                            v-model="form.remaining_amount"
+                            type="number"
+                            step="0.01"
+                            readonly
+                            helper="Outstanding principal balance after paid installments."
+                        />
+                    </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <FormInput label="Total Amount *" v-model="form.total_amount" type="number" step="0.01" placeholder="0.00" />
-                    <FormInput label="Monthly Payment *" v-model="form.monthly_payment" type="number" step="0.01" placeholder="0.00" />
-                </div>
+                    <div class="mt-4 flex items-center gap-3">
+                        <input
+                            id="is_variable_rate"
+                            v-model="form.is_variable_rate"
+                            type="checkbox"
+                            class="h-4 w-4 rounded border-gray-300 bg-white text-amber-500 focus:ring-amber-400"
+                        >
+                        <label for="is_variable_rate" class="text-sm font-medium text-gray-700">Variable rate</label>
+                    </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <FormInput label="Interest Rate (%)" v-model="form.interest_rate" type="number" step="0.01" placeholder="0.00" />
-                    <FormSelect label="Status *" v-model="form.status" :options="statusOptions" />
-                </div>
+                    <p class="mt-4 text-sm text-gray-500">Total interest (full loan): <span class="font-medium text-gray-900">{{ totalInterestLabel }}</span></p>
+                </section>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <FormInput label="Total Installments *" v-model="form.total_installments" type="number" step="1" placeholder="12" />
-                    <FormInput label="Paid Installments *" v-model="form.paid_installments" type="number" step="1" placeholder="0" />
-                </div>
-
-                <template v-if="!isEdit">
-                    <div class="grid grid-cols-2 gap-4">
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Schedule</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
                         <FormInput label="Start Date *" v-model="form.start_date" type="date" />
                         <FormInput label="End Date" v-model="form.end_date" type="date" />
+                        <FormInput
+                            label="Withdrawal Day *"
+                            v-model="form.withdrawal_day"
+                            type="number"
+                            min="1"
+                            max="31"
+                            step="1"
+                        />
+                        <FormSelect label="Status *" v-model="form.status" :options="statusOptions" />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <FormInput label="Withdrawal Day *" v-model="form.withdrawal_day" type="number" min="1" max="31" placeholder="1" />
-                        <FormInput label="Remaining Amount" v-model="form.remaining_amount" type="number" step="0.01" placeholder="0.00" />
-                    </div>
-
-                    <div class="flex items-center gap-3">
+                    <div class="mt-4 flex items-center gap-3">
                         <input
                             id="skip_weekends"
                             v-model="form.skip_weekends"
                             type="checkbox"
-                            class="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-600 focus:ring-blue-500"
+                            class="h-4 w-4 rounded border-gray-300 bg-white text-amber-500 focus:ring-amber-400"
                         >
-                        <label for="skip_weekends" class="text-sm text-gray-300">Skip weekends for payment dates</label>
+                        <label for="skip_weekends" class="text-sm font-medium text-gray-700">Skip weekends</label>
                     </div>
-
-                    <div class="flex items-center gap-3">
-                        <input
-                            id="is_variable"
-                            v-model="form.is_variable_rate"
-                            type="checkbox"
-                            class="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-600 focus:ring-blue-500"
-                        >
-                        <label for="is_variable" class="text-sm text-gray-300">Variable interest rate</label>
-                    </div>
-                </template>
+                </section>
             </div>
 
             <div class="mt-6 flex items-center justify-between">
                 <button
                     v-if="isEdit"
                     type="button"
-                    class="text-sm text-red-400 hover:text-red-300 focus:outline-none"
+                    class="text-sm font-medium text-red-500 hover:text-red-600 focus:outline-none"
                     @click="showDeleteModal = true"
                 >
                     Delete loan
@@ -272,14 +379,14 @@ async function handleDelete() {
                 <div class="ml-auto flex gap-3">
                     <router-link
                         to="/loans"
-                        class="flex h-10 items-center rounded-lg border border-gray-600 bg-gray-700 px-4 text-sm text-gray-100 transition-colors hover:bg-gray-600"
+                        class="flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                     >
                         Cancel
                     </router-link>
                     <button
                         type="submit"
                         :disabled="saving"
-                        class="flex h-10 items-center gap-2 rounded-lg bg-blue-600 px-4 text-sm text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        class="flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-4 text-sm font-medium text-white transition-colors hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         {{ saving ? 'Saving…' : (isEdit ? 'Update Loan' : 'Record Loan') }}
                     </button>

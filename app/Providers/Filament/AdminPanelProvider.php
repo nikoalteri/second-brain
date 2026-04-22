@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -12,6 +13,7 @@ use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Navigation\NavigationGroup;
 use Filament\Navigation\NavigationItem;
+use Filament\Navigation\MenuItem;
 use App\Filament\Widgets\AccountsListWidget;
 use App\Filament\Widgets\CreditCardsKpiOverview;
 use App\Filament\Widgets\StatsOverview;
@@ -44,10 +46,18 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->brandName('Fluxa')
             ->login()
+            ->darkMode(false, true)
+            ->defaultThemeMode(ThemeMode::Light)
             ->topNavigation()
             ->renderHook('panels::body.end', fn() => '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>')
             ->colors([
                 'primary' => Color::Amber,
+            ])
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('Open frontend')
+                    ->url(url('/dashboard'))
+                    ->icon('heroicon-o-arrow-top-right-on-square'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->resources([

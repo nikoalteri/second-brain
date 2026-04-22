@@ -4,13 +4,25 @@ import { defineStore } from 'pinia';
 export const useAuthStore = defineStore('auth', () => {
     const accessToken = ref(localStorage.getItem('fluxa_access_token'));
     const refreshToken = ref(localStorage.getItem('fluxa_refresh_token'));
-    const user = ref(null);
+    const storedUser = localStorage.getItem('fluxa_user');
+    const user = ref(storedUser ? JSON.parse(storedUser) : null);
     const loading = ref(false);
     const error = ref(null);
 
     const isAuthenticated = computed(() => !!accessToken.value);
+    const isAdmin = computed(() => !!user.value?.is_admin);
 
-    function setTokens(access, refresh = null) {
+    function setUser(value) {
+        user.value = value;
+
+        if (value) {
+            localStorage.setItem('fluxa_user', JSON.stringify(value));
+        } else {
+            localStorage.removeItem('fluxa_user');
+        }
+    }
+
+    function setTokens(access, refresh = null, authenticatedUser = null) {
         accessToken.value = access;
         localStorage.setItem('fluxa_access_token', access);
 
@@ -18,14 +30,45 @@ export const useAuthStore = defineStore('auth', () => {
             refreshToken.value = refresh;
             localStorage.setItem('fluxa_refresh_token', refresh);
         }
+
+        if (authenticatedUser) {
+            setUser(authenticatedUser);
+        }
     }
 
     function clearTokens() {
         accessToken.value = null;
         refreshToken.value = null;
-        user.value = null;
+        setUser(null);
         localStorage.removeItem('fluxa_access_token');
         localStorage.removeItem('fluxa_refresh_token');
+    }
+
+    async function fetchCurrentUser() {
+        if (!accessToken.value) {
+            setUser(null);
+            return null;
+        }
+
+        const response = await fetch('/api/v1/auth/me', {
+            headers: {
+                Authorization: `Bearer ${accessToken.value}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                clearTokens();
+            }
+
+            return null;
+        }
+
+        const data = await response.json();
+        setUser(data.user ?? null);
+
+        return data.user ?? null;
     }
 
     async function login(email, password) {
@@ -49,7 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
                 return false;
             }
 
-            setTokens(data.access_token, data.refresh_token);
+            setTokens(data.access_token, data.refresh_token, data.user ?? null);
             return true;
         } catch {
             error.value = 'Network error. Please try again.';
@@ -80,9 +123,12 @@ export const useAuthStore = defineStore('auth', () => {
         loading,
         error,
         isAuthenticated,
+        isAdmin,
         login,
         logout,
         setTokens,
+        setUser,
         clearTokens,
+        fetchCurrentUser,
     };
 });

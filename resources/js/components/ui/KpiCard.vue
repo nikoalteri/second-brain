@@ -16,11 +16,11 @@ const colorMap = {
 </script>
 
 <template>
-    <div class="flex min-h-[100px] flex-col gap-2 rounded-xl border border-gray-700 bg-gray-800 p-6">
-        <p class="text-sm font-normal uppercase tracking-wide text-gray-400">{{ label }}</p>
-        <p class="font-mono text-3xl font-semibold" :class="colorMap[props.color] || 'text-gray-100'">
+    <div class="flex min-h-[100px] flex-col gap-2 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <p class="text-sm font-medium uppercase tracking-wide text-gray-500">{{ label }}</p>
+        <p class="font-mono text-3xl font-semibold" :class="colorMap[props.color] || 'text-gray-900'">
             {{ value }}
         </p>
-        <p v-if="delta" class="text-sm font-normal text-gray-400">{{ delta }}</p>
+        <p v-if="delta" class="text-sm font-normal text-gray-500">{{ delta }}</p>
     </div>
 </template>
