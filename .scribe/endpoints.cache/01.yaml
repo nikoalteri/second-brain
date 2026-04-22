@@ -104,11 +104,8 @@ endpoints:
     responses:
       -
         custom: []
-        status: 500
-        content: |-
-          {
-              "message": "Server Error"
-          }
+        status: 401
+        content: '{"message":"Unauthenticated."}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -147,7 +144,7 @@ endpoints:
         name: account_id
         description: 'The ID of the account.'
         required: true
-        example: 16
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
@@ -165,7 +162,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      account_id: 16
+      account_id: 2
       account: 1
     queryParameters: []
     cleanQueryParameters: []
@@ -175,11 +172,8 @@ endpoints:
     responses:
       -
         custom: []
-        status: 500
-        content: |-
-          {
-              "message": "Server Error"
-          }
+        status: 401
+        content: '{"message":"Unauthenticated."}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -313,7 +307,7 @@ endpoints:
         name: account_id
         description: 'The ID of the account.'
         required: true
-        example: 16
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
@@ -331,7 +325,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      account_id: 16
+      account_id: 2
       account: 1
     queryParameters: []
     cleanQueryParameters: []
@@ -374,7 +368,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -384,7 +378,7 @@ endpoints:
       name: b
       type: 'n'
       currency: gzm
-      is_active: true
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -420,7 +414,7 @@ endpoints:
         name: account_id
         description: 'The ID of the account.'
         required: true
-        example: 16
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
@@ -438,7 +432,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      account_id: 16
+      account_id: 2
       account: 1
     queryParameters: []
     cleanQueryParameters: []
@@ -527,7 +521,7 @@ endpoints:
         name: account_id
         description: 'The ID of the account.'
         required: true
-        example: 16
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
@@ -545,7 +539,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      account_id: 16
+      account_id: 2
       account: 1
     queryParameters: []
     cleanQueryParameters: []

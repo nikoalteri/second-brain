@@ -31,7 +31,10 @@ class DashboardWidgetsTest extends TestCase
         // Create finance test data via factories
         $account = Account::factory()->create(['user_id' => $this->user->id, 'balance' => 5000]);
 
-        $type = TransactionType::first();
+        $type = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false]
+        );
         $category = TransactionCategory::firstOrCreate(
             ['user_id' => $this->user->id, 'name' => 'General', 'parent_id' => null],
             ['is_active' => true]

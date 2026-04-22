@@ -1,14 +1,14 @@
-name: 'Credit Cards @authenticated @response 204 {}'
+name: 'Loans @authenticated @response 204 {}'
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - DELETE
-    uri: 'api/v1/credit-cards/{creditCard_id}'
+    uri: 'api/v1/loans/{loan_id}'
     metadata:
       custom: []
-      groupName: 'Credit Cards @authenticated @response 204 {}'
+      groupName: 'Loans @authenticated @response 204 {}'
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
@@ -21,19 +21,19 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      creditCard_id:
+      loan_id:
         custom: []
-        name: creditCard_id
-        description: 'The ID of the creditCard.'
+        name: loan_id
+        description: 'The ID of the loan.'
         required: true
-        example: 16
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      creditCard_id: 16
+      loan_id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []

@@ -1,18 +1,18 @@
-name: Transactions
+name: Endpoints
 description: ''
 endpoints:
   -
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/transactions
+    uri: api/v1/dashboard/charts
     metadata:
       custom: []
-      groupName: Transactions
+      groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
-      title: 'List transactions for the authenticated user.'
+      title: ''
       description: ''
       authenticated: true
       deprecated: false
@@ -24,17 +24,38 @@ endpoints:
     cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
+    bodyParameters:
+      year:
+        custom: []
+        name: year
+        description: 'Must be at least 2000. Must not be greater than 2100.'
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      month:
+        custom: []
+        name: month
+        description: 'Must be at least 1. Must not be greater than 12.'
+        required: false
+        example: 4
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      year: 1
+      month: 4
     fileParameters: []
     responses:
       -
         custom: []
-        status: 500
-        content: |-
-          {
-              "message": "Server Error"
-          }
+        status: 401
+        content: '{"message":"Unauthenticated."}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -52,10 +73,10 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: 'api/v1/transactions/{transaction_id}'
+    uri: api/v1/dashboard/upcoming-payments
     metadata:
       custom: []
-      groupName: Transactions
+      groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
@@ -67,20 +88,64 @@ endpoints:
       Authorization: 'Bearer {ACCESS_TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters:
-      transaction_id:
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      days:
         custom: []
-        name: transaction_id
-        description: 'The ID of the transaction.'
-        required: true
-        example: 16
+        name: days
+        description: 'Must be at least 1. Must not be greater than 30.'
+        required: false
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
-        nullable: false
+        nullable: true
         deprecated: false
-    cleanUrlParameters:
-      transaction_id: 16
+    cleanBodyParameters:
+      days: 1
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/subscription-frequencies
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
@@ -89,11 +154,196 @@ endpoints:
     responses:
       -
         custom: []
-        status: 500
-        content: |-
-          {
-              "message": "Server Error"
-          }
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/reports/finance
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      year:
+        custom: []
+        name: year
+        description: 'Must be at least 2000. Must not be greater than 2100.'
+        required: false
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      types:
+        custom: []
+        name: types
+        description: ''
+        required: false
+        example:
+          - 16
+        type: 'integer[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      note:
+        custom: []
+        name: note
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      year: 1
+      types:
+        - 16
+      note: architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/reports/finance/details
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      year:
+        custom: []
+        name: year
+        description: 'Must be at least 2000. Must not be greater than 2100.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      month:
+        custom: []
+        name: month
+        description: 'Must be at least 1. Must not be greater than 12.'
+        required: true
+        example: 4
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      category_key:
+        custom: []
+        name: category_key
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      types:
+        custom: []
+        name: types
+        description: ''
+        required: false
+        example:
+          - 16
+        type: 'integer[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      note:
+        custom: []
+        name: note
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      year: 1
+      month: 4
+      category_key: architecto
+      types:
+        - 16
+      note: architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -111,10 +361,10 @@ endpoints:
     custom: []
     httpMethods:
       - POST
-    uri: api/v1/transactions
+    uri: 'api/v1/credit-cards/{creditCard_id}/cycles'
     metadata:
       custom: []
-      groupName: Transactions
+      groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
@@ -126,40 +376,270 @@ endpoints:
       Authorization: 'Bearer {ACCESS_TOKEN}'
       Content-Type: application/json
       Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
+    urlParameters:
+      creditCard_id:
+        custom: []
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      creditCard_id: 1
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      account_id:
+      period_start_date:
         custom: []
-        name: account_id
-        description: 'The <code>id</code> of an existing record in the accounts table.'
+        name: period_start_date
+        description: 'Must be a valid date.'
         required: true
-        example: 16
-        type: integer
+        example: '2026-04-22T23:24:33'
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      transaction_type_id:
+      statement_date:
         custom: []
-        name: transaction_type_id
-        description: 'The <code>id</code> of an existing record in the transaction_types table.'
+        name: statement_date
+        description: 'Must be a valid date.'
         required: true
-        example: 16
-        type: integer
+        example: '2026-04-22T23:24:33'
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      transaction_category_id:
+      due_date:
         custom: []
-        name: transaction_category_id
-        description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+        name: due_date
+        description: 'Must be a valid date.'
         required: false
-        example: 16
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      total_spent:
+        custom: []
+        name: total_spent
+        description: 'Must be at least 0.'
+        required: false
+        example: 27
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      status:
+        custom: []
+        name: status
+        description: ''
+        required: false
+        example: paid
+        type: string
+        enumValues:
+          - open
+          - issued
+          - paid
+          - overdue
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      period_start_date: '2026-04-22T23:24:33'
+      statement_date: '2026-04-22T23:24:33'
+      due_date: '2026-04-22T23:24:33'
+      total_spent: 27
+      status: paid
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/credit-cards/{creditCard_id}/cycles/{cycle_id}/issue'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      creditCard_id:
+        custom: []
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
         type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      cycle_id:
+        custom: []
+        name: cycle_id
+        description: 'The ID of the cycle.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      creditCard_id: 1
+      cycle_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/credit-cards/{creditCard_id}/payments/{payment_id}/mark-paid'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      creditCard_id:
+        custom: []
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      payment_id:
+        custom: []
+        name: payment_id
+        description: 'The ID of the payment.'
+        required: true
+        example: 3
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      creditCard_id: 1
+      payment_id: 3
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: 'api/v1/credit-cards/{creditCard_id}/expenses'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      creditCard_id:
+        custom: []
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      creditCard_id: 1
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      spent_at:
+        custom: []
+        name: spent_at
+        description: 'Must be a valid date.'
+        required: true
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      posted_at:
+        custom: []
+        name: posted_at
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-22T23:24:33'
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
@@ -169,19 +649,8 @@ endpoints:
         name: amount
         description: 'Must be at least 0.01.'
         required: true
-        example: 39
+        example: 27
         type: number
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      date:
-        custom: []
-        name: date
-        description: 'Must be a valid date.'
-        required: true
-        example: '2026-04-21T21:51:05'
-        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: false
@@ -191,7 +660,7 @@ endpoints:
         name: description
         description: 'Must not be greater than 255 characters.'
         required: true
-        example: 'Animi quos velit et fugiat.'
+        example: 'Et animi quos velit et fugiat.'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -200,7 +669,7 @@ endpoints:
       notes:
         custom: []
         name: notes
-        description: 'Must not be greater than 1000 characters.'
+        description: 'Must not be greater than 255 characters.'
         required: false
         example: d
         type: string
@@ -208,38 +677,12 @@ endpoints:
         exampleWasSpecified: false
         nullable: true
         deprecated: false
-      is_transfer:
-        custom: []
-        name: is_transfer
-        description: ''
-        required: false
-        example: true
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      to_account_id:
-        custom: []
-        name: to_account_id
-        description: 'The value and <code>account_id</code> must be different. The <code>id</code> of an existing record in the accounts table.'
-        required: false
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
     cleanBodyParameters:
-      account_id: 16
-      transaction_type_id: 16
-      transaction_category_id: 16
-      amount: 39
-      date: '2026-04-21T21:51:05'
-      description: 'Animi quos velit et fugiat.'
+      spent_at: '2026-04-22T23:24:33'
+      posted_at: '2026-04-22T23:24:33'
+      amount: 27
+      description: 'Et animi quos velit et fugiat.'
       notes: d
-      is_transfer: true
-      to_account_id: 16
     fileParameters: []
     responses: []
     responseFields: []
@@ -254,10 +697,10 @@ endpoints:
     custom: []
     httpMethods:
       - PUT
-    uri: 'api/v1/transactions/{transaction_id}'
+    uri: 'api/v1/credit-cards/{creditCard_id}/cycles/{cycle_id}'
     metadata:
       custom: []
-      groupName: Transactions
+      groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
@@ -270,51 +713,298 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      transaction_id:
+      creditCard_id:
         custom: []
-        name: transaction_id
-        description: 'The ID of the transaction.'
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
         required: true
-        example: 16
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      cycle_id:
+        custom: []
+        name: cycle_id
+        description: 'The ID of the cycle.'
+        required: true
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      transaction_id: 16
+      creditCard_id: 1
+      cycle_id: 2
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      account_id:
+      period_start_date:
         custom: []
-        name: account_id
-        description: 'The <code>id</code> of an existing record in the accounts table.'
+        name: period_start_date
+        description: 'Must be a valid date.'
         required: false
-        example: 16
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      statement_date:
+        custom: []
+        name: statement_date
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      due_date:
+        custom: []
+        name: due_date
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      total_spent:
+        custom: []
+        name: total_spent
+        description: 'Must be at least 0.'
+        required: false
+        example: 27
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      status:
+        custom: []
+        name: status
+        description: ''
+        required: false
+        example: issued
+        type: string
+        enumValues:
+          - open
+          - issued
+          - paid
+          - overdue
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      period_start_date: '2026-04-22T23:24:33'
+      statement_date: '2026-04-22T23:24:33'
+      due_date: '2026-04-22T23:24:33'
+      total_spent: 27
+      status: issued
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/credit-cards/{creditCard_id}/cycles/{cycle_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      creditCard_id:
+        custom: []
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      transaction_type_id:
+      cycle_id:
         custom: []
-        name: transaction_type_id
-        description: 'The <code>id</code> of an existing record in the transaction_types table.'
-        required: false
-        example: 16
+        name: cycle_id
+        description: 'The ID of the cycle.'
+        required: true
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      transaction_category_id:
+    cleanUrlParameters:
+      creditCard_id: 1
+      cycle_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      period_start_date:
         custom: []
-        name: transaction_category_id
-        description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+        name: period_start_date
+        description: 'Must be a valid date.'
         required: false
-        example: 16
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      statement_date:
+        custom: []
+        name: statement_date
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      due_date:
+        custom: []
+        name: due_date
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      total_spent:
+        custom: []
+        name: total_spent
+        description: 'Must be at least 0.'
+        required: false
+        example: 27
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      status:
+        custom: []
+        name: status
+        description: ''
+        required: false
+        example: overdue
+        type: string
+        enumValues:
+          - open
+          - issued
+          - paid
+          - overdue
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      period_start_date: '2026-04-22T23:24:33'
+      statement_date: '2026-04-22T23:24:33'
+      due_date: '2026-04-22T23:24:33'
+      total_spent: 27
+      status: overdue
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/credit-cards/{creditCard_id}/expenses/{expense_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      creditCard_id:
+        custom: []
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
         type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      expense_id:
+        custom: []
+        name: expense_id
+        description: 'The ID of the expense.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      creditCard_id: 1
+      expense_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      spent_at:
+        custom: []
+        name: spent_at
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-22T23:24:33'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      posted_at:
+        custom: []
+        name: posted_at
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-22T23:24:33'
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
@@ -324,19 +1014,8 @@ endpoints:
         name: amount
         description: 'Must be at least 0.01.'
         required: false
-        example: 39
+        example: 27
         type: number
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      date:
-        custom: []
-        name: date
-        description: 'Must be a valid date.'
-        required: false
-        example: '2026-04-21T21:51:05'
-        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: false
@@ -346,7 +1025,7 @@ endpoints:
         name: description
         description: 'Must not be greater than 255 characters.'
         required: false
-        example: 'Animi quos velit et fugiat.'
+        example: 'Et animi quos velit et fugiat.'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -355,7 +1034,7 @@ endpoints:
       notes:
         custom: []
         name: notes
-        description: 'Must not be greater than 1000 characters.'
+        description: 'Must not be greater than 255 characters.'
         required: false
         example: d
         type: string
@@ -364,12 +1043,10 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      account_id: 16
-      transaction_type_id: 16
-      transaction_category_id: 16
-      amount: 39
-      date: '2026-04-21T21:51:05'
-      description: 'Animi quos velit et fugiat.'
+      spent_at: '2026-04-22T23:24:33'
+      posted_at: '2026-04-22T23:24:33'
+      amount: 27
+      description: 'Et animi quos velit et fugiat.'
       notes: d
     fileParameters: []
     responses: []
@@ -385,10 +1062,10 @@ endpoints:
     custom: []
     httpMethods:
       - PATCH
-    uri: 'api/v1/transactions/{transaction_id}'
+    uri: 'api/v1/credit-cards/{creditCard_id}/expenses/{expense_id}'
     metadata:
       custom: []
-      groupName: Transactions
+      groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
@@ -401,51 +1078,52 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      transaction_id:
+      creditCard_id:
         custom: []
-        name: transaction_id
-        description: 'The ID of the transaction.'
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
         required: true
-        example: 16
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      expense_id:
+        custom: []
+        name: expense_id
+        description: 'The ID of the expense.'
+        required: true
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      transaction_id: 16
+      creditCard_id: 1
+      expense_id: 2
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
-      account_id:
+      spent_at:
         custom: []
-        name: account_id
-        description: 'The <code>id</code> of an existing record in the accounts table.'
+        name: spent_at
+        description: 'Must be a valid date.'
         required: false
-        example: 16
-        type: integer
+        example: '2026-04-22T23:24:33'
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
-      transaction_type_id:
+      posted_at:
         custom: []
-        name: transaction_type_id
-        description: 'The <code>id</code> of an existing record in the transaction_types table.'
+        name: posted_at
+        description: 'Must be a valid date.'
         required: false
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      transaction_category_id:
-        custom: []
-        name: transaction_category_id
-        description: 'The <code>id</code> of an existing record in the transaction_categories table.'
-        required: false
-        example: 16
-        type: integer
+        example: '2026-04-22T23:24:33'
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
@@ -455,19 +1133,8 @@ endpoints:
         name: amount
         description: 'Must be at least 0.01.'
         required: false
-        example: 39
+        example: 27
         type: number
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      date:
-        custom: []
-        name: date
-        description: 'Must be a valid date.'
-        required: false
-        example: '2026-04-21T21:51:05'
-        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: false
@@ -477,7 +1144,7 @@ endpoints:
         name: description
         description: 'Must not be greater than 255 characters.'
         required: false
-        example: 'Animi quos velit et fugiat.'
+        example: 'Et animi quos velit et fugiat.'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -486,7 +1153,7 @@ endpoints:
       notes:
         custom: []
         name: notes
-        description: 'Must not be greater than 1000 characters.'
+        description: 'Must not be greater than 255 characters.'
         required: false
         example: d
         type: string
@@ -495,12 +1162,10 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      account_id: 16
-      transaction_type_id: 16
-      transaction_category_id: 16
-      amount: 39
-      date: '2026-04-21T21:51:05'
-      description: 'Animi quos velit et fugiat.'
+      spent_at: '2026-04-22T23:24:33'
+      posted_at: '2026-04-22T23:24:33'
+      amount: 27
+      description: 'Et animi quos velit et fugiat.'
       notes: d
     fileParameters: []
     responses: []
@@ -516,10 +1181,10 @@ endpoints:
     custom: []
     httpMethods:
       - DELETE
-    uri: 'api/v1/transactions/{transaction_id}'
+    uri: 'api/v1/credit-cards/{creditCard_id}/cycles/{cycle_id}'
     metadata:
       custom: []
-      groupName: Transactions
+      groupName: Endpoints
       groupDescription: ''
       subgroup: ''
       subgroupDescription: ''
@@ -532,31 +1197,155 @@ endpoints:
       Content-Type: application/json
       Accept: application/json
     urlParameters:
-      transaction_id:
+      creditCard_id:
         custom: []
-        name: transaction_id
-        description: 'The ID of the transaction.'
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
         required: true
-        example: 16
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      cycle_id:
+        custom: []
+        name: cycle_id
+        description: 'The ID of the cycle.'
+        required: true
+        example: 2
         type: integer
         enumValues: []
         exampleWasSpecified: false
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      transaction_id: 16
+      creditCard_id: 1
+      cycle_id: 2
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters: []
     cleanBodyParameters: []
     fileParameters: []
-    responses:
-      -
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/credit-cards/{creditCard_id}/payments/{payment_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      creditCard_id:
         custom: []
-        status: 204
-        content: '{}'
-        headers: []
-        description: ''
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      payment_id:
+        custom: []
+        name: payment_id
+        description: 'The ID of the payment.'
+        required: true
+        example: 3
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      creditCard_id: 1
+      payment_id: 3
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/credit-cards/{creditCard_id}/expenses/{expense_id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      creditCard_id:
+        custom: []
+        name: creditCard_id
+        description: 'The ID of the creditCard.'
+        required: true
+        example: 1
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      expense_id:
+        custom: []
+        name: expense_id
+        description: 'The ID of the expense.'
+        required: true
+        example: 2
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      creditCard_id: 1
+      expense_id: 2
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
     responseFields: []
     auth:
       - headers

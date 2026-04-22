@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Models\Transaction;
 use App\Models\User;
+use App\Models\Account;
 use App\Policies\TransactionPolicy;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -26,7 +27,11 @@ class TransactionAuthorizationTest extends TestCase
     public function test_user_can_access_own_transaction(): void
     {
         $user = User::factory()->create();
-        $transaction = Transaction::factory()->create(['user_id' => $user->id]);
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $transaction = Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+        ]);
 
         $this->assertTrue((new TransactionPolicy())->update($user, $transaction));
     }
