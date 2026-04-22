@@ -204,12 +204,14 @@ php artisan test tests/Unit/LoanScheduleServiceTest.php
 | [PROJECT_ROADMAP_EN.md](docs/PROJECT_ROADMAP_EN.md) | Project phases and timeline |
 | [API.md](docs/API.md) | GraphQL API documentation |
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines |
+| [PHASE7_CLOSEOUT.md](docs/PHASE7_CLOSEOUT.md) | Final verification, scheduler, docs, and release closeout steps |
 
 ## ⏭️ Immediate Next Steps
 
-1. Ensure the production/deployment environment runs Laravel scheduler continuously.
-2. Regenerate and publish API docs if you want the new subscription frequency and dashboard payloads reflected in generated docs.
-3. Run the broader full-suite regression pass when ready for release.
+1. Follow [PHASE7_CLOSEOUT.md](docs/PHASE7_CLOSEOUT.md) for final verification and release hardening.
+2. Ensure the production/deployment environment runs Laravel scheduler continuously.
+3. Regenerate and publish API docs if you want the new subscription frequency and dashboard payloads reflected in generated docs.
+4. Run the broader full-suite regression pass when ready for release.
 
 ---
 
