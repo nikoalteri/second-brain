@@ -10,11 +10,11 @@
 
 **Fluxa** is a Laravel-based personal finance tracker designed to help users monitor and manage all aspects of their financial life in one unified system.
 
-### Current Status: Finance SPA Parity and Automation In Progress
+### Current Status: Finance SPA Parity, Automation, and Dashboard Graph Parity Implemented
 
 - **Backend + SPA parity:** accounts, transactions, loans, credit cards, subscriptions
 - **Automation:** loan posting, credit-card cycle issuing, subscription renewal posting
-- **Dashboard reminders:** upcoming loan, credit-card, and subscription payments in the next 3 days
+- **Dashboard:** upcoming reminders plus cashflow, spending, and net-worth graphs in the SPA
 - **Tests:** targeted finance, API, and lifecycle suites passing
 
 ---
@@ -50,6 +50,13 @@
 - Automatic 3-day renewal reminders on the dashboard
 - Scheduled renewal posting to transactions or credit-card expenses
 - Active/inactive/cancelled status management
+
+### Dashboard
+- SPA dashboard mirrors the Filament finance overview with graph-based summaries
+- Monthly cashflow separates income, spending, and payment outflows
+- Spending highlights only include real expense categories, excluding transfers and payment transactions
+- Net-worth trend uses month-by-month account balance reconstruction so newly created test/demo data stays at zero before the first active month
+- Upcoming payments merge loans, credit cards, and subscriptions with posting-state context
 
 ### Settings & Admin
 - User preference management
@@ -200,10 +207,9 @@ php artisan test tests/Unit/LoanScheduleServiceTest.php
 
 ## ⏭️ Immediate Next Steps
 
-1. Run final manual verification across the SPA for finance report, subscriptions, and cross-resource posting flows.
-2. Ensure the production/deployment environment runs Laravel scheduler continuously.
-3. Regenerate and publish API docs if you want the new subscription frequency and dashboard payloads reflected in generated docs.
-4. Run the broader full-suite regression pass when ready for release.
+1. Ensure the production/deployment environment runs Laravel scheduler continuously.
+2. Regenerate and publish API docs if you want the new subscription frequency and dashboard payloads reflected in generated docs.
+3. Run the broader full-suite regression pass when ready for release.
 
 ---
 

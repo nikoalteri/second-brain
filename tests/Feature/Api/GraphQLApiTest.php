@@ -124,6 +124,17 @@ class GraphQLApiTest extends TestCase
             'amount'              => 1000.00,
             'date'                => '2026-03-15',
         ]);
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false]
+        );
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $expenseType->id,
+            'amount' => -250.00,
+            'date' => '2026-03-20',
+        ]);
 
         $response = $this->graphqlAs($user, '
             query TestCashflow($year: Int!, $month: Int!) {
@@ -147,11 +158,39 @@ class GraphQLApiTest extends TestCase
         $this->assertArrayHasKey('total_expense', $cashflow);
         $this->assertArrayHasKey('net', $cashflow);
         $this->assertEquals(1000.00, $cashflow['total_income']);
+        $this->assertEquals(250.00, $cashflow['total_expense']);
+        $this->assertEquals(750.00, $cashflow['net']);
     }
 
     public function test_graphql_total_by_category_returns_array_of_category_totals(): void
     {
         $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $incomeType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Salary'],
+            ['is_income' => true]
+        );
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expense'],
+            ['is_income' => false]
+        );
+
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $incomeType->id,
+            'amount' => 1200,
+            'date' => '2026-03-10',
+            'transaction_category_id' => null,
+        ]);
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $expenseType->id,
+            'amount' => -80,
+            'date' => '2026-03-11',
+            'transaction_category_id' => null,
+        ]);
 
         $response = $this->graphqlAs($user, '
             query TestTotalByCategory($year: Int!, $month: Int!) {
@@ -166,8 +205,11 @@ class GraphQLApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('errors', null);
 
-        // Returns an array (possibly empty for no transactions)
-        $this->assertIsArray($response->json('data.totalByCategory'));
+        $totals = $response->json('data.totalByCategory');
+        $this->assertIsArray($totals);
+        $this->assertCount(1, $totals);
+        $this->assertEquals('Uncategorised', $totals[0]['category']);
+        $this->assertEquals(80.0, $totals[0]['total']);
     }
 
     public function test_graphql_introspection_returns_all_finance_types(): void

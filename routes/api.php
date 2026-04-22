@@ -29,6 +29,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'throttle:api-read'])->group(function () {
         Route::get('accounts', [AccountController::class, 'index']);
         Route::get('accounts/{account}', [AccountController::class, 'show']);
+        Route::get('dashboard/charts', [DashboardController::class, 'charts']);
         Route::get('dashboard/upcoming-payments', [DashboardController::class, 'upcomingPayments']);
 
         Route::get('transactions', [TransactionController::class, 'index']);

@@ -22,6 +22,7 @@ class MonthlyCashflow
                 ! $user->hasRole('superadmin'),
                 fn ($query) => $query->where('user_id', $user->id)
             )
+            ->where('is_transfer', false)
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->get();
@@ -32,7 +33,7 @@ class MonthlyCashflow
 
         $expense = $transactions
             ->filter(fn ($t) => $t->type && $t->type->is_income === false)
-            ->sum(fn ($t) => (float) $t->amount);
+            ->sum(fn ($t) => abs((float) $t->amount));
 
         return [
             'year'          => $year,

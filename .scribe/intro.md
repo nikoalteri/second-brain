@@ -2,12 +2,13 @@
 
 REST API for the Fluxa personal finance tracker. All endpoints require Bearer token authentication obtained via POST /api/v1/auth/login.
 
-The current API is used by the Vue SPA for the finance-critical flows: accounts, transactions, loans, credit cards, subscriptions, dashboard reminders, and finance reports.
+The current API is used by the Vue SPA for the finance-critical flows: accounts, transactions, loans, credit cards, subscriptions, dashboard reminders, dashboard charts, and finance reports.
 
 Recent finance additions include:
 
 - credit-card cycles, expenses, and payments through REST
 - dashboard upcoming-payment reminders with a default 3-day window
+- dashboard chart payloads for SPA cashflow, spending, and net-worth widgets
 - subscription frequencies managed as first-class backend data
 - subscription renewals that can post either to transactions or credit-card expenses
 
