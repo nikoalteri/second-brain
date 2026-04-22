@@ -13,15 +13,22 @@ import { useToast } from '@/composables/useToast.js';
 const route = useRoute();
 const router = useRouter();
 const { addToast } = useToast();
+const accountTypeLabels = {
+    bank: 'Bank',
+    cash: 'Cash',
+    investment: 'Investment',
+    emergency_fund: 'Emergency Fund',
+    debt: 'Debt',
+};
 
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
-const form = ref({ name: '', type: 'checking', opening_balance: 0, currency: 'EUR', is_active: true });
+const form = ref({ name: '', type: 'bank', opening_balance: 0, currency: 'EUR', is_active: true });
 const errors = ref({});
 
-const typeOptions = ['checking', 'savings', 'investment', 'cash', 'credit', 'other'].map((value) => ({
+const typeOptions = ['bank', 'cash', 'investment', 'emergency_fund', 'debt'].map((value) => ({
     value,
-    label: value.charAt(0).toUpperCase() + value.slice(1),
+    label: accountTypeLabels[value] ?? value,
 }));
 const currencyOptions = ['EUR', 'USD', 'GBP', 'CHF'].map((value) => ({ value, label: value }));
 

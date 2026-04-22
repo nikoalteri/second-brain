@@ -11,6 +11,13 @@ import { useCurrency } from '@/composables/useCurrency.js';
 
 const route = useRoute();
 const { formatCurrency, colorClass, formatSigned } = useCurrency();
+const accountTypeLabels = {
+    bank: 'Bank',
+    cash: 'Cash',
+    investment: 'Investment',
+    emergency_fund: 'Emergency Fund',
+    debt: 'Debt',
+};
 
 const ACCOUNT_DETAIL_QUERY = gql`
     query GetAccount($id: ID!) {
@@ -49,7 +56,7 @@ const transactions = computed(() => account.value?.transactions ?? []);
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-white">{{ account.name }}</h1>
-                    <p class="mt-1 text-sm capitalize text-gray-400">{{ account.type }} · {{ account.currency }}</p>
+                    <p class="mt-1 text-sm text-gray-400">{{ accountTypeLabels[account.type] ?? account.type }} · {{ account.currency }}</p>
                 </div>
                 <router-link
                     :to="`/accounts/${account.id}/edit`"

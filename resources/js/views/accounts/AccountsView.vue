@@ -12,6 +12,13 @@ import { useCurrency } from '@/composables/useCurrency.js';
 const router = useRouter();
 const { formatCurrency } = useCurrency();
 const page = ref(1);
+const accountTypeLabels = {
+    bank: 'Bank',
+    cash: 'Cash',
+    investment: 'Investment',
+    emergency_fund: 'Emergency Fund',
+    debt: 'Debt',
+};
 
 const ACCOUNTS_QUERY = gql`
     query GetAccounts($page: Int) {
@@ -75,7 +82,7 @@ const paginator = computed(() => result.value?.accounts?.paginatorInfo);
                     <div class="mb-3 flex items-start justify-between">
                         <div>
                             <h3 class="text-base font-normal text-white">{{ account.name }}</h3>
-                            <span class="capitalize text-sm text-gray-400">{{ account.type }}</span>
+                            <span class="text-sm text-gray-400">{{ accountTypeLabels[account.type] ?? account.type }}</span>
                         </div>
                         <span
                             class="rounded px-2 py-0.5 text-sm"

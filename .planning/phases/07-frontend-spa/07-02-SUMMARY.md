@@ -60,7 +60,7 @@
 
 ## Account form options
 
-- Account types: `checking`, `savings`, `investment`, `cash`, `credit`, `other`
+- Account types: `bank`, `cash`, `investment`, `emergency_fund`, `debt`
 - Currencies: `EUR`, `USD`, `GBP`, `CHF`
 
 ## What shipped
@@ -72,4 +72,4 @@
 
 ## Deviations from plan
 
-- None. The implemented queries, chart stack, CRUD flow, and delete modal behavior match the plan.
+1. The account-type options were aligned to the existing backend enum/Filament resource values (`bank`, `cash`, `investment`, `emergency_fund`, `debt`) so the SPA create/edit form can submit valid account records.
