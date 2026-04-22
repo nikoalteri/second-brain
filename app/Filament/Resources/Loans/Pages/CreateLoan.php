@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Loans\Pages;
 
 use App\Filament\Resources\Loans\LoanResource;
 use App\Filament\Resources\Loans\Schemas\LoanForm;
+use App\Services\LoanScheduleService;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateLoan extends CreateRecord
@@ -39,5 +40,10 @@ class CreateLoan extends CreateRecord
         $data['remaining_amount'] = (float) ($data['total_amount'] ?? 0);
 
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        app(LoanScheduleService::class)->generate($this->record, onlyMissing: true);
     }
 }

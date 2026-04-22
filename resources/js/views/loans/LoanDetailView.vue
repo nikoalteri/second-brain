@@ -1,46 +1,75 @@
 <script setup>
-import { computed } from 'vue';
-import { useQuery } from '@vue/apollo-composable';
-import { gql } from 'graphql-tag';
+import { computed, onMounted, ref, watch } from 'vue';
 import { PencilIcon } from '@heroicons/vue/24/outline';
 import { useRoute } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useToast } from '@/composables/useToast.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const route = useRoute();
 const { formatCurrency } = useCurrency();
-
-const LOAN_DETAIL_QUERY = gql`
-    query GetLoan($id: ID!) {
-        loan(id: $id) {
-            id
-            name
-            total_amount
-            remaining_amount
-            monthly_payment
-            interest_rate
-            is_variable_rate
-            paid_installments
-            total_installments
-            status
-            start_date
-            end_date
-            payments {
-                id
-                due_date
-                actual_date
-                amount
-                status
-                notes
-            }
-        }
-    }
-`;
-
-const { result, loading } = useQuery(LOAN_DETAIL_QUERY, () => ({ id: route.params.id }));
-const loan = computed(() => result.value?.loan);
+const { addToast } = useToast();
+const auth = useAuthStore();
+const loading = ref(false);
+const generatingSchedule = ref(false);
+const loan = ref(null);
 const payments = computed(() => loan.value?.payments ?? []);
+
+async function fetchLoan() {
+    if (!auth.accessToken) {
+        loan.value = null;
+        return;
+    }
+
+    loading.value = true;
+
+    try {
+        const response = await fetch(`/api/v1/loans/${route.params.id}`, {
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            loan.value = null;
+            return;
+        }
+
+        const data = await response.json();
+        loan.value = data.data ?? null;
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function handleGenerateSchedule() {
+    generatingSchedule.value = true;
+
+    try {
+        const response = await fetch(`/api/v1/loans/${route.params.id}/generate-schedule`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate schedule.');
+        }
+
+        const data = await response.json();
+        loan.value = data.data ?? loan.value;
+        addToast('Payment schedule generated.', 'success');
+    } catch {
+        addToast('Could not generate the payment schedule. Please try again.', 'error');
+    } finally {
+        generatingSchedule.value = false;
+    }
+}
 
 function progressPct(currentLoan) {
     if (!currentLoan?.total_installments) return 0;
@@ -56,6 +85,14 @@ function paymentStatusClass(status) {
 
     return map[status?.toLowerCase()] ?? 'bg-gray-500/10 text-gray-500';
 }
+
+watch(() => route.params.id, () => {
+    void fetchLoan();
+});
+
+onMounted(() => {
+    void fetchLoan();
+});
 </script>
 
 <template>
@@ -68,13 +105,23 @@ function paymentStatusClass(status) {
                     <h1 class="text-xl font-semibold text-gray-900">{{ loan.name }}</h1>
                     <p class="mt-1 text-sm text-gray-500">{{ loan.status }} · {{ loan.interest_rate }}% interest</p>
                 </div>
-                <router-link
-                    :to="`/loans/${loan.id}/edit`"
-                    class="flex h-10 items-center gap-2 rounded-lg border border-gray-600 bg-gray-100 px-4 text-sm text-gray-900 transition-colors hover:bg-gray-50"
-                >
-                    <PencilIcon class="h-4 w-4" />
-                    Edit
-                </router-link>
+                <div class="flex items-center gap-3">
+                    <button
+                        type="button"
+                        class="flex h-10 items-center rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        :disabled="generatingSchedule"
+                        @click="handleGenerateSchedule"
+                    >
+                        {{ generatingSchedule ? 'Generating…' : 'Generate schedule' }}
+                    </button>
+                    <router-link
+                        :to="`/loans/${loan.id}/edit`"
+                        class="flex h-10 items-center gap-2 rounded-lg border border-gray-600 bg-gray-100 px-4 text-sm text-gray-900 transition-colors hover:bg-gray-50"
+                    >
+                        <PencilIcon class="h-4 w-4" />
+                        Edit
+                    </router-link>
+                </div>
             </div>
 
             <div class="mb-6 rounded-xl border border-gray-200 bg-white p-6">
@@ -108,7 +155,9 @@ function paymentStatusClass(status) {
 
             <h2 class="mb-4 text-xl font-semibold text-gray-900">Payment Schedule</h2>
 
-            <div class="hidden overflow-x-auto sm:block">
+            <p v-if="!payments.length" class="mb-4 text-sm text-gray-500">No payment schedule yet. Generate it to see the installments here.</p>
+
+            <div v-else class="hidden overflow-x-auto sm:block">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200">
@@ -135,7 +184,7 @@ function paymentStatusClass(status) {
                 </table>
             </div>
 
-            <div class="flex flex-col gap-2 sm:hidden">
+            <div v-if="payments.length" class="flex flex-col gap-2 sm:hidden">
                 <div
                     v-for="(payment, index) in payments"
                     :key="payment.id"

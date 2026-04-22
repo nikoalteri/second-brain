@@ -2,14 +2,9 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\Transaction;
-use App\Models\TransactionType;
 use Carbon\Carbon;
-use Filament\Actions\Action;
 use Filament\Pages\Page;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class FinanceReport extends Page
@@ -127,51 +122,21 @@ class FinanceReport extends Page
             return collect();
         }
 
-        $query = Transaction::query()
-            ->with(['account', 'type', 'category.parent'])
-            ->where('is_transfer', false)
-            ->whereNull('deleted_at')
-            ->whereYear('date', $this->selectedYear)
-            ->whereMonth('date', $this->detailMonth)
-            ->when(Auth::id(), fn($q) => $q->where('user_id', Auth::id()));
-
-        if (!empty($this->selectedTypes)) {
-            $query->whereIn('transaction_type_id', $this->selectedTypes);
-        }
-        if ($this->selectedNote !== null && $this->selectedNote !== '') {
-            $query->where('notes', $this->selectedNote);
-        }
-
-        if (str_contains($this->detailCategoryKey, '|')) {
-            [$parentName, $childName] = explode('|', $this->detailCategoryKey, 2);
-            $query->whereHas('category', function (EloquentBuilder $q) use ($parentName, $childName) {
-                $q->where('name', $childName)
-                    ->whereHas('parent', fn($pq) => $pq->where('name', $parentName));
-            });
-        } else {
-            $parentName = $this->detailCategoryKey;
-            if ($parentName === 'Altro') {
-                $query->whereNull('transaction_category_id');
-            } else {
-                $query->whereHas('category', function (EloquentBuilder $q) use ($parentName) {
-                    $q->whereHas('parent', fn($pq) => $pq->where('name', $parentName));
-                });
-            }
-        }
-
-        return $query->orderBy('date')->orderBy('id')->get();
+        return app(\App\Services\FinanceReportService::class)
+            ->getDetailTransactions(
+                $this->selectedYear,
+                $this->detailMonth,
+                $this->detailCategoryKey,
+                $this->selectedTypes,
+                $this->selectedNote,
+                Auth::id(),
+            );
     }
 
     public function getNoteOptions(): array
     {
-        $q = DB::table('transactions')
-            ->select('notes')
-            ->whereNotNull('notes')
-            ->where('notes', '!=', '')
-            ->whereYear('date', $this->selectedYear)
-            ->when(Auth::id(), fn($query) => $query->where('user_id', Auth::id()));
-
-        return $q->distinct()->orderBy('notes')->limit(100)->pluck('notes', 'notes')->toArray();
+        return app(\App\Services\FinanceReportService::class)
+            ->getNoteOptions($this->selectedYear, Auth::id());
     }
 
     // ─── Simple table (Cashflow) ────────────────────────────────────────────
@@ -184,98 +149,16 @@ class FinanceReport extends Page
     // ─── Pivot per categoria × mese (gerarchia parent/children) ───────────
     public function getPivotData(): array
     {
-        $rows = $this->baseTransactionsQuery()
-            ->leftJoin('transaction_categories as tc', 'transactions.transaction_category_id', '=', 'tc.id')
-            ->leftJoin('transaction_categories as tcp', 'tc.parent_id', '=', 'tcp.id')
-            ->selectRaw('
-                MONTH(transactions.date) as month,
-                COALESCE(tcp.name, tc.name, "Altro") as parent_name,
-                CASE WHEN tc.parent_id IS NOT NULL THEN tc.name ELSE NULL END as child_name,
-                SUM(transactions.amount) as amount
-            ')
-            ->groupByRaw('MONTH(transactions.date), COALESCE(tcp.name, tc.name, "Altro"), CASE WHEN tc.parent_id IS NOT NULL THEN tc.name ELSE NULL END')
-            ->get();
-
-        $pivot = [];
-        $childrenByParent = [];
-        $monthTotals = array_fill(1, 12, 0);
-
-        foreach ($rows as $row) {
-            $parentName = $row->parent_name;
-            $childName = $row->child_name;
-            $key = $childName ? "{$parentName}|{$childName}" : $parentName;
-
-            $pivot[$key][$row->month] = $row->amount;
-            $pivot[$key]['total'] = ($pivot[$key]['total'] ?? 0) + $row->amount;
-            $monthTotals[$row->month] += $row->amount;
-
-            if ($childName) {
-                if (!isset($childrenByParent[$parentName])) {
-                    $childrenByParent[$parentName] = [];
-                }
-                if (!in_array($childName, $childrenByParent[$parentName])) {
-                    $childrenByParent[$parentName][] = $childName;
-                }
-            }
-        }
-
-        // Costruisci albero: parent con children, ordinato per totale assoluto
-        $parentTotals = [];
-        foreach ($pivot as $key => $data) {
-            $parentName = str_contains($key, '|') ? explode('|', $key)[0] : $key;
-            $parentTotals[$parentName] = ($parentTotals[$parentName] ?? 0) + ($data['total'] ?? 0);
-        }
-        uasort($parentTotals, fn($a, $b) => abs($b) <=> abs($a));
-
-        $tree = [];
-        foreach (array_keys($parentTotals) as $parentName) {
-            $children = [];
-            foreach ($childrenByParent[$parentName] ?? [] as $childName) {
-                $childKey = "{$parentName}|{$childName}";
-                if (isset($pivot[$childKey])) {
-                    $children[] = ['key' => $childKey, 'label' => $childName];
-                }
-            }
-            usort($children, fn($a, $b) => abs($pivot[$b['key']]['total'] ?? 0) <=> abs($pivot[$a['key']]['total'] ?? 0));
-            $tree[] = [
-                'key'         => $parentName,
-                'label'       => $parentName,
-                'has_children' => !empty($children),
-                'children'    => $children,
-            ];
-        }
-
-        return [
-            'tree'        => $tree,
-            'pivot'       => $pivot,
-            'monthTotals' => $monthTotals,
-            'grandTotal'  => array_sum($monthTotals),
-        ];
+        return app(\App\Services\FinanceReportService::class)
+            ->getPivotData($this->selectedYear, $this->selectedTypes, $this->selectedNote, Auth::id());
     }
 
 
     // ─── Dati grafico torta (solo livello parent) ──────────────────────────
     public function getPieData(): array
     {
-        $pivot = $this->getPivotData();
-        $data  = [];
-
-        foreach ($pivot['tree'] as $node) {
-            $total = $pivot['pivot'][$node['key']]['total'] ?? 0;
-            if ($node['has_children']) {
-                foreach ($node['children'] as $child) {
-                    $total += $pivot['pivot'][$child['key']]['total'] ?? 0;
-                }
-            }
-            if ($total != 0) {
-                $data[] = [
-                    'label'  => $node['label'],
-                    'amount' => round(abs($total), 2),
-                ];
-            }
-        }
-
-        return $data;
+        return app(\App\Services\FinanceReportService::class)
+            ->getPieData($this->selectedYear, $this->selectedTypes, $this->selectedNote, Auth::id());
     }
 
     public function exportCsv(): \Symfony\Component\HttpFoundation\StreamedResponse

@@ -7,6 +7,11 @@ use App\Models\User;
 
 class LoanPaymentPolicy
 {
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->hasRole('superadmin') ? true : null;
+    }
+
     public function viewAny(User $user): bool
     {
         return true;

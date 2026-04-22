@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useMutation, useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
@@ -9,10 +9,12 @@ import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useToast } from '@/composables/useToast.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
 const { addToast } = useToast();
+const auth = useAuthStore();
 
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
@@ -47,17 +49,6 @@ const CATEGORIES_QUERY = gql`
             parent_id
             name
             parent {
-                id
-                name
-            }
-        }
-    }
-`;
-
-const ACCOUNTS_QUERY = gql`
-    query GetAccounts {
-        accounts(first: 100) {
-            data {
                 id
                 name
             }
@@ -106,28 +97,77 @@ const DELETE_TX = gql`
     }
 `;
 
-const { result: typesResult } = useQuery(TYPES_QUERY);
-const { result: categoriesResult } = useQuery(CATEGORIES_QUERY);
-const { result: accountsResult } = useQuery(ACCOUNTS_QUERY);
+const { result: typesResult } = useQuery(TYPES_QUERY, null, {
+    fetchPolicy: 'network-only',
+});
+const { result: categoriesResult } = useQuery(CATEGORIES_QUERY, null, {
+    fetchPolicy: 'network-only',
+});
 const { result: txResult, loading: loadingTx } = useQuery(
     TX_QUERY,
     () => ({ id: route.params.id }),
     () => ({ enabled: isEdit.value })
 );
 
+const accounts = ref([]);
+
 const typeOptions = computed(() =>
     (typesResult.value?.transactionTypes ?? []).map((type) => ({ value: type.id, label: type.name }))
 );
-const categoryOptions = computed(() => [
-    { value: '', label: 'No category' },
-    ...(categoriesResult.value?.transactionCategories ?? []).map((category) => ({
-        value: category.id,
-        label: category.parent?.name ? `${category.parent.name} › ${category.name}` : category.name,
-    })),
-]);
+const categoryOptions = computed(() => {
+    const categories = categoriesResult.value?.transactionCategories ?? [];
+    const parents = categories.filter((category) => !category.parent_id);
+    const childrenByParentId = new Map();
+
+    for (const category of categories.filter((item) => item.parent_id)) {
+        const key = String(category.parent_id);
+        const bucket = childrenByParentId.get(key) ?? [];
+        bucket.push(category);
+        childrenByParentId.set(key, bucket);
+    }
+
+    const options = [{ value: '', label: 'No category' }];
+
+    for (const parent of parents) {
+        const children = (childrenByParentId.get(String(parent.id)) ?? [])
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (children.length === 0) {
+            options.push({
+                value: parent.id,
+                label: parent.name,
+            });
+            continue;
+        }
+
+        options.push({
+            value: `group-${parent.id}`,
+            label: parent.name,
+            disabled: true,
+        });
+
+        for (const child of children) {
+            options.push({
+                value: child.id,
+                label: `${parent.name} › ${child.name}`,
+            });
+        }
+    }
+
+    return options;
+});
 const accountOptions = computed(() =>
-    (accountsResult.value?.accounts?.data ?? []).map((account) => ({ value: account.id, label: account.name }))
+    accounts.value.map((account) => ({ value: account.id, label: account.name }))
 );
+const accountHelperText = computed(() => {
+    if (accountOptions.value.length > 0) {
+        return null;
+    }
+
+    return auth.isAdmin
+        ? 'No accounts are available for this user. Only superadmin can select accounts across users.'
+        : 'No accounts are available. You can create transactions only for accounts you own.';
+});
 const selectedTransactionTypeName = computed(() =>
     (typesResult.value?.transactionTypes ?? []).find((type) => type.id === form.value.transaction_type_id)?.name ?? ''
 );
@@ -166,6 +206,32 @@ const { mutate: createTx, loading: creating } = useMutation(CREATE_TX);
 const { mutate: updateTx, loading: updating } = useMutation(UPDATE_TX);
 const { mutate: deleteTx, loading: deleting } = useMutation(DELETE_TX);
 const saving = computed(() => creating.value || updating.value);
+
+async function fetchAccounts() {
+    if (!auth.accessToken) {
+        accounts.value = [];
+        return;
+    }
+
+    const response = await fetch('/api/v1/accounts?per_page=100', {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        accounts.value = [];
+        return;
+    }
+
+    const data = await response.json();
+    accounts.value = data.data ?? [];
+}
+
+onMounted(() => {
+    void fetchAccounts();
+});
 
 async function handleSubmit() {
     errors.value = {};
@@ -259,6 +325,8 @@ async function handleDelete() {
                             :options="accountOptions"
                             placeholder="Select account"
                             :error="errors.account_id"
+                            :helper="accountHelperText"
+                            :disabled="!accountOptions.length"
                         />
                         <FormSelect
                             label="Type *"
@@ -276,7 +344,6 @@ async function handleDelete() {
                         v-model="form.transaction_category_id"
                         :options="categoryOptions"
                         placeholder="No category"
-                        helper="Categories follow the same parent › child labels as Filament."
                     />
                     <FormSelect
                         v-if="showsDestinationAccount"

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Api;
 
 use App\Models\Account;
+use App\Models\CreditCard;
+use App\Models\CreditCardPayment;
 use App\Models\Transaction;
 use App\Models\TransactionType;
 use App\Models\User;
@@ -93,5 +95,44 @@ class TransactionApiTest extends TestCase
         $this->assertArrayHasKey('account', $firstItem);
         $this->assertEquals($account->id, $firstItem['account']['id']);
         $this->assertEquals('My Bank', $firstItem['account']['name']);
+    }
+
+    public function test_deleting_credit_card_posting_transaction_unposts_payment(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $card = CreditCard::factory()->charge()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+        ]);
+
+        $payment = CreditCardPayment::create([
+            'credit_card_id' => $card->id,
+            'due_date' => now()->toDateString(),
+            'actual_date' => now()->toDateString(),
+            'installment_amount' => 148,
+            'interest_amount' => 0,
+            'principal_amount' => 148,
+            'stamp_duty_amount' => 2,
+            'total_amount' => 150,
+            'status' => 'paid',
+        ]);
+
+        $posting = Transaction::query()
+            ->where('credit_card_payment_id', $payment->id)
+            ->firstOrFail();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->deleteJson("/api/v1/transactions/{$posting->id}");
+
+        $response->assertNoContent();
+
+        $payment->refresh();
+
+        $this->assertSame('pending', $payment->status->value);
+        $this->assertNull($payment->actual_date);
+        $this->assertNull($payment->transaction_id);
+        $this->assertTrue(Transaction::withTrashed()->findOrFail($posting->id)->trashed());
     }
 }

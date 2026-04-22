@@ -26,7 +26,14 @@ defineEmits(['update:modelValue']);
                 @change="$emit('update:modelValue', $event.target.value)"
             >
                 <option v-if="placeholder" value="" disabled :selected="!modelValue">{{ placeholder }}</option>
-                <option v-for="opt in options" :key="String(opt.value)" :value="opt.value">{{ opt.label }}</option>
+                <option
+                    v-for="opt in options"
+                    :key="String(opt.value)"
+                    :value="opt.value"
+                    :disabled="opt.disabled"
+                >
+                    {{ opt.label }}
+                </option>
             </select>
             <svg
                 class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"

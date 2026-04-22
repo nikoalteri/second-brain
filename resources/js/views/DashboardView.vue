@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import {
     BarElement,
     CategoryScale,
@@ -16,13 +16,17 @@ import AppLayout from '@/components/layout/AppLayout.vue';
 import KpiCard from '@/components/ui/KpiCard.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const { formatCurrency } = useCurrency();
+const auth = useAuthStore();
 const now = new Date();
 const year = now.getFullYear();
 const month = now.getMonth() + 1;
+const upcomingPayments = ref([]);
+const upcomingLoading = ref(false);
 
 const CASHFLOW_QUERY = gql`
     query GetMonthlyCashflow($year: Int!, $month: Int!) {
@@ -72,7 +76,7 @@ const totalBalance = computed(() =>
     (accountsResult.value?.accounts?.data ?? []).reduce((sum, account) => sum + (account.balance ?? 0), 0)
 );
 const netCashflow = computed(() => cashflow.value.net ?? (cashflow.value.total_income - cashflow.value.total_expense));
-const loading = computed(() => cashflowLoading.value || categoriesLoading.value || accountsLoading.value);
+const loading = computed(() => cashflowLoading.value || categoriesLoading.value || accountsLoading.value || upcomingLoading.value);
 
 const chartData = computed(() => ({
     labels: ['This Month'],
@@ -128,6 +132,82 @@ const chartOptions = {
         },
     },
 };
+
+function upcomingPaymentStatus(payment) {
+    if (payment.days_until_due === 0) {
+        return 'Due today';
+    }
+
+    if (payment.days_until_due === 1) {
+        return 'Due tomorrow';
+    }
+
+    return `Due in ${payment.days_until_due} days`;
+}
+
+function upcomingPaymentTypeLabel(payment) {
+    if (payment.type === 'loan') {
+        return 'Loan installment';
+    }
+
+    if (payment.type === 'credit-card') {
+        return 'Credit card payment';
+    }
+
+    return 'Subscription renewal';
+}
+
+function upcomingPostingLabel(payment) {
+    if (payment.type !== 'subscription') {
+        return payment.transaction_posted ? 'Posted to transactions' : 'Will post on due date';
+    }
+
+    if (!payment.auto_create_transaction) {
+        return 'Reminder only';
+    }
+
+    if (payment.transaction_posted) {
+        return payment.posting_target === 'credit-card-expense'
+            ? 'Added to card expenses'
+            : 'Posted to transactions';
+    }
+
+    return payment.posting_target === 'credit-card-expense'
+        ? 'Will add to card expenses on due date'
+        : 'Will post on due date';
+}
+
+async function fetchUpcomingPayments() {
+    if (!auth.accessToken) {
+        upcomingPayments.value = [];
+        return;
+    }
+
+    upcomingLoading.value = true;
+
+    try {
+        const response = await fetch('/api/v1/dashboard/upcoming-payments?days=3', {
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            upcomingPayments.value = [];
+            return;
+        }
+
+        const data = await response.json();
+        upcomingPayments.value = data.data ?? [];
+    } finally {
+        upcomingLoading.value = false;
+    }
+}
+
+onMounted(() => {
+    void fetchUpcomingPayments();
+});
 </script>
 
 <template>
@@ -151,6 +231,44 @@ const chartOptions = {
                     :value="formatCurrency(netCashflow)"
                     :color="netCashflow >= 0 ? 'emerald' : 'red'"
                 />
+            </div>
+
+            <div v-if="upcomingPayments.length" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Impending payments</h2>
+                        <p class="mt-1 text-sm text-gray-600">Upcoming installments, card payments, and subscription renewals due in the next 3 days.</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <div
+                        v-for="payment in upcomingPayments"
+                        :key="payment.id"
+                        class="rounded-xl border border-amber-200 bg-white p-4 shadow-sm"
+                    >
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ upcomingPaymentTypeLabel(payment) }}</p>
+                                <p class="mt-1 truncate text-sm font-medium text-gray-900">{{ payment.description }}</p>
+                                <p class="mt-1 text-sm text-gray-500">{{ payment.due_date }}</p>
+                            </div>
+                            <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                                {{ upcomingPaymentStatus(payment) }}
+                            </span>
+                        </div>
+
+                        <div class="mt-4 flex items-end justify-between gap-3">
+                            <p class="font-mono text-lg font-semibold text-gray-900">{{ formatCurrency(payment.amount) }}</p>
+                            <span
+                                class="text-xs font-medium"
+                                :class="payment.transaction_posted ? 'text-emerald-600' : 'text-gray-500'"
+                            >
+                                {{ upcomingPostingLabel(payment) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="mb-6 h-72 rounded-xl border border-gray-200 bg-white p-6">

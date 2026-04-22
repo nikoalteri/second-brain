@@ -89,3 +89,7 @@ export const apolloClient = new ApolloClient({
         },
     },
 });
+
+export function clearApolloCache() {
+    return apolloClient.clearStore();
+}

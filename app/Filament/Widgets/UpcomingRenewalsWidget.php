@@ -31,7 +31,7 @@ class UpcomingRenewalsWidget extends BaseWidget
                     ->searchable()
                     ->label('Subscription'),
 
-                BadgeColumn::make('frequency')
+                BadgeColumn::make('frequencyOption.name')
                     ->label('Frequency'),
 
                 TextColumn::make('monthly_cost')

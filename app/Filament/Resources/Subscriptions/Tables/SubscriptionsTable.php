@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\Subscriptions\Tables;
 
 use App\Enums\SubscriptionStatus;
-use App\Enums\SubscriptionFrequency;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Actions\EditAction;
@@ -23,12 +22,22 @@ class SubscriptionsTable
                     ->searchable()
                     ->sortable(),
 
-                BadgeColumn::make('frequency')
+                BadgeColumn::make('frequencyOption.name')
+                    ->label('Frequency')
                     ->sortable(),
 
-                TextColumn::make('monthly_cost')
+                TextColumn::make('annual_cost')
+                    ->label('Renewal amount')
                     ->money('EUR')
                     ->sortable(),
+
+                TextColumn::make('payment_source_type')
+                    ->label('Source')
+                    ->formatStateUsing(fn (?string $state, $record) => match ($state) {
+                        'account' => $record->account?->name ?? 'Account',
+                        'credit-card' => $record->creditCard?->name ?? 'Credit card',
+                        default => 'Not set',
+                    }),
 
                 TextColumn::make('next_renewal_date')
                     ->date()
@@ -41,8 +50,8 @@ class SubscriptionsTable
                 SelectFilter::make('status')
                     ->options(SubscriptionStatus::class),
 
-                SelectFilter::make('frequency')
-                    ->options(SubscriptionFrequency::class),
+                SelectFilter::make('subscription_frequency_id')
+                    ->relationship('frequencyOption', 'name'),
             ])
             ->actions([
                 EditAction::make(),

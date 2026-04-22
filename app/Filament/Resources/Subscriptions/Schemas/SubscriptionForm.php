@@ -2,14 +2,15 @@
 
 namespace App\Filament\Resources\Subscriptions\Schemas;
 
-use App\Enums\SubscriptionFrequency;
 use App\Enums\SubscriptionStatus;
+use App\Models\SubscriptionFrequency;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 
 class SubscriptionForm
@@ -25,26 +26,32 @@ class SubscriptionForm
                             ->maxLength(255)
                             ->placeholder('e.g., Netflix, Spotify'),
 
-                        Select::make('frequency')
-                            ->options(SubscriptionFrequency::class)
+                        Select::make('subscription_frequency_id')
+                            ->label('Frequency')
+                            ->relationship('frequencyOption', 'name', fn ($query) => $query->where('is_active', true)->orderBy('sort_order')->orderBy('name'))
                             ->required()
-                            ->live(),
+                            ->searchable()
+                            ->preload(),
                     ])
                     ->columns(2),
 
                 Section::make('Cost')
                     ->schema([
-                        TextInput::make('monthly_cost')
-                            ->numeric()
-                            ->prefix('€')
-                            ->step(0.01)
-                            ->helperText('For monthly subscriptions'),
-
                         TextInput::make('annual_cost')
+                            ->label('Renewal amount')
                             ->numeric()
                             ->prefix('€')
                             ->step(0.01)
-                            ->helperText('For annual/biennial subscriptions'),
+                            ->required()
+                            ->helperText('Charge applied each time the subscription renews.'),
+                        TextInput::make('monthly_cost')
+                            ->label('Monthly equivalent')
+                            ->numeric()
+                            ->prefix('€')
+                            ->step(0.01)
+                            ->disabled()
+                            ->dehydrated(false)
+                            ->helperText('Calculated from the renewal amount and selected frequency.'),
                     ])
                     ->columns(2),
 
@@ -63,13 +70,25 @@ class SubscriptionForm
                     ])
                     ->columns(2),
 
-                Section::make('Account & Category')
+                Section::make('Payment Source & Category')
                     ->schema([
                         Select::make('account_id')
                             ->relationship('account', 'name')
                             ->searchable()
                             ->preload()
-                            ->helperText('Account to debit'),
+                            ->requiredWithout('credit_card_id')
+                            ->live()
+                            ->afterStateUpdated(fn ($state, Set $set) => $state ? $set('credit_card_id', null) : null)
+                            ->helperText('Pick a bank/cash account, or leave empty and choose a credit card.'),
+
+                        Select::make('credit_card_id')
+                            ->relationship('creditCard', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->requiredWithout('account_id')
+                            ->live()
+                            ->afterStateUpdated(fn ($state, Set $set) => $state ? $set('account_id', null) : null)
+                            ->helperText('Use this when the subscription is charged directly to a credit card.'),
 
                         Select::make('category_id')
                             ->relationship('category', 'name')
@@ -77,7 +96,7 @@ class SubscriptionForm
                             ->preload()
                             ->helperText('Transaction category (optional)'),
                     ])
-                    ->columns(2),
+                    ->columns(3),
 
                 Section::make('Settings')
                     ->schema([

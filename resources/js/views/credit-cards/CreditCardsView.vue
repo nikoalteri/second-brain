@@ -1,44 +1,50 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { useQuery } from '@vue/apollo-composable';
-import { gql } from 'graphql-tag';
+import { computed, onMounted, ref } from 'vue';
 import { CreditCardIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
 const { formatCurrency } = useCurrency();
-const page = ref(1);
+const auth = useAuthStore();
+const loading = ref(false);
+const cardsResponse = ref({ data: [] });
 
-const CARDS_QUERY = gql`
-    query GetCreditCards($page: Int) {
-        creditCards(first: 20, page: $page) {
-            data {
-                id
-                name
-                type
-                credit_limit
-                current_balance
-                available_credit
-                status
-                statement_day
-                due_day
-            }
-            paginatorInfo {
-                currentPage
-                lastPage
-                total
-            }
-        }
+const cards = computed(() => cardsResponse.value?.data ?? []);
+
+async function fetchCards() {
+    if (!auth.accessToken) {
+        cardsResponse.value = { data: [] };
+        return;
     }
-`;
 
-const { result, loading } = useQuery(CARDS_QUERY, () => ({ page: page.value }));
-const cards = computed(() => result.value?.creditCards?.data ?? []);
-const paginator = computed(() => result.value?.creditCards?.paginatorInfo);
+    loading.value = true;
+
+    try {
+        const response = await fetch('/api/v1/credit-cards?per_page=100', {
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            cardsResponse.value = { data: [] };
+            return;
+        }
+
+        const data = await response.json();
+        cardsResponse.value = {
+            data: data.data ?? [],
+        };
+    } finally {
+        loading.value = false;
+    }
+}
 
 function availablePct(card) {
     if (!card.credit_limit) return 100;
@@ -54,6 +60,10 @@ function statusBadgeClass(status) {
 
     return map[status?.toLowerCase()] ?? 'bg-gray-500/10 text-gray-500';
 }
+
+onMounted(() => {
+    void fetchCards();
+});
 </script>
 
 <template>
@@ -117,28 +127,6 @@ function statusBadgeClass(status) {
                 </div>
             </div>
 
-            <div
-                v-if="paginator?.lastPage > 1"
-                class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4"
-            >
-                <p class="text-sm text-gray-500">Page {{ paginator.currentPage }} of {{ paginator.lastPage }}</p>
-                <div class="flex gap-2">
-                    <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-                        :disabled="page <= 1"
-                        @click="page--"
-                    >
-                        Prev
-                    </button>
-                    <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-                        :disabled="page >= paginator.lastPage"
-                        @click="page++"
-                    >
-                        Next
-                    </button>
-                </div>
-            </div>
         </template>
     </AppLayout>
 </template>

@@ -11,7 +11,13 @@ class CreateUser extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        return $this->getEditUrl();
+        $record = $this->getRecord();
+
+        if (auth()->user()?->can('update', $record)) {
+            return UserResource::getUrl('edit', ['record' => $record]);
+        }
+
+        return UserResource::getUrl();
     }
 
     protected function mutateFormDataBeforeCreate(array $data): array

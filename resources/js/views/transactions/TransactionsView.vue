@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { ArrowsRightLeftIcon } from '@heroicons/vue/24/outline';
@@ -7,25 +7,16 @@ import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
 const { colorClass, formatSigned } = useCurrency();
+const auth = useAuthStore();
 
 const page = ref(1);
 const filterAccountId = ref(null);
 const filterDateFrom = ref('');
 const filterDateTo = ref('');
-
-const ACCOUNTS_QUERY = gql`
-    query GetAccountsForFilter {
-        accounts(first: 100) {
-            data {
-                id
-                name
-            }
-        }
-    }
-`;
 
 const CATEGORIES_QUERY = gql`
     query GetTransactionCategories {
@@ -57,14 +48,15 @@ const TRANSACTIONS_QUERY = gql`
     }
 `;
 
-const { result: accountsResult } = useQuery(ACCOUNTS_QUERY);
-const { result: categoriesResult } = useQuery(CATEGORIES_QUERY);
+const { result: categoriesResult } = useQuery(CATEGORIES_QUERY, null, {
+    fetchPolicy: 'network-only',
+});
 const { result, loading, error } = useQuery(TRANSACTIONS_QUERY, () => ({
     page: page.value,
     account_id: filterAccountId.value || undefined,
 }));
 
-const accounts = computed(() => accountsResult.value?.accounts?.data ?? []);
+const accounts = ref([]);
 const accountOptions = computed(() => [
     { value: '', label: 'All accounts' },
     ...accounts.value.map((account) => ({ value: account.id, label: account.name })),
@@ -96,6 +88,32 @@ function applyAccountFilter(value) {
     filterAccountId.value = value || null;
     page.value = 1;
 }
+
+async function fetchAccounts() {
+    if (!auth.accessToken) {
+        accounts.value = [];
+        return;
+    }
+
+    const response = await fetch('/api/v1/accounts?per_page=100', {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        accounts.value = [];
+        return;
+    }
+
+    const data = await response.json();
+    accounts.value = data.data ?? [];
+}
+
+onMounted(() => {
+    void fetchAccounts();
+});
 </script>
 
 <template>

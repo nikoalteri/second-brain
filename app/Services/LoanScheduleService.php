@@ -51,7 +51,10 @@ class LoanScheduleService
                 }
             });
 
-            $this->syncLoan($loan->fresh(['payments.loan']));
+            $freshLoan = $loan->fresh(['payments.loan']);
+
+            $this->syncLoan($freshLoan);
+            app(LoanPaymentPostingService::class)->syncDuePayments(loan: $freshLoan);
         });
     }
 

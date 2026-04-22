@@ -28,7 +28,10 @@ class CreditCardController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $creditCards = QueryBuilder::for(CreditCard::class)
-            ->where('user_id', $request->user()->id)
+            ->when(
+                ! $request->user()->hasRole('superadmin'),
+                fn ($query) => $query->where('user_id', $request->user()->id)
+            )
             ->allowedFilters(
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('type'),
@@ -58,7 +61,17 @@ class CreditCardController extends Controller
     {
         $this->authorize('view', $creditCard);
 
-        $creditCard->load('cycles');
+        $creditCard->load([
+            'cycles' => fn ($query) => $query
+                ->with(['expenses' => fn ($expenseQuery) => $expenseQuery->orderByDesc('spent_at')])
+                ->orderByDesc('statement_date'),
+            'payments' => fn ($query) => $query
+                ->with('postingTransaction')
+                ->orderBy('due_date'),
+            'expenses' => fn ($query) => $query
+                ->with('cycle')
+                ->orderByDesc('spent_at'),
+        ]);
 
         return new CreditCardResource($creditCard);
     }

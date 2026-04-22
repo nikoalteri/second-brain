@@ -8,6 +8,7 @@ use App\Models\Account;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AccountApiTest extends TestCase
@@ -191,5 +192,44 @@ class AccountApiTest extends TestCase
             'name'    => 'Injected Account',
             'user_id' => $otherUser->id,
         ]);
+    }
+
+    public function test_superadmin_can_list_all_accounts(): void
+    {
+        Role::create(['name' => 'superadmin']);
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        Account::factory()->count(2)->create(['user_id' => $userA->id]);
+        Account::factory()->count(1)->create(['user_id' => $userB->id]);
+
+        Sanctum::actingAs($superadmin);
+
+        $response = $this->getJson('/api/v1/accounts');
+
+        $response->assertOk()
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_superadmin_can_view_another_users_account(): void
+    {
+        Role::create(['name' => 'superadmin']);
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $otherUser = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $otherUser->id]);
+
+        Sanctum::actingAs($superadmin);
+
+        $response = $this->getJson("/api/v1/accounts/{$account->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $account->id);
     }
 }

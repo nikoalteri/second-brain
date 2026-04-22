@@ -13,6 +13,18 @@ export const routes = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/profile',
+        name: 'profile',
+        component: () => import('@/views/UserDetailsView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/reports/finance',
+        name: 'reports.finance',
+        component: () => import('@/views/reports/FinanceReportView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/accounts',
         name: 'accounts',
         component: () => import('@/views/accounts/AccountsView.vue'),

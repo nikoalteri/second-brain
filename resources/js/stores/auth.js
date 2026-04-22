@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+import { clearApolloCache } from '@/apollo/client.js';
 
 export const useAuthStore = defineStore('auth', () => {
     const accessToken = ref(localStorage.getItem('fluxa_access_token'));
@@ -34,6 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
         if (authenticatedUser) {
             setUser(authenticatedUser);
         }
+
+        void clearApolloCache();
     }
 
     function clearTokens() {
@@ -42,6 +45,7 @@ export const useAuthStore = defineStore('auth', () => {
         setUser(null);
         localStorage.removeItem('fluxa_access_token');
         localStorage.removeItem('fluxa_refresh_token');
+        void clearApolloCache();
     }
 
     async function fetchCurrentUser() {

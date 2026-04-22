@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useMutation, useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
@@ -9,13 +9,16 @@ import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useToast } from '@/composables/useToast.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
 const { addToast } = useToast();
+const auth = useAuthStore();
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
 const today = new Date().toISOString().split('T')[0];
+const accounts = ref([]);
 
 const form = ref({
     account_id: '',
@@ -33,17 +36,6 @@ const form = ref({
     remaining_amount: '',
     status: 'active',
 });
-
-const ACCOUNTS_QUERY = gql`
-    query GetAccounts {
-        accounts(first: 100) {
-            data {
-                id
-                name
-            }
-        }
-    }
-`;
 
 const LOAN_QUERY = gql`
     query GetLoan($id: ID!) {
@@ -91,7 +83,6 @@ const DELETE_LOAN = gql`
     }
 `;
 
-const { result: accountsResult } = useQuery(ACCOUNTS_QUERY);
 const { result: loanResult, loading: loadingLoan } = useQuery(
     LOAN_QUERY,
     () => ({ id: route.params.id }),
@@ -99,7 +90,7 @@ const { result: loanResult, loading: loadingLoan } = useQuery(
 );
 
 const accountOptions = computed(() =>
-    (accountsResult.value?.accounts?.data ?? []).map((account) => ({ value: account.id, label: account.name }))
+    accounts.value.map((account) => ({ value: account.id, label: account.name }))
 );
 const statusOptions = [
     { value: 'active', label: 'Active' },
@@ -205,6 +196,32 @@ const { mutate: createLoan, loading: creating } = useMutation(CREATE_LOAN);
 const { mutate: updateLoan, loading: updating } = useMutation(UPDATE_LOAN);
 const { mutate: deleteLoan, loading: deleting } = useMutation(DELETE_LOAN);
 const saving = computed(() => creating.value || updating.value);
+
+async function fetchAccounts() {
+    if (!auth.accessToken) {
+        accounts.value = [];
+        return;
+    }
+
+    const response = await fetch('/api/v1/accounts?per_page=100', {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        accounts.value = [];
+        return;
+    }
+
+    const data = await response.json();
+    accounts.value = data.data ?? [];
+}
+
+onMounted(() => {
+    void fetchAccounts();
+});
 
 async function handleSubmit() {
     const input = {

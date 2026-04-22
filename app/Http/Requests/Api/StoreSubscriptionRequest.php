@@ -13,10 +13,10 @@ class StoreSubscriptionRequest extends FormRequest
     {
         return [
             'name'                    => ['required', 'string', 'max:255'],
-            'account_id'              => ['required', 'integer', 'exists:accounts,id'],
-            'monthly_cost'            => ['nullable', 'numeric', 'min:0'],
-            'annual_cost'             => ['nullable', 'numeric', 'min:0'],
-            'frequency'               => ['required', Rule::in(['monthly', 'annual', 'biennial'])],
+            'account_id'              => ['nullable', 'integer', 'exists:accounts,id', 'required_without:credit_card_id'],
+            'credit_card_id'          => ['nullable', 'integer', 'exists:credit_cards,id', 'required_without:account_id'],
+            'billing_amount'          => ['required', 'numeric', 'min:0'],
+            'subscription_frequency_id' => ['required', 'integer', Rule::exists('subscription_frequencies', 'id')->where('is_active', true)],
             'day_of_month'            => ['required', 'integer', 'min:1', 'max:31'],
             'next_renewal_date'       => ['required', 'date'],
             'category_id'             => ['nullable', 'integer', 'exists:transaction_categories,id'],

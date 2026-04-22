@@ -36,7 +36,10 @@ class AccountController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $accounts = QueryBuilder::for(Account::class)
-            ->where('user_id', $request->user()->id)
+            ->when(
+                ! $request->user()->hasRole('superadmin'),
+                fn ($query) => $query->where('user_id', $request->user()->id)
+            )
             ->allowedFilters(
                 AllowedFilter::exact('type'),
                 AllowedFilter::exact('is_active'),

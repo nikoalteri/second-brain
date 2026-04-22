@@ -1,45 +1,46 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { useQuery } from '@vue/apollo-composable';
-import { gql } from 'graphql-tag';
+import { onMounted, ref } from 'vue';
 import { DocumentTextIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
 const { formatCurrency } = useCurrency();
-const page = ref(1);
+const auth = useAuthStore();
+const loading = ref(false);
+const loans = ref([]);
 
-const LOANS_QUERY = gql`
-    query GetLoans($page: Int) {
-        loans(first: 20, page: $page) {
-            data {
-                id
-                name
-                total_amount
-                remaining_amount
-                monthly_payment
-                paid_installments
-                total_installments
-                status
-                start_date
-                end_date
-            }
-            paginatorInfo {
-                currentPage
-                lastPage
-                total
-            }
-        }
+async function fetchLoans() {
+    if (!auth.accessToken) {
+        loans.value = [];
+        return;
     }
-`;
 
-const { result, loading } = useQuery(LOANS_QUERY, () => ({ page: page.value }));
-const loans = computed(() => result.value?.loans?.data ?? []);
-const paginator = computed(() => result.value?.loans?.paginatorInfo);
+    loading.value = true;
+
+    try {
+        const response = await fetch('/api/v1/loans?per_page=100', {
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            loans.value = [];
+            return;
+        }
+
+        const data = await response.json();
+        loans.value = data.data ?? [];
+    } finally {
+        loading.value = false;
+    }
+}
 
 function progressPct(loan) {
     if (!loan.total_installments) return 0;
@@ -56,6 +57,10 @@ function statusBadgeClass(status) {
 
     return map[status?.toLowerCase()] ?? 'bg-gray-500/10 text-gray-500';
 }
+
+onMounted(() => {
+    void fetchLoans();
+});
 </script>
 
 <template>
@@ -122,28 +127,6 @@ function statusBadgeClass(status) {
                 </div>
             </div>
 
-            <div
-                v-if="paginator?.lastPage > 1"
-                class="mt-6 flex items-center justify-between border-t border-gray-200 pt-4"
-            >
-                <p class="text-sm text-gray-500">Page {{ paginator.currentPage }} of {{ paginator.lastPage }}</p>
-                <div class="flex gap-2">
-                    <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-                        :disabled="page <= 1"
-                        @click="page--"
-                    >
-                        Prev
-                    </button>
-                    <button
-                        class="h-9 rounded-lg px-3 text-sm text-gray-500 transition-colors hover:bg-white hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
-                        :disabled="page >= paginator.lastPage"
-                        @click="page++"
-                    >
-                        Next
-                    </button>
-                </div>
-            </div>
         </template>
     </AppLayout>
 </template>

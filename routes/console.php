@@ -3,7 +3,10 @@
 use App\Enums\CreditCardCycleStatus;
 use App\Enums\CreditCardStatus;
 use App\Models\CreditCard;
+use App\Models\Loan;
 use App\Services\CreditCardCycleService;
+use App\Services\LoanScheduleService;
+use App\Services\SubscriptionService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -49,4 +52,35 @@ Artisan::command('credit-cards:generate-cycles {--month=} {--issue-ready}', func
     $this->info("Cycles ensured: {$cards->count()} cards, {$created} created, {$issued} issued.");
 })->purpose('Create monthly credit card cycles and optionally issue ready cycles');
 
+Artisan::command('loans:sync-installments {--date=}', function () {
+    $throughDate = $this->option('date')
+        ? Carbon::parse($this->option('date'))->endOfDay()
+        : now()->endOfDay();
+
+    $scheduleService = app(LoanScheduleService::class);
+    $loans = Loan::query()
+        ->where('status', 'active')
+        ->whereNotNull('start_date')
+        ->get();
+
+    foreach ($loans as $loan) {
+        $scheduleService->generate($loan, onlyMissing: true);
+    }
+
+    $this->info("Loans checked and synced through {$throughDate->toDateString()}: {$loans->count()}.");
+})->purpose('Generate missing loan installments and post due ones to transactions');
+
+Artisan::command('subscriptions:sync-renewals {--date=}', function () {
+    $throughDate = $this->option('date')
+        ? Carbon::parse($this->option('date'))->endOfDay()
+        : now()->endOfDay();
+
+    $service = app(SubscriptionService::class);
+    $synced = $service->syncDueRenewals($throughDate);
+
+    $this->info("Subscriptions checked and synced through {$throughDate->toDateString()}: {$synced} renewal(s) processed.");
+})->purpose('Post due subscription renewals to transactions or credit card expenses');
+
+Schedule::command('loans:sync-installments')->dailyAt('01:50');
+Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55');
 Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00');

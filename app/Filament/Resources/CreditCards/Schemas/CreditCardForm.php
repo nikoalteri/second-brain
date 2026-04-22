@@ -49,7 +49,12 @@ class CreditCardForm
                             ->required()
                             ->default(CreditCardType::CHARGE->value)
                             ->live()
-                            ->afterStateUpdated(fn(callable $set) => $set('fixed_payment', null)),
+                            ->afterStateUpdated(function ($state, callable $set): void {
+                                if ($state === CreditCardType::CHARGE->value) {
+                                    $set('fixed_payment', null);
+                                    $set('interest_rate', null);
+                                }
+                            }),
                         Select::make('status')
                             ->label('Status')
                             ->options(CreditCardStatus::class)
@@ -77,7 +82,8 @@ class CreditCardForm
                             ->step(0.01)
                             ->helperText('Maximum monthly amount for revolving cards. If residual balance is lower, the generated installment is reduced automatically.')
                             ->nullable()
-                            ->live(),
+                            ->live()
+                            ->disabled(fn (callable $get) => $get('type') !== CreditCardType::REVOLVING->value),
                         TextInput::make('interest_rate')
                             ->label('Interest rate (%)')
                             ->numeric()
@@ -85,7 +91,8 @@ class CreditCardForm
                             ->step(0.01)
                             ->helperText('Nominal monthly interest rate applied to revolving residual balance.')
                             ->nullable()
-                            ->live(),
+                            ->live()
+                            ->disabled(fn (callable $get) => $get('type') !== CreditCardType::REVOLVING->value),
                         TextInput::make('stamp_duty_amount')
                             ->label('Stamp duty')
                             ->numeric()

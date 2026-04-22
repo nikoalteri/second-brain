@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreLoanRequest;
 use App\Http\Requests\Api\UpdateLoanRequest;
 use App\Http\Resources\Api\LoanResource;
 use App\Models\Loan;
+use App\Services\LoanScheduleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -28,7 +29,10 @@ class LoanController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $loans = QueryBuilder::for(Loan::class)
-            ->where('user_id', $request->user()->id)
+            ->when(
+                ! $request->user()->hasRole('superadmin'),
+                fn ($query) => $query->where('user_id', $request->user()->id)
+            )
             ->allowedFilters(
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('account_id'),
@@ -42,13 +46,18 @@ class LoanController extends Controller
     }
 
     /** @group Loans @authenticated */
-    public function store(StoreLoanRequest $request): JsonResponse
+    public function store(
+        StoreLoanRequest $request,
+        LoanScheduleService $loanScheduleService,
+    ): JsonResponse
     {
         $this->authorize('create', Loan::class);
 
         $loan = Loan::create(array_merge($request->validated(), [
             'user_id' => $request->user()->id,
         ]));
+
+        $loanScheduleService->generate($loan, onlyMissing: true);
 
         return (new LoanResource($loan))->response()->setStatusCode(201);
     }
@@ -64,11 +73,16 @@ class LoanController extends Controller
     }
 
     /** @group Loans @authenticated */
-    public function update(UpdateLoanRequest $request, Loan $loan): LoanResource
+    public function update(
+        UpdateLoanRequest $request,
+        Loan $loan,
+        LoanScheduleService $loanScheduleService,
+    ): LoanResource
     {
         $this->authorize('update', $loan);
 
         $loan->update($request->validated());
+        $loanScheduleService->generate($loan, onlyMissing: true);
 
         return new LoanResource($loan);
     }
@@ -81,5 +95,17 @@ class LoanController extends Controller
         $loan->delete();
 
         return response()->noContent();
+    }
+
+    /** @group Loans @authenticated */
+    public function generateSchedule(Request $request, Loan $loan, LoanScheduleService $loanScheduleService): LoanResource
+    {
+        $this->authorize('update', $loan);
+
+        $loanScheduleService->generate($loan, onlyMissing: true);
+
+        $loan->load('payments');
+
+        return new LoanResource($loan);
     }
 }

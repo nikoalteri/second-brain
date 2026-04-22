@@ -20,6 +20,8 @@ class LoanResource extends JsonResource
             'remaining_amount'   => (float) $this->remaining_amount,
             'total_installments' => $this->total_installments,
             'paid_installments'  => $this->paid_installments,
+            'withdrawal_day'     => $this->withdrawal_day,
+            'skip_weekends'      => (bool) $this->skip_weekends,
             'status'             => $this->status,
             'start_date'         => $this->start_date?->toDateString(),
             'end_date'           => $this->end_date?->toDateString(),
@@ -27,8 +29,11 @@ class LoanResource extends JsonResource
                 $this->payments->map(fn ($p) => [
                     'id'         => $p->id,
                     'due_date'   => $p->due_date?->toDateString(),
+                    'actual_date'=> $p->actual_date?->toDateString(),
                     'amount'     => (float) $p->amount,
+                    'interest_rate' => $p->interest_rate !== null ? (float) $p->interest_rate : null,
                     'status'     => $p->status,
+                    'notes'      => $p->notes,
                 ])
             ),
             'created_at'         => $this->created_at->toISOString(),

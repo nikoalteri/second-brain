@@ -52,6 +52,23 @@ class CreditCard extends Model
         'interest_calculation_method' => InterestCalculationMethod::class,
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (CreditCard $creditCard): void {
+            $type = $creditCard->type instanceof \BackedEnum
+                ? $creditCard->type->value
+                : (string) $creditCard->type;
+
+            if ($type !== CreditCardType::CHARGE->value) {
+                return;
+            }
+
+            $creditCard->fixed_payment = null;
+            $creditCard->interest_rate = null;
+            $creditCard->interest_calculation_method = InterestCalculationMethod::DAILY_BALANCE;
+        });
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -97,6 +114,10 @@ class CreditCard extends Model
      */
     public function scopeBelongsToAuthUser($query): \Illuminate\Database\Eloquent\Builder
     {
+        if (auth()->user()?->hasRole('superadmin')) {
+            return $query;
+        }
+
         return $query->where('user_id', auth()->id());
     }
 }

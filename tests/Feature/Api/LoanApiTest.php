@@ -6,6 +6,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Account;
 use App\Models\Loan;
+use App\Services\LoanScheduleService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -116,5 +117,86 @@ class LoanApiTest extends TestCase
             'user_id' => $user->id,
             'name'    => 'Home Loan',
         ]);
+    }
+
+    public function test_creating_loan_auto_generates_schedule(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/v1/loans', [
+            'name' => 'Car Loan',
+            'account_id' => $account->id,
+            'total_amount' => 1200.00,
+            'monthly_payment' => 400.00,
+            'interest_rate' => 0,
+            'withdrawal_day' => 5,
+            'start_date' => '2026-01-01',
+            'total_installments' => 3,
+            'paid_installments' => 0,
+            'remaining_amount' => 1200.00,
+            'status' => 'active',
+        ]);
+
+        $response->assertCreated();
+
+        $loanId = $response->json('data.id');
+
+        $this->assertCount(3, Loan::findOrFail($loanId)->payments);
+    }
+
+    public function test_loan_show_returns_generated_schedule_fields(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $loan = Loan::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'start_date' => '2026-01-01',
+            'withdrawal_day' => 5,
+            'total_installments' => 2,
+            'monthly_payment' => 250,
+        ]);
+
+        app(LoanScheduleService::class)->generate($loan);
+
+        $payment = $loan->fresh()->payments()->first();
+        $payment->update([
+            'actual_date' => '2026-01-05',
+            'notes' => 'Paid manually',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/loans/{$loan->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.payments.0.actual_date', '2026-01-05')
+            ->assertJsonPath('data.payments.0.notes', 'Paid manually');
+    }
+
+    public function test_user_can_generate_loan_schedule_via_api(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $loan = Loan::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'start_date' => '2026-01-01',
+            'withdrawal_day' => 5,
+            'total_installments' => 3,
+            'monthly_payment' => 250,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/v1/loans/{$loan->id}/generate-schedule");
+
+        $response->assertOk()
+            ->assertJsonCount(3, 'data.payments');
+
+        $this->assertCount(3, $loan->fresh()->payments);
     }
 }

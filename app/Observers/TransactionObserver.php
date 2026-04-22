@@ -2,6 +2,8 @@
 
 namespace App\Observers;
 
+use App\Enums\CreditCardPaymentStatus;
+use App\Models\CreditCardPayment;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +27,23 @@ class TransactionObserver
         app(\App\Services\AccountBalanceService::class)
             ->handleDeleted($transaction);
 
+        if ($transaction->credit_card_payment_id) {
+            $payment = CreditCardPayment::query()->find($transaction->credit_card_payment_id);
+
+            if ($payment) {
+                $payload = [
+                    'transaction_id' => null,
+                ];
+
+                if ($payment->status === CreditCardPaymentStatus::PAID) {
+                    $payload['status'] = CreditCardPaymentStatus::PENDING;
+                    $payload['actual_date'] = null;
+                }
+
+                $payment->update($payload);
+            }
+        }
+
         // Se è un trasferimento OUT, soft-delete anche la transazione IN paired.
         // La condizione transfer_direction !== 'in' previene la ricorsione senza flag statici.
         if (
@@ -43,6 +62,18 @@ class TransactionObserver
     {
         app(\App\Services\AccountBalanceService::class)
             ->handleCreated($transaction);
+
+        if ($transaction->credit_card_payment_id) {
+            $payment = CreditCardPayment::query()->find($transaction->credit_card_payment_id);
+
+            if ($payment) {
+                $payment->update([
+                    'transaction_id' => $transaction->id,
+                    'status' => CreditCardPaymentStatus::PAID,
+                    'actual_date' => $payment->actual_date ?? $transaction->date?->toDateString(),
+                ]);
+            }
+        }
     }
 
     public function forceDeleted(Transaction $transaction): void

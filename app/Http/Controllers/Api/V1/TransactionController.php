@@ -30,7 +30,10 @@ class TransactionController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $transactions = QueryBuilder::for(Transaction::class)
-            ->where('user_id', $request->user()->id)
+            ->when(
+                ! $request->user()->hasRole('superadmin'),
+                fn ($query) => $query->where('user_id', $request->user()->id)
+            )
             ->with(['account', 'category'])
             ->allowedFilters(
                 AllowedFilter::exact('account_id'),

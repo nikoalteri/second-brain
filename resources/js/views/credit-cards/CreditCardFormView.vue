@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useMutation, useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
@@ -9,13 +9,16 @@ import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useToast } from '@/composables/useToast.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
 const { addToast } = useToast();
+const auth = useAuthStore();
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
 const today = new Date().toISOString().split('T')[0];
+const accounts = ref([]);
 
 const form = ref({
     account_id: '',
@@ -24,7 +27,7 @@ const form = ref({
     credit_limit: '',
     fixed_payment: '',
     interest_rate: '',
-    stamp_duty_amount: 0,
+    stamp_duty_amount: 2,
     statement_day: 1,
     due_day: 15,
     skip_weekends: true,
@@ -33,17 +36,6 @@ const form = ref({
     start_date: today,
     interest_calculation_method: 'daily_balance',
 });
-
-const ACCOUNTS_QUERY = gql`
-    query GetAccounts {
-        accounts(first: 100) {
-            data {
-                id
-                name
-            }
-        }
-    }
-`;
 
 const CARD_QUERY = gql`
     query GetCreditCard($id: ID!) {
@@ -83,15 +75,6 @@ const UPDATE_CARD = gql`
     }
 `;
 
-const DELETE_CARD = gql`
-    mutation DeleteCreditCard($id: ID!) {
-        deleteCreditCard(id: $id) {
-            id
-        }
-    }
-`;
-
-const { result: accountsResult } = useQuery(ACCOUNTS_QUERY);
 const { result: cardResult, loading: loadingCard } = useQuery(
     CARD_QUERY,
     () => ({ id: route.params.id }),
@@ -99,7 +82,7 @@ const { result: cardResult, loading: loadingCard } = useQuery(
 );
 
 const accountOptions = computed(() =>
-    (accountsResult.value?.accounts?.data ?? []).map((account) => ({ value: account.id, label: account.name }))
+    accounts.value.map((account) => ({ value: account.id, label: account.name }))
 );
 const typeOptions = [
     { value: 'charge', label: 'Charge' },
@@ -114,6 +97,7 @@ const methodOptions = [
     { value: 'daily_balance', label: 'Daily Balance Method' },
     { value: 'direct_monthly', label: 'Direct Monthly Method' },
 ];
+const isRevolving = computed(() => form.value.type === 'revolving');
 
 watch(
     cardResult,
@@ -141,10 +125,47 @@ watch(
     { immediate: true }
 );
 
+watch(
+    () => form.value.type,
+    (type) => {
+        if (type === 'revolving') {
+            form.value.interest_calculation_method ||= 'daily_balance';
+            return;
+        }
+
+        form.value.fixed_payment = '';
+        form.value.interest_rate = '';
+        form.value.interest_calculation_method = '';
+    },
+    { immediate: true }
+);
+
 const { mutate: createCard, loading: creating } = useMutation(CREATE_CARD);
 const { mutate: updateCard, loading: updating } = useMutation(UPDATE_CARD);
-const { mutate: deleteCard, loading: deleting } = useMutation(DELETE_CARD);
+const deleting = ref(false);
 const saving = computed(() => creating.value || updating.value);
+
+async function fetchAccounts() {
+    if (!auth.accessToken) {
+        accounts.value = [];
+        return;
+    }
+
+    const response = await fetch('/api/v1/accounts?per_page=100', {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        accounts.value = [];
+        return;
+    }
+
+    const data = await response.json();
+    accounts.value = data.data ?? [];
+}
 
 function parseOptionalFloat(value) {
     return value === '' || value === null ? null : parseFloat(value);
@@ -187,22 +208,41 @@ async function handleSubmit() {
 }
 
 async function handleDelete() {
+    deleting.value = true;
+
     try {
-        await deleteCard({ id: route.params.id });
+        const response = await fetch(`/api/v1/credit-cards/${route.params.id}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete card.');
+        }
+
         addToast('Card deleted.', 'success');
         showDeleteModal.value = false;
         router.push('/credit-cards');
     } catch {
         addToast('Could not delete card. Please try again.', 'error');
+    } finally {
+        deleting.value = false;
     }
 }
+
+onMounted(() => {
+    void fetchAccounts();
+});
 </script>
 
 <template>
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Card' : 'Add Card' }}</h1>
-            <p class="mt-1 text-sm text-gray-500">Use the same settlement account, rules, and balance fields available in the Filament credit card form.</p>
+                    <p class="mt-1 text-sm text-gray-500">Use the same settlement account, rules, and balance fields available in the Filament credit card form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingCard" class="py-16" />
@@ -265,7 +305,8 @@ async function handleDelete() {
                             min="0"
                             step="0.01"
                             placeholder="0.00"
-                            helper="Maximum monthly amount for revolving cards."
+                            :disabled="!isRevolving"
+                            :helper="isRevolving ? 'Maximum monthly amount for revolving cards.' : 'Not used for charge cards.'"
                         />
                         <FormInput
                             label="Interest rate (%)"
@@ -275,7 +316,8 @@ async function handleDelete() {
                             max="100"
                             step="0.01"
                             placeholder="0.00"
-                            helper="Nominal monthly interest rate applied to revolving residual balance."
+                            :disabled="!isRevolving"
+                            :helper="isRevolving ? 'Nominal monthly interest rate applied to revolving residual balance.' : 'Charge cards do not calculate interest.'"
                         />
                         <FormInput
                             label="Stamp duty"
@@ -316,6 +358,7 @@ async function handleDelete() {
                             label="Interest calculation method"
                             v-model="form.interest_calculation_method"
                             :options="methodOptions"
+                            :disabled="!isRevolving"
                         />
                     </div>
 

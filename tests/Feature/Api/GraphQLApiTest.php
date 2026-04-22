@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class GraphQLApiTest extends TestCase
@@ -244,5 +245,216 @@ class GraphQLApiTest extends TestCase
         $this->assertArrayHasKey('account', $firstTx);
         $this->assertEquals($account->id, $firstTx['account']['id']);
         $this->assertEquals('GQL Bank', $firstTx['account']['name']);
+    }
+
+    public function test_graphql_transaction_categories_query_returns_shared_categories(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $parentA = \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userA->id,
+            'name' => 'Living',
+            'is_active' => true,
+        ]);
+
+        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userA->id,
+            'parent_id' => $parentA->id,
+            'name' => 'Rent',
+            'is_active' => true,
+        ]);
+
+        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userB->id,
+            'name' => 'Travel',
+            'is_active' => true,
+        ]);
+
+        $response = $this->graphqlAs($userA, '
+            {
+                transactionCategories {
+                    name
+                    parent {
+                        name
+                    }
+                }
+            }
+        ');
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null);
+
+        $categoryNames = collect($response->json('data.transactionCategories'))
+            ->pluck('name')
+            ->all();
+
+        $this->assertContains('Living', $categoryNames);
+        $this->assertContains('Rent', $categoryNames);
+        $this->assertContains('Travel', $categoryNames);
+    }
+
+    public function test_superadmin_graphql_accounts_query_returns_all_accounts(): void
+    {
+        Role::create(['name' => 'superadmin']);
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        Account::factory()->count(2)->create(['user_id' => $userA->id]);
+        Account::factory()->count(1)->create(['user_id' => $userB->id]);
+
+        $response = $this->graphqlAs($superadmin, '
+            {
+                accounts(first: 10) {
+                    paginatorInfo { total }
+                }
+            }
+        ');
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null)
+            ->assertJsonPath('data.accounts.paginatorInfo.total', 3);
+    }
+
+    public function test_superadmin_monthly_cashflow_includes_all_users_transactions(): void
+    {
+        Role::create(['name' => 'superadmin']);
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $accountA = Account::factory()->create(['user_id' => $userA->id]);
+        $accountB = Account::factory()->create(['user_id' => $userB->id]);
+
+        $incomeType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Salary'],
+            ['is_income' => true]
+        );
+
+        Transaction::factory()->create([
+            'user_id'             => $userA->id,
+            'account_id'          => $accountA->id,
+            'transaction_type_id' => $incomeType->id,
+            'amount'              => 1000.00,
+            'date'                => '2026-03-15',
+        ]);
+
+        Transaction::factory()->create([
+            'user_id'             => $userB->id,
+            'account_id'          => $accountB->id,
+            'transaction_type_id' => $incomeType->id,
+            'amount'              => 500.00,
+            'date'                => '2026-03-20',
+        ]);
+
+        $response = $this->graphqlAs($superadmin, '
+            query TestCashflow($year: Int!, $month: Int!) {
+                monthlyCashflow(year: $year, month: $month) {
+                    total_income
+                }
+            }
+        ', ['year' => 2026, 'month' => 3]);
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null)
+            ->assertJsonPath('data.monthlyCashflow.total_income', 1500);
+    }
+
+    public function test_superadmin_can_create_transaction_for_another_users_account(): void
+    {
+        Role::create(['name' => 'superadmin']);
+
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $otherUser = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $otherUser->id]);
+
+        $type = TransactionType::query()->firstOrCreate(
+            ['name' => 'Income'],
+            ['is_income' => true]
+        );
+
+        $response = $this->graphqlAs($superadmin, '
+            mutation CreateTransaction($input: CreateTransactionInput!) {
+                createTransaction(input: $input) {
+                    id
+                    account_id
+                }
+            }
+        ', [
+            'input' => [
+                'account_id' => (string) $account->id,
+                'transaction_type_id' => (string) $type->id,
+                'amount' => 25.50,
+                'date' => '2026-03-22',
+                'description' => 'Superadmin test transaction',
+            ],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null)
+            ->assertJsonPath('data.createTransaction.account_id', (string) $account->id);
+
+        $this->assertDatabaseHas('transactions', [
+            'account_id' => $account->id,
+            'user_id' => $otherUser->id,
+            'description' => 'Superadmin test transaction',
+        ]);
+    }
+
+    public function test_graphql_create_expense_transaction_stores_negative_amount_and_updates_balance(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create([
+            'user_id' => $user->id,
+            'balance' => 1000.00,
+        ]);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false]
+        );
+
+        $response = $this->graphqlAs($user, '
+            mutation CreateTransaction($input: CreateTransactionInput!) {
+                createTransaction(input: $input) {
+                    id
+                }
+            }
+        ', [
+            'input' => [
+                'account_id' => (string) $account->id,
+                'transaction_type_id' => (string) $expenseType->id,
+                'amount' => 650,
+                'date' => '2026-03-22',
+                'description' => 'Rent',
+            ],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null);
+
+        $transactionId = $response->json('data.createTransaction.id');
+
+        $this->assertDatabaseHas('transactions', [
+            'id' => $transactionId,
+            'account_id' => $account->id,
+            'amount' => -650.00,
+            'competence_month' => '2026-03',
+            'description' => 'Rent',
+        ]);
+
+        $this->assertSame(
+            350.0,
+            (float) $account->fresh()->balance,
+        );
     }
 }

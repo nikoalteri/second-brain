@@ -18,7 +18,10 @@ class MonthlyCashflow
         // We eager-load the `type` relation to distinguish income vs expense.
         $transactions = Transaction::query()
             ->with('type')
-            ->where('user_id', $user->id)
+            ->when(
+                ! $user->hasRole('superadmin'),
+                fn ($query) => $query->where('user_id', $user->id)
+            )
             ->whereYear('date', $year)
             ->whereMonth('date', $month)
             ->get();

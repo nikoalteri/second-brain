@@ -1,6 +1,6 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
-import { useMutation, useQuery } from '@vue/apollo-composable';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
@@ -9,22 +9,30 @@ import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useToast } from '@/composables/useToast.js';
+import { useAuthStore } from '@/stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
 const { addToast } = useToast();
+const auth = useAuthStore();
 
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
+const loadingSub = ref(false);
+const deleting = ref(false);
+const saving = ref(false);
+const accounts = ref([]);
+const creditCards = ref([]);
+const frequencies = ref([]);
 const defaultRenewal = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
 const form = ref({
     account_id: '',
+    credit_card_id: '',
     category_id: '',
     name: '',
-    monthly_cost: '',
-    annual_cost: '',
-    frequency: 'monthly',
+    billing_amount: '',
+    subscription_frequency_id: '',
     day_of_month: 1,
     next_renewal_date: defaultRenewal,
     auto_create_transaction: false,
@@ -33,10 +41,13 @@ const form = ref({
 });
 const errors = ref({});
 
-const ACCOUNTS_QUERY = gql`
-    query GetAccounts {
-        accounts(first: 100) {
-            data {
+const CATEGORIES_QUERY = gql`
+    query GetTransactionCategories {
+        transactionCategories {
+            id
+            parent_id
+            name
+            parent {
                 id
                 name
             }
@@ -44,78 +55,77 @@ const ACCOUNTS_QUERY = gql`
     }
 `;
 
-const CATEGORIES_QUERY = gql`
-    query GetTransactionCategories {
-        transactionCategories {
-            id
-            name
-        }
-    }
-`;
-
-const SUB_QUERY = gql`
-    query GetSubscription($id: ID!) {
-        subscription(id: $id) {
-            id
-            account_id
-            category_id
-            name
-            monthly_cost
-            annual_cost
-            frequency
-            day_of_month
-            next_renewal_date
-            auto_create_transaction
-            status
-            notes
-        }
-    }
-`;
-
-const CREATE_SUB = gql`
-    mutation CreateSubscription($input: CreateSubscriptionInput!) {
-        createSubscription(input: $input) {
-            id
-        }
-    }
-`;
-
-const UPDATE_SUB = gql`
-    mutation UpdateSubscription($id: ID!, $input: UpdateSubscriptionInput!) {
-        updateSubscription(id: $id, input: $input) {
-            id
-        }
-    }
-`;
-
-const DELETE_SUB = gql`
-    mutation DeleteSubscription($id: ID!) {
-        deleteSubscription(id: $id) {
-            id
-        }
-    }
-`;
-
-const { result: accountsResult } = useQuery(ACCOUNTS_QUERY);
 const { result: categoriesResult } = useQuery(CATEGORIES_QUERY);
-const { result: subResult, loading: loadingSub } = useQuery(
-    SUB_QUERY,
-    () => ({ id: route.params.id }),
-    () => ({ enabled: isEdit.value })
-);
 
 const accountOptions = computed(() =>
-    (accountsResult.value?.accounts?.data ?? []).map((account) => ({ value: account.id, label: account.name }))
+    accounts.value.map((account) => ({ value: String(account.id), label: account.name }))
 );
-const categoryOptions = computed(() => [
-    { value: '', label: 'No category' },
-    ...(categoriesResult.value?.transactionCategories ?? []).map((category) => ({ value: category.id, label: category.name })),
-]);
-const frequencyOptions = [
-    { value: 'monthly', label: 'Monthly' },
-    { value: 'annual', label: 'Annual' },
-    { value: 'biennial', label: 'Every 2 Years' },
-];
+const creditCardOptions = computed(() =>
+    creditCards.value.map((card) => ({ value: String(card.id), label: card.name }))
+);
+const frequencyOptions = computed(() =>
+    frequencies.value.map((frequency) => ({
+        value: String(frequency.id),
+        label: frequency.name,
+    }))
+);
+const selectedFrequency = computed(() =>
+    frequencies.value.find((frequency) => String(frequency.id) === String(form.value.subscription_frequency_id))
+);
+const amountLabel = computed(() => {
+    const monthsInterval = selectedFrequency.value?.months_interval ?? 1;
+
+    return monthsInterval === 1 ? 'Monthly charge *' : 'Renewal amount *';
+});
+const amountHelper = computed(() => {
+    const monthsInterval = selectedFrequency.value?.months_interval ?? 1;
+
+    return monthsInterval === 1
+        ? 'Amount charged every month.'
+        : `Amount charged every ${monthsInterval} month${monthsInterval === 1 ? '' : 's'}.`;
+});
+const categoryOptions = computed(() => {
+    const categories = categoriesResult.value?.transactionCategories ?? [];
+    const parents = categories.filter((category) => !category.parent_id);
+    const childrenByParentId = new Map();
+
+    for (const category of categories.filter((item) => item.parent_id)) {
+        const key = String(category.parent_id);
+        const bucket = childrenByParentId.get(key) ?? [];
+        bucket.push(category);
+        childrenByParentId.set(key, bucket);
+    }
+
+    const options = [{ value: '', label: 'No category' }];
+
+    for (const parent of parents) {
+        const children = (childrenByParentId.get(String(parent.id)) ?? [])
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        if (children.length === 0) {
+            options.push({
+                value: String(parent.id),
+                label: parent.name,
+            });
+            continue;
+        }
+
+        options.push({
+            value: `group-${parent.id}`,
+            label: parent.name,
+            disabled: true,
+        });
+
+        for (const child of children) {
+            options.push({
+                value: String(child.id),
+                label: `${parent.name} › ${child.name}`,
+            });
+        }
+    }
+
+    return options;
+});
 const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
@@ -123,32 +133,102 @@ const statusOptions = [
 ];
 
 watch(
-    subResult,
+    () => form.value.account_id,
     (value) => {
-        if (value?.subscription) {
-            const subscription = value.subscription;
-            form.value = {
-                account_id: subscription.account_id ?? '',
-                category_id: subscription.category_id ?? '',
-                name: subscription.name,
-                monthly_cost: subscription.monthly_cost,
-                annual_cost: subscription.annual_cost,
-                frequency: subscription.frequency,
-                day_of_month: subscription.day_of_month,
-                next_renewal_date: subscription.next_renewal_date ?? defaultRenewal,
-                auto_create_transaction: subscription.auto_create_transaction ?? false,
-                status: subscription.status,
-                notes: subscription.notes ?? '',
-            };
+        if (value) {
+            form.value.credit_card_id = '';
         }
-    },
-    { immediate: true }
+    }
 );
 
-const { mutate: createSub, loading: creating } = useMutation(CREATE_SUB);
-const { mutate: updateSub, loading: updating } = useMutation(UPDATE_SUB);
-const { mutate: deleteSub, loading: deleting } = useMutation(DELETE_SUB);
-const saving = computed(() => creating.value || updating.value);
+watch(
+    () => form.value.credit_card_id,
+    (value) => {
+        if (value) {
+            form.value.account_id = '';
+        }
+    }
+);
+
+async function fetchJson(url) {
+    const response = await fetch(url, {
+        headers: {
+            Authorization: `Bearer ${auth.accessToken}`,
+            Accept: 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Request failed: ${url}`);
+    }
+
+    return response.json();
+}
+
+async function fetchLookupData() {
+    if (!auth.accessToken) {
+        accounts.value = [];
+        creditCards.value = [];
+        frequencies.value = [];
+        return;
+    }
+
+    const [accountsData, cardsData, frequenciesData] = await Promise.all([
+        fetchJson('/api/v1/accounts?per_page=100'),
+        fetchJson('/api/v1/credit-cards?per_page=100'),
+        fetchJson('/api/v1/subscription-frequencies'),
+    ]);
+
+    accounts.value = accountsData.data ?? [];
+    creditCards.value = cardsData.data ?? [];
+    frequencies.value = frequenciesData.data ?? [];
+
+    if (!form.value.subscription_frequency_id && frequencies.value.length) {
+        form.value.subscription_frequency_id = String(frequencies.value[0].id);
+    }
+}
+
+async function fetchSubscription() {
+    if (!isEdit.value || !auth.accessToken) {
+        return;
+    }
+
+    loadingSub.value = true;
+
+    try {
+        const data = await fetchJson(`/api/v1/subscriptions/${route.params.id}`);
+        const subscription = data.data;
+
+        form.value = {
+            account_id: subscription.account_id ? String(subscription.account_id) : '',
+            credit_card_id: subscription.credit_card_id ? String(subscription.credit_card_id) : '',
+            category_id: subscription.category_id ? String(subscription.category_id) : '',
+            name: subscription.name ?? '',
+            billing_amount: String(subscription.billing_amount ?? ''),
+            subscription_frequency_id: subscription.subscription_frequency_id ? String(subscription.subscription_frequency_id) : '',
+            day_of_month: subscription.day_of_month ?? 1,
+            next_renewal_date: subscription.next_renewal_date ?? defaultRenewal,
+            auto_create_transaction: !!subscription.auto_create_transaction,
+            status: subscription.status ?? 'active',
+            notes: subscription.notes ?? '',
+        };
+    } finally {
+        loadingSub.value = false;
+    }
+}
+
+onMounted(async () => {
+    try {
+        await fetchLookupData();
+        await fetchSubscription();
+    } catch {
+        addToast('Could not load subscription settings. Please refresh and try again.', 'error');
+    }
+});
+
+function normalizeOptionalInt(value) {
+    return value === '' || value === null ? null : parseInt(value, 10);
+}
 
 function parseOptionalFloat(value) {
     return value === '' || value === null ? null : parseFloat(value);
@@ -162,19 +242,27 @@ async function handleSubmit() {
         return;
     }
 
-    if (!form.value.account_id) {
-        errors.value.account_id = 'Account is required';
+    if (!form.value.account_id && !form.value.credit_card_id) {
+        errors.value.account_id = 'Choose an account or a credit card';
+        errors.value.credit_card_id = 'Choose an account or a credit card';
         return;
     }
 
+    if (!form.value.subscription_frequency_id) {
+        errors.value.subscription_frequency_id = 'Frequency is required';
+        return;
+    }
+
+    saving.value = true;
+
     try {
-        const input = {
-            account_id: form.value.account_id,
-            category_id: form.value.category_id || null,
+        const payload = {
+            account_id: normalizeOptionalInt(form.value.account_id),
+            credit_card_id: normalizeOptionalInt(form.value.credit_card_id),
+            category_id: normalizeOptionalInt(form.value.category_id),
             name: form.value.name,
-            monthly_cost: parseOptionalFloat(form.value.monthly_cost),
-            annual_cost: parseOptionalFloat(form.value.annual_cost),
-            frequency: form.value.frequency,
+            billing_amount: parseOptionalFloat(form.value.billing_amount),
+            subscription_frequency_id: normalizeOptionalInt(form.value.subscription_frequency_id),
             day_of_month: parseInt(form.value.day_of_month, 10),
             next_renewal_date: form.value.next_renewal_date,
             auto_create_transaction: form.value.auto_create_transaction,
@@ -182,31 +270,63 @@ async function handleSubmit() {
             notes: form.value.notes || null,
         };
 
-        if (isEdit.value) {
-            await updateSub({
-                id: route.params.id,
-                input,
-            });
-            addToast('Subscription updated successfully.', 'success');
-        } else {
-            await createSub({ input });
-            addToast('Subscription saved successfully.', 'success');
+        const response = await fetch(
+            isEdit.value ? `/api/v1/subscriptions/${route.params.id}` : '/api/v1/subscriptions',
+            {
+                method: isEdit.value ? 'PUT' : 'POST',
+                headers: {
+                    Authorization: `Bearer ${auth.accessToken}`,
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            }
+        );
+
+        if (response.status === 422) {
+            const data = await response.json();
+            errors.value = Object.fromEntries(
+                Object.entries(data.errors ?? {}).map(([key, value]) => [key, value?.[0] ?? 'Invalid value'])
+            );
+            return;
         }
 
+        if (!response.ok) {
+            throw new Error('Failed to save subscription');
+        }
+
+        addToast(isEdit.value ? 'Subscription updated successfully.' : 'Subscription saved successfully.', 'success');
         router.push('/subscriptions');
     } catch {
         addToast("Something went wrong. Your changes weren't saved. Please try again.", 'error');
+    } finally {
+        saving.value = false;
     }
 }
 
 async function handleDelete() {
+    deleting.value = true;
+
     try {
-        await deleteSub({ id: route.params.id });
+        const response = await fetch(`/api/v1/subscriptions/${route.params.id}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete subscription');
+        }
+
         addToast('Subscription deleted.', 'success');
         showDeleteModal.value = false;
         router.push('/subscriptions');
     } catch {
         addToast('Could not delete subscription. Please try again.', 'error');
+    } finally {
+        deleting.value = false;
     }
 }
 </script>
@@ -215,7 +335,7 @@ async function handleDelete() {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Subscription' : 'Add Subscription' }}</h1>
-            <p class="mt-1 text-sm text-gray-500">Use the same billing, account, category, and automation settings available in the Filament subscription form.</p>
+            <p class="mt-1 text-sm text-gray-500">Use the same renewal, payment source, category, and automation settings available in the backend.</p>
         </div>
 
         <LoadingSpinner v-if="loadingSub" class="py-16" />
@@ -231,35 +351,28 @@ async function handleDelete() {
                             placeholder="e.g. Netflix, Spotify"
                             :error="errors.name"
                         />
-                        <FormSelect label="Frequency *" v-model="form.frequency" :options="frequencyOptions" />
-                    </div>
-                </section>
-
-                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Cost</h2>
-                    <div class="mt-4 grid gap-4 md:grid-cols-2">
-                        <FormInput
-                            label="Monthly cost"
-                            v-model="form.monthly_cost"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            helper="For monthly subscriptions."
-                        />
-                        <FormInput
-                            label="Annual cost"
-                            v-model="form.annual_cost"
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            helper="For annual or biennial subscriptions."
+                        <FormSelect
+                            label="Frequency *"
+                            v-model="form.subscription_frequency_id"
+                            :options="frequencyOptions"
+                            placeholder="Select frequency"
+                            :error="errors.subscription_frequency_id"
                         />
                     </div>
                 </section>
 
                 <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Renewal</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Charge</h2>
                     <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormInput
+                            :label="amountLabel"
+                            v-model="form.billing_amount"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            :helper="amountHelper"
+                            :error="errors.billing_amount"
+                        />
                         <FormInput
                             label="Day of month *"
                             v-model="form.day_of_month"
@@ -268,43 +381,56 @@ async function handleDelete() {
                             max="31"
                             step="1"
                             helper="Day of month for renewal."
-                        />
-                        <FormInput
-                            label="Next renewal date *"
-                            v-model="form.next_renewal_date"
-                            type="date"
-                            helper="Next scheduled renewal."
+                            :error="errors.day_of_month"
                         />
                     </div>
                 </section>
 
                 <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Account &amp; Category</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Renewal</h2>
                     <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <FormInput
+                            label="Next renewal date *"
+                            v-model="form.next_renewal_date"
+                            type="date"
+                            helper="Next scheduled renewal."
+                            :error="errors.next_renewal_date"
+                        />
+                        <FormSelect label="Status *" v-model="form.status" :options="statusOptions" :error="errors.status" />
+                    </div>
+                </section>
+
+                <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Payment Source &amp; Category</h2>
+                    <div class="mt-4 grid gap-4 md:grid-cols-3">
                         <FormSelect
-                            label="Account *"
+                            label="Account"
                             v-model="form.account_id"
                             :options="accountOptions"
                             placeholder="Select account"
                             :error="errors.account_id"
-                            helper="Account to debit."
+                            helper="Use an account for direct debit."
+                        />
+                        <FormSelect
+                            label="Credit card"
+                            v-model="form.credit_card_id"
+                            :options="creditCardOptions"
+                            placeholder="Select credit card"
+                            :error="errors.credit_card_id"
+                            helper="Use a credit card to create card expenses automatically."
                         />
                         <FormSelect
                             label="Category"
                             v-model="form.category_id"
                             :options="categoryOptions"
                             placeholder="No category"
-                            helper="Transaction category (optional)."
+                            :error="errors.category_id"
                         />
                     </div>
                 </section>
 
                 <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Settings</h2>
-                    <div class="mt-4 grid gap-4 md:grid-cols-2">
-                        <FormSelect label="Status *" v-model="form.status" :options="statusOptions" />
-                    </div>
-
                     <div class="mt-4 flex items-center gap-3">
                         <input
                             id="auto_tx"
@@ -312,7 +438,7 @@ async function handleDelete() {
                             type="checkbox"
                             class="h-4 w-4 rounded border-gray-300 bg-white text-amber-500 focus:ring-amber-400"
                         >
-                        <label for="auto_tx" class="text-sm font-medium text-gray-700">Auto-create transaction on renewal</label>
+                        <label for="auto_tx" class="text-sm font-medium text-gray-700">Auto-create renewal entry on due date</label>
                     </div>
                 </section>
 

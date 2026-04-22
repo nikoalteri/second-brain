@@ -136,6 +136,64 @@ class CreditCardCycleService
         });
     }
 
+    public function syncIssuedCycle(CreditCardCycle $cycle): void
+    {
+        $cycle->loadMissing(['creditCard', 'payments']);
+
+        if (! $cycle->creditCard || $cycle->status === CreditCardCycleStatus::OPEN) {
+            return;
+        }
+
+        DB::transaction(function () use ($cycle) {
+            $breakdown = $cycle->creditCard->type === CreditCardType::CHARGE
+                ? $this->calculator->calculateChargePaymentBreakdown($cycle)
+                : $this->calculator->calculatePaymentBreakdown($cycle);
+
+            if (empty($breakdown)) {
+                return;
+            }
+
+            $paidAmount = (float) $cycle->payments()
+                ->where('status', CreditCardPaymentStatus::PAID)
+                ->sum('total_amount');
+
+            $status = CreditCardCycleStatus::ISSUED;
+
+            if ($breakdown['total_due'] > 0 && $paidAmount >= (float) $breakdown['total_due']) {
+                $status = CreditCardCycleStatus::PAID;
+            } elseif ($cycle->due_date && now()->toDateString() > $cycle->due_date->toDateString()) {
+                $status = CreditCardCycleStatus::OVERDUE;
+            }
+
+            $cycle->update([
+                'interest_amount' => $breakdown['interest_amount'],
+                'principal_amount' => $breakdown['principal_amount'],
+                'stamp_duty_amount' => $breakdown['stamp_duty_amount'],
+                'total_due' => $breakdown['total_due'],
+                'paid_amount' => round($paidAmount, 2),
+                'status' => $status,
+            ]);
+
+            $payment = $cycle->payments()
+                ->orderByDesc('status')
+                ->orderBy('id')
+                ->first();
+
+            if (! $payment) {
+                return;
+            }
+
+            $payment->update([
+                'due_date' => $cycle->due_date,
+                'installment_amount' => $breakdown['installment_amount'],
+                'interest_amount' => $breakdown['interest_amount'],
+                'principal_amount' => $breakdown['principal_amount'],
+                'stamp_duty_amount' => $breakdown['stamp_duty_amount'],
+                'total_amount' => $breakdown['total_due'],
+            ]);
+        });
+    }
+
     public function ensureCurrentMonthCycle(CreditCard $card, ?Carbon $referenceDate = null): CreditCardCycle
     {
         $referenceDate ??= now();

@@ -9,13 +9,13 @@ trait HasUserScoping
     protected static function bootHasUserScoping(): void
     {
         static::addGlobalScope('user', function (Builder $query) {
-            if (auth()->check()) {
+            if (auth()->check() && ! auth()->user()?->hasRole('superadmin')) {
                 $query->where('user_id', auth()->id());
             }
         });
 
         static::creating(function ($model) {
-            if (auth()->check()) {
+            if (auth()->check() && empty($model->user_id)) {
                 $model->user_id = auth()->id();
             }
         });
@@ -23,6 +23,6 @@ trait HasUserScoping
 
     public function scopeWithoutUserScope(Builder $query)
     {
-        $query->withoutGlobalScope('user');
+        return $query->withoutGlobalScope('user');
     }
 }

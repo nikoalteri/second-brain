@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\CreditCardCycleStatus;
 use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CreditCardExpenseService
 {
@@ -18,14 +20,23 @@ class CreditCardExpenseService
     public function validateExpenseChange(
         CreditCardExpense $expense,
         ?int $originalCardId = null,
+        ?int $originalCycleId = null,
         ?float $originalAmount = null
     ): void {
-        DB::transaction(function () use ($expense, $originalCardId, $originalAmount) {
+        DB::transaction(function () use ($expense, $originalCardId, $originalCycleId, $originalAmount) {
+            if ($originalCycleId) {
+                $originalCycle = CreditCardCycle::query()->find($originalCycleId);
+                $this->ensureCycleIsMutable($originalCycle);
+            }
+
             $currentCard = CreditCard::query()->lockForUpdate()->find((int) $expense->credit_card_id);
 
             if (! $currentCard) {
                 return;
             }
+
+            $targetCycle = $this->findMatchingCycle($currentCard, $expense->spent_at ?? now());
+            $this->ensureCycleIsMutable($targetCycle);
 
             $newAmount = (float) $expense->amount;
 
@@ -55,6 +66,16 @@ class CreditCardExpenseService
                 }
             }
         });
+    }
+
+    public function validateExpenseRemoval(CreditCardExpense $expense): void
+    {
+        if (! $expense->credit_card_cycle_id) {
+            return;
+        }
+
+        $cycle = CreditCardCycle::query()->find((int) $expense->credit_card_cycle_id);
+        $this->ensureCycleIsMutable($cycle);
     }
 
     public function syncExpense(
@@ -134,13 +155,7 @@ class CreditCardExpenseService
     {
         $date = $spentAt instanceof Carbon ? $spentAt->copy() : Carbon::parse($spentAt);
 
-        $matchingCycle = CreditCardCycle::query()
-            ->where('credit_card_id', $card->id)
-            ->whereNotNull('period_start_date')
-            ->whereDate('period_start_date', '<=', $date->toDateString())
-            ->whereDate('statement_date', '>=', $date->toDateString())
-            ->orderBy('statement_date')
-            ->first();
+        $matchingCycle = $this->findMatchingCycle($card, $date, openOnly: true);
 
         if ($matchingCycle) {
             return $matchingCycle;
@@ -149,9 +164,38 @@ class CreditCardExpenseService
         return $this->cycleService->ensureCurrentMonthCycle($card, $date);
     }
 
+    private function findMatchingCycle(
+        CreditCard $card,
+        Carbon|string $spentAt,
+        bool $openOnly = false
+    ): ?CreditCardCycle {
+        $date = $spentAt instanceof Carbon ? $spentAt->copy() : Carbon::parse($spentAt);
+
+        return CreditCardCycle::query()
+            ->where('credit_card_id', $card->id)
+            ->whereNotNull('period_start_date')
+            ->whereDate('period_start_date', '<=', $date->toDateString())
+            ->whereDate('statement_date', '>=', $date->toDateString())
+            ->when($openOnly, fn ($query) => $query->where('status', CreditCardCycleStatus::OPEN))
+            ->orderBy('statement_date')
+            ->first();
+    }
+
+    private function ensureCycleIsMutable(?CreditCardCycle $cycle): void
+    {
+        if (! $cycle || $cycle->status === CreditCardCycleStatus::OPEN) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'spent_at' => 'This billing cycle has already been issued. Create or use the next open cycle before changing expenses.',
+        ]);
+    }
+
     private function recomputeCycleTotal(CreditCardCycle $cycle): void
     {
         $total = (float) $cycle->expenses()->sum('amount');
         $cycle->update(['total_spent' => round(max(0.0, $total), 2)]);
+        $this->cycleService->syncIssuedCycle($cycle);
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Observers;
 
-use App\Enums\SubscriptionFrequency;
 use App\Models\Subscription;
 use App\Services\SubscriptionService;
 
@@ -15,24 +14,7 @@ class SubscriptionObserver
      */
     public function creating(Subscription $subscription): void
     {
-        // Calculate missing cost based on frequency
-        if (!$subscription->annual_cost && $subscription->monthly_cost) {
-            $subscription->annual_cost = $this->service->calculateAnnualCost(
-                $subscription->monthly_cost,
-                $subscription->frequency
-            );
-        } elseif (!$subscription->monthly_cost && $subscription->annual_cost) {
-            $subscription->monthly_cost = $this->service->calculateMonthlyCost(
-                $subscription->annual_cost,
-                $subscription->frequency
-            );
-        }
-
-        // Set default day_of_month
-        $subscription->day_of_month ??= 1;
-
-        // Calculate next renewal date
-        $subscription->next_renewal_date = $this->service->calculateNextRenewalDate($subscription);
+        $this->service->syncComputedFields($subscription);
     }
 
     /**
@@ -40,6 +22,6 @@ class SubscriptionObserver
      */
     public function updating(Subscription $subscription): void
     {
-        $this->creating($subscription);
+        $this->service->syncComputedFields($subscription);
     }
 }

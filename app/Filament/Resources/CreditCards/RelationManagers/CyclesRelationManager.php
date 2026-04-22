@@ -115,8 +115,18 @@ class CyclesRelationManager extends RelationManager
                     ->action(function ($record) {
                         $card = $record->creditCard;
 
-                        // Validate card configuration
-                        if (! $card || ! $card->fixed_payment || ! $card->interest_rate) {
+                        if (! $card) {
+                            Notification::make()
+                                ->title('Cannot issue cycle: card not found')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $requiresRevolvingConfig = $card->type?->value === 'revolving';
+
+                        if ($requiresRevolvingConfig && (! $card->fixed_payment || ! $card->interest_rate)) {
                             Notification::make()
                                 ->title('Cannot issue cycle: configure card first')
                                 ->description('Set fixed payment amount and interest rate on the credit card')

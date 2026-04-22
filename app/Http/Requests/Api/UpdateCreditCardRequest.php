@@ -13,6 +13,7 @@ class UpdateCreditCardRequest extends FormRequest
     {
         return [
             'name'                        => ['sometimes', 'required', 'string', 'max:255'],
+            'account_id'                  => ['sometimes', 'required', 'integer', 'exists:accounts,id'],
             'type'                        => ['sometimes', 'required', Rule::in(['charge', 'revolving'])],
             'credit_limit'                => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'fixed_payment'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
@@ -23,6 +24,7 @@ class UpdateCreditCardRequest extends FormRequest
             'skip_weekends'               => ['sometimes', 'boolean'],
             'current_balance'             => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'status'                      => ['sometimes', 'required', Rule::in(['active', 'suspended', 'closed'])],
+            'start_date'                  => ['sometimes', 'nullable', 'date'],
             'interest_calculation_method' => ['sometimes', 'nullable', Rule::in(['daily_balance', 'direct_monthly'])],
         ];
     }

@@ -24,6 +24,7 @@ class CreditCardExpenseObserver
         app(CreditCardExpenseService::class)->validateExpenseChange(
             $expense,
             (int) $expense->getOriginal('credit_card_id'),
+            (int) $expense->getOriginal('credit_card_cycle_id'),
             (float) $expense->getOriginal('amount')
         );
 
@@ -55,5 +56,10 @@ class CreditCardExpenseObserver
     public function deleted(CreditCardExpense $expense): void
     {
         app(CreditCardExpenseService::class)->removeExpense($expense);
+    }
+
+    public function deleting(CreditCardExpense $expense): void
+    {
+        app(CreditCardExpenseService::class)->validateExpenseRemoval($expense);
     }
 }

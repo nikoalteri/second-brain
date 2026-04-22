@@ -71,6 +71,10 @@ class Account extends Model
      */
     public function scopeBelongsToAuthUser($query): \Illuminate\Database\Eloquent\Builder
     {
+        if (auth()->user()?->hasRole('superadmin')) {
+            return $query;
+        }
+
         return $query->where('user_id', auth()->id());
     }
 }

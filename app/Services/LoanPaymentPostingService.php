@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Enums\LoanPaymentStatus;
+use App\Models\Loan;
 use App\Models\LoanPayment;
 use App\Models\Transaction;
 use App\Models\TransactionType;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 class LoanPaymentPostingService
@@ -19,7 +21,7 @@ class LoanPaymentPostingService
         }
 
         DB::transaction(function () use ($payment) {
-            if ($payment->status === LoanPaymentStatus::PAID) {
+            if ($this->shouldHavePostingTransaction($payment)) {
                 $this->upsertPostingTransaction($payment);
                 return;
             }
@@ -33,6 +35,29 @@ class LoanPaymentPostingService
         DB::transaction(function () use ($payment) {
             $this->removePostingTransaction($payment);
         });
+    }
+
+    public function syncDuePayments(?CarbonInterface $throughDate = null, ?Loan $loan = null): int
+    {
+        $throughDate ??= now()->endOfDay();
+
+        $query = LoanPayment::query()
+            ->with('loan')
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<=', $throughDate->toDateString());
+
+        if ($loan) {
+            $query->where('loan_id', $loan->id);
+        }
+
+        $synced = 0;
+
+        foreach ($query->get() as $payment) {
+            $this->syncPosting($payment);
+            $synced++;
+        }
+
+        return $synced;
     }
 
     private function upsertPostingTransaction(LoanPayment $payment): void
@@ -81,6 +106,19 @@ class LoanPaymentPostingService
             'loan_payment_id' => $payment->id,
             ...$payload,
         ]);
+    }
+
+    private function shouldHavePostingTransaction(LoanPayment $payment): bool
+    {
+        if ($payment->status === LoanPaymentStatus::PAID) {
+            return true;
+        }
+
+        if (! $payment->due_date) {
+            return false;
+        }
+
+        return $payment->due_date->copy()->endOfDay()->lessThanOrEqualTo(now());
     }
 
     private function removePostingTransaction(LoanPayment $payment): void

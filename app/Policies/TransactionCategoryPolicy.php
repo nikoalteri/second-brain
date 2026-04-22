@@ -8,6 +8,11 @@ use Illuminate\Auth\Access\Response;
 
 class TransactionCategoryPolicy
 {
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->hasRole('superadmin') ? true : null;
+    }
+
     public function viewAny(User $user): bool
     {
         return true;
@@ -15,7 +20,7 @@ class TransactionCategoryPolicy
 
     public function view(User $user, TransactionCategory $category): bool
     {
-        return $user->is_superadmin || $category->user_id === $user->id;
+        return $category->user_id === $user->id;
     }
 
     public function create(User $user): bool
@@ -25,11 +30,11 @@ class TransactionCategoryPolicy
 
     public function update(User $user, TransactionCategory $category): bool
     {
-        return $user->is_superadmin || $category->user_id === $user->id;
+        return $category->user_id === $user->id;
     }
 
     public function delete(User $user, TransactionCategory $category): bool
     {
-        return $user->is_superadmin || $category->user_id === $user->id;
+        return $category->user_id === $user->id;
     }
 }

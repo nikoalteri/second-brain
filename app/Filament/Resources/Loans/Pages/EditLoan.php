@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Loans\Pages;
 
 use App\Filament\Resources\Loans\LoanResource;
 use App\Filament\Resources\Loans\Schemas\LoanForm;
+use App\Services\LoanScheduleService;
 use Filament\Resources\Pages\EditRecord;
 
 class EditLoan extends EditRecord
@@ -41,5 +42,10 @@ class EditLoan extends EditRecord
         }
 
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        app(LoanScheduleService::class)->generate($this->record, onlyMissing: true);
     }
 }

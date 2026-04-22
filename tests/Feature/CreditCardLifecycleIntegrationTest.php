@@ -14,6 +14,7 @@ use App\Models\Transaction;
 use App\Services\CreditCardCycleService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class CreditCardLifecycleIntegrationTest extends TestCase
@@ -139,6 +140,64 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $this->assertSame(CreditCardCycleStatus::PAID, $cycle->status);
         $this->assertSame(982.0, (float) $card->current_balance);
         $this->assertSame(748.0, (float) $account->balance);
+    }
+
+    /** @test */
+    public function adding_expense_after_issue_is_rejected_and_preserves_statement(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-03-20'));
+
+        $account = Account::factory()->create(['balance' => 1000]);
+
+        $card = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            'name' => 'Carta aggiorna emesso',
+            'type' => CreditCardType::CHARGE,
+            'statement_day' => 28,
+            'due_day' => 15,
+            'skip_weekends' => true,
+            'current_balance' => 0,
+            'status' => CreditCardStatus::ACTIVE,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        CreditCardExpense::create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2026-03-10'),
+            'amount' => 300,
+            'description' => 'Initial expense',
+        ]);
+
+        $cycle = CreditCardCycle::query()
+            ->where('credit_card_id', $card->id)
+            ->where('period_month', '2026-03')
+            ->firstOrFail();
+
+        $this->assertTrue(app(CreditCardCycleService::class)->issueCycle($cycle));
+
+        $this->expectException(ValidationException::class);
+
+        try {
+            CreditCardExpense::create([
+                'credit_card_id' => $card->id,
+                'spent_at' => Carbon::parse('2026-03-12'),
+                'amount' => 50,
+                'description' => 'Late expense on issued cycle',
+            ]);
+        } finally {
+            $cycle->refresh();
+            $payment = $cycle->payments()->firstOrFail();
+
+            $this->assertSame(CreditCardCycleStatus::ISSUED, $cycle->status);
+            $this->assertSame(300.0, (float) $cycle->total_spent);
+            $this->assertSame(302.0, (float) $cycle->total_due);
+            $this->assertSame(302.0, (float) $payment->total_amount);
+            $this->assertSame(300.0, (float) $payment->principal_amount);
+            $this->assertSame(2.0, (float) $payment->stamp_duty_amount);
+        }
+
+        Carbon::setTestNow();
     }
 
     /** @test */
