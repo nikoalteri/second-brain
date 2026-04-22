@@ -32,6 +32,7 @@ type Account {
 type Transaction {
     id: ID!
     account_id: ID!
+    transaction_type_id: ID!
     amount: Float!
     date: Date!
     description: String
@@ -43,6 +44,13 @@ type Transaction {
     category: TransactionCategory @belongsTo(relation: "category")
     created_at: DateTime!
     updated_at: DateTime!
+}
+
+"A transaction type (e.g. income, expense, transfer). Global lookup — not user-scoped."
+type TransactionType {
+    id: ID!
+    name: String!
+    is_income: Boolean!
 }
 
 "A transaction spending category."
@@ -238,6 +246,12 @@ type Query {
     totalByCategory(year: Int!, month: Int!): [CategoryTotal!]!
         @guard
         @field(resolver: "App\\GraphQL\\Queries\\TotalByCategory")
+
+    "List all transaction types (global lookup table — not user-scoped)."
+    transactionTypes: [TransactionType!]! @all @guard
+
+    "List transaction categories for the authenticated user."
+    transactionCategories: [TransactionCategory!]! @all @guard
 }
 
 # ─── INPUT TYPES ──────────────────────────────────────────────────────────────
