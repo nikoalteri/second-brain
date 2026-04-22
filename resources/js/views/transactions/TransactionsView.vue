@@ -27,23 +27,26 @@ const ACCOUNTS_QUERY = gql`
     }
 `;
 
+const CATEGORIES_QUERY = gql`
+    query GetTransactionCategories {
+        transactionCategories {
+            id
+            name
+        }
+    }
+`;
+
 const TRANSACTIONS_QUERY = gql`
     query GetTransactions($page: Int, $account_id: ID) {
         transactions(first: 20, page: $page, account_id: $account_id) {
             data {
                 id
+                account_id
+                transaction_category_id
                 amount
                 date
                 description
                 is_transfer
-                account {
-                    id
-                    name
-                }
-                category {
-                    id
-                    name
-                }
             }
             paginatorInfo {
                 currentPage
@@ -55,6 +58,7 @@ const TRANSACTIONS_QUERY = gql`
 `;
 
 const { result: accountsResult } = useQuery(ACCOUNTS_QUERY);
+const { result: categoriesResult } = useQuery(CATEGORIES_QUERY);
 const { result, loading, error } = useQuery(TRANSACTIONS_QUERY, () => ({
     page: page.value,
     account_id: filterAccountId.value || undefined,
@@ -65,6 +69,13 @@ const accountOptions = computed(() => [
     { value: '', label: 'All accounts' },
     ...accounts.value.map((account) => ({ value: account.id, label: account.name })),
 ]);
+const categories = computed(() => categoriesResult.value?.transactionCategories ?? []);
+const accountNameById = computed(() =>
+    Object.fromEntries(accounts.value.map((account) => [String(account.id), account.name]))
+);
+const categoryNameById = computed(() =>
+    Object.fromEntries(categories.value.map((category) => [String(category.id), category.name]))
+);
 const transactions = computed(() => result.value?.transactions?.data ?? []);
 const filteredTransactions = computed(() =>
     transactions.value.filter((transaction) => {
@@ -155,8 +166,12 @@ function applyAccountFilter(value) {
                 >
                     <td class="w-28 py-3 pr-4 text-sm text-gray-400">{{ transaction.date }}</td>
                     <td class="py-3 pr-4 text-sm text-gray-100">{{ transaction.description }}</td>
-                    <td class="hidden py-3 pr-4 text-sm text-gray-400 lg:table-cell">{{ transaction.category?.name ?? '—' }}</td>
-                    <td class="hidden py-3 pr-4 text-sm text-gray-400 md:table-cell">{{ transaction.account?.name }}</td>
+                    <td class="hidden py-3 pr-4 text-sm text-gray-400 lg:table-cell">
+                        {{ categoryNameById[String(transaction.transaction_category_id)] ?? '—' }}
+                    </td>
+                    <td class="hidden py-3 pr-4 text-sm text-gray-400 md:table-cell">
+                        {{ accountNameById[String(transaction.account_id)] ?? '—' }}
+                    </td>
                     <td class="py-3 text-right font-mono text-sm" :class="colorClass(transaction.amount, 'signed')">
                         {{ formatSigned(transaction.amount) }}
                     </td>
@@ -172,7 +187,9 @@ function applyAccountFilter(value) {
                 >
                     <div class="min-w-0 flex-1 pr-3">
                         <p class="truncate text-sm text-gray-100">{{ transaction.description }}</p>
-                        <p class="mt-0.5 text-sm text-gray-400">{{ transaction.date }} · {{ transaction.account?.name }}</p>
+                        <p class="mt-0.5 text-sm text-gray-400">
+                            {{ transaction.date }} · {{ accountNameById[String(transaction.account_id)] ?? '—' }}
+                        </p>
                     </div>
                     <span class="shrink-0 font-mono text-sm" :class="colorClass(transaction.amount, 'signed')">
                         {{ formatSigned(transaction.amount) }}

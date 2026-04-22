@@ -66,15 +66,12 @@ const TX_QUERY = gql`
             id
             account_id
             transaction_type_id
+            transaction_category_id
             amount
             date
             description
             notes
             is_transfer
-            category {
-                id
-                name
-            }
         }
     }
 `;
@@ -134,7 +131,7 @@ watch(
             form.value = {
                 account_id: transaction.account_id ?? '',
                 transaction_type_id: transaction.transaction_type_id ?? '',
-                transaction_category_id: transaction.category?.id ?? '',
+                transaction_category_id: transaction.transaction_category_id ?? '',
                 amount: Math.abs(transaction.amount),
                 date: transaction.date,
                 description: transaction.description ?? '',

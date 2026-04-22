@@ -54,4 +54,5 @@
 ## Deviations from plan
 
 1. The summary tracks the human-verification checkpoint as pending because it requires user confirmation outside the automated build.
-2. The phase ended up with 25 view/component files rather than the plan note's count of 22; the file list above reflects the implemented codebase exactly.
+2. Lighthouse's default `max_query_complexity` cap was too low for the planned first-party SPA list queries, so it was raised from `100` to `500` during verification.
+3. The phase ended up with 25 view/component files rather than the plan note's count of 22; the file list above reflects the implemented codebase exactly.

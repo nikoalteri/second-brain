@@ -226,8 +226,9 @@ return [
     */
 
     'security' => [
-        // Maximum query complexity limit (e.g. 100)
-        'max_query_complexity' => 100,
+        // The SPA query surface exceeds the stock cap once paginated finance lists
+        // include their planned fields, so keep the limit high enough for first-party use.
+        'max_query_complexity' => 500,
         // Maximum query depth limit (e.g. 10)
         'max_query_depth' => 10,
         'disable_introspection' => (bool) env('LIGHTHOUSE_SECURITY_DISABLE_INTROSPECTION', false)

@@ -33,6 +33,7 @@ type Transaction {
     id: ID!
     account_id: ID!
     transaction_type_id: ID!
+    transaction_category_id: ID
     amount: Float!
     date: Date!
     description: String
