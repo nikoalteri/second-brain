@@ -1,0 +1,567 @@
+name: Transactions
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/transactions
+    metadata:
+      custom: []
+      groupName: Transactions
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List transactions for the authenticated user.'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 500
+        content: |-
+          {
+              "message": "Server Error"
+          }
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/transactions/{transaction_id}'
+    metadata:
+      custom: []
+      groupName: Transactions
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      transaction_id:
+        custom: []
+        name: transaction_id
+        description: 'The ID of the transaction.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      transaction_id: 16
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 500
+        content: |-
+          {
+              "message": "Server Error"
+          }
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          access-control-allow-origin: '*'
+        description: null
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/transactions
+    metadata:
+      custom: []
+      groupName: Transactions
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      account_id:
+        custom: []
+        name: account_id
+        description: 'The <code>id</code> of an existing record in the accounts table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      transaction_type_id:
+        custom: []
+        name: transaction_type_id
+        description: 'The <code>id</code> of an existing record in the transaction_types table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      transaction_category_id:
+        custom: []
+        name: transaction_category_id
+        description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      amount:
+        custom: []
+        name: amount
+        description: 'Must be at least 0.01.'
+        required: true
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      date:
+        custom: []
+        name: date
+        description: 'Must be a valid date.'
+        required: true
+        example: '2026-04-21T21:51:05'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      description:
+        custom: []
+        name: description
+        description: 'Must not be greater than 255 characters.'
+        required: true
+        example: 'Animi quos velit et fugiat.'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: 'Must not be greater than 1000 characters.'
+        required: false
+        example: d
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_transfer:
+        custom: []
+        name: is_transfer
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      to_account_id:
+        custom: []
+        name: to_account_id
+        description: 'The value and <code>account_id</code> must be different. The <code>id</code> of an existing record in the accounts table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      account_id: 16
+      transaction_type_id: 16
+      transaction_category_id: 16
+      amount: 39
+      date: '2026-04-21T21:51:05'
+      description: 'Animi quos velit et fugiat.'
+      notes: d
+      is_transfer: true
+      to_account_id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/transactions/{transaction_id}'
+    metadata:
+      custom: []
+      groupName: Transactions
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      transaction_id:
+        custom: []
+        name: transaction_id
+        description: 'The ID of the transaction.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      transaction_id: 16
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      account_id:
+        custom: []
+        name: account_id
+        description: 'The <code>id</code> of an existing record in the accounts table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      transaction_type_id:
+        custom: []
+        name: transaction_type_id
+        description: 'The <code>id</code> of an existing record in the transaction_types table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      transaction_category_id:
+        custom: []
+        name: transaction_category_id
+        description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      amount:
+        custom: []
+        name: amount
+        description: 'Must be at least 0.01.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      date:
+        custom: []
+        name: date
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-21T21:51:05'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      description:
+        custom: []
+        name: description
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: 'Animi quos velit et fugiat.'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: 'Must not be greater than 1000 characters.'
+        required: false
+        example: d
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      account_id: 16
+      transaction_type_id: 16
+      transaction_category_id: 16
+      amount: 39
+      date: '2026-04-21T21:51:05'
+      description: 'Animi quos velit et fugiat.'
+      notes: d
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/transactions/{transaction_id}'
+    metadata:
+      custom: []
+      groupName: Transactions
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      transaction_id:
+        custom: []
+        name: transaction_id
+        description: 'The ID of the transaction.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      transaction_id: 16
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      account_id:
+        custom: []
+        name: account_id
+        description: 'The <code>id</code> of an existing record in the accounts table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      transaction_type_id:
+        custom: []
+        name: transaction_type_id
+        description: 'The <code>id</code> of an existing record in the transaction_types table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      transaction_category_id:
+        custom: []
+        name: transaction_category_id
+        description: 'The <code>id</code> of an existing record in the transaction_categories table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      amount:
+        custom: []
+        name: amount
+        description: 'Must be at least 0.01.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      date:
+        custom: []
+        name: date
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-04-21T21:51:05'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      description:
+        custom: []
+        name: description
+        description: 'Must not be greater than 255 characters.'
+        required: false
+        example: 'Animi quos velit et fugiat.'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: 'Must not be greater than 1000 characters.'
+        required: false
+        example: d
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      account_id: 16
+      transaction_type_id: 16
+      transaction_category_id: 16
+      amount: 39
+      date: '2026-04-21T21:51:05'
+      description: 'Animi quos velit et fugiat.'
+      notes: d
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/transactions/{transaction_id}'
+    metadata:
+      custom: []
+      groupName: Transactions
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      transaction_id:
+        custom: []
+        name: transaction_id
+        description: 'The ID of the transaction.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      transaction_id: 16
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 204
+        content: '{}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null

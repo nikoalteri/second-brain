@@ -1,0 +1,164 @@
+name: Authentication
+description: ''
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/auth/login
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Authenticate user and issue access + refresh tokens.'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      email:
+        custom: []
+        name: email
+        description: 'User email.'
+        required: true
+        example: user@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'User password (min 8 chars).'
+        required: true
+        example: secret1234
+        type: string
+        enumValues: []
+        exampleWasSpecified: true
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      email: user@example.com
+      password: secret1234
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"access_token":"1|...","refresh_token":"2|...","token_type":"Bearer","expires_in":1800}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Invalid credentials."}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: '{"message":"Validation failed.","errors":{"email":["The email field is required."]}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/auth/refresh
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Refresh an expired access token using a valid refresh token.'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"access_token":"3|...","token_type":"Bearer","expires_in":1800}'
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 401
+        content: '{"message":"Unauthenticated."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/auth/logout
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Logout user and invalidate all tokens.'
+      description: ''
+      authenticated: true
+      deprecated: false
+    headers:
+      Authorization: 'Bearer {ACCESS_TOKEN}'
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"message":"Logged out."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth:
+      - headers
+      - Authorization
+      - 'Bearer test-token-here'
+    controller: null
+    method: null
+    route: null

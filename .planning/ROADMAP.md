@@ -56,8 +56,17 @@ Plans:
 
 ## v3.0 — Frontend ⏳
 
-### Phase 7: Mobile-Friendly Frontend
-**Goal:** Build a mobile-friendly SPA (Vue.js) or React Native app consuming the v2.0 API.
+### Phase 7: Mobile-Friendly Frontend SPA ⏳
+**Goal:** Build a mobile-friendly Vue 3 SPA (Composition API + script setup) served within the existing Laravel project, consuming the v2.0 REST + GraphQL API. Covers all 5 finance domains with full CRUD, Apollo Client v4 with auto-refresh, Pinia auth store, and responsive dark-theme UI.
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 07-01-infrastructure-auth-PLAN.md — npm install, Vite + Vue plugin, Blade entry, web.php catch-all, Apollo Client v4, Pinia auth store, router (20 routes + auth guard), Login view, all shared UI components + composables
+- [ ] 07-02-dashboard-accounts-PLAN.md — Dashboard (KPI cards + cashflow chart + category totals), Accounts list/detail/form (CRUD)
+- [ ] 07-03-transactions-PLAN.md — Schema additions (transactionTypes + transactionCategories queries), Transactions list with filters + create/edit form
+- [ ] 07-04-loans-creditcards-PLAN.md — Loans list/detail/form with amber progress bars, Credit Cards list/detail/form with purple credit bars + cycle accordion
+- [ ] 07-05-subscriptions-polish-PLAN.md — Subscriptions list/form with renewal highlighting, human verification checkpoint
 
 ---
 
