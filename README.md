@@ -10,12 +10,12 @@
 
 **Fluxa** is a Laravel-based personal finance tracker designed to help users monitor and manage all aspects of their financial life in one unified system.
 
-### Current Status: Backend Foundation Complete ✅
+### Current Status: Finance SPA Parity and Automation In Progress
 
-- **Phases Implemented:** 0-5 (Finance Backend)
-- **Models:** 16 finance entities
-- **Filament Resources:** 14 CRUD interfaces
-- **Tests:** 80+ passing
+- **Backend + SPA parity:** accounts, transactions, loans, credit cards, subscriptions
+- **Automation:** loan posting, credit-card cycle issuing, subscription renewal posting
+- **Dashboard reminders:** upcoming loan, credit-card, and subscription payments in the next 3 days
+- **Tests:** targeted finance, API, and lifecycle suites passing
 
 ---
 
@@ -41,11 +41,15 @@
 - Credit limit and available credit management
 - Payment posting with revolving credit support
 - KPI widgets (utilization, debt ratio, daily balance)
+- Automatic cycle generation and issuing through the scheduler
+- SPA support for cycles, expenses, and payments with backend parity
 
 ### Subscriptions
-- Recurring payment tracking (monthly, yearly, etc.)
-- Automatic renewal reminders
-- Active/paused/cancelled status management
+- Recurring payment tracking with backend-managed frequency settings
+- Payment source can be either an account or a credit card
+- Automatic 3-day renewal reminders on the dashboard
+- Scheduled renewal posting to transactions or credit-card expenses
+- Active/inactive/cancelled status management
 
 ### Settings & Admin
 - User preference management
@@ -67,11 +71,12 @@ Admin UI:       Filament 4
 Testing:        PHPUnit + Pest
 ```
 
-### Next: API Layer (Coming Soon)
+### API and Frontend
 ```
-API:            GraphQL (Lighthouse) + REST fallback
+API:            REST for SPA-critical finance flows + GraphQL where still retained
 Auth:           JWT with token refresh
-Docs:           API documentation
+Docs:           Scribe API documentation
+Frontend:       Vue SPA
 ```
 
 ### Database Architecture
@@ -112,15 +117,25 @@ Docs:           API documentation
    ```
 
 4. **Run development servers:**
+    ```bash
+    php artisan serve          # Laravel server on http://localhost:8000
+    npm run dev                # Vite server for assets
+    ```
+
+5. **Run the scheduler for automation:**
    ```bash
-   php artisan serve          # Laravel server on http://localhost:8000
-   npm run dev                # Vite server for assets
+   php artisan schedule:work
    ```
 
-5. **Access admin panel:**
-   - URL: http://localhost:8000/admin
-   - Email: `admin@fluxa.local`
-   - Password: `password`
+   This is required for:
+   - loan installment sync and posting
+   - subscription renewal sync and posting
+   - automatic credit-card cycle issuing
+
+6. **Access admin panel:**
+    - URL: http://localhost:8000/admin
+    - Email: `admin@fluxa.local`
+    - Password: `password`
 
 ### Database Statistics
 
@@ -183,6 +198,13 @@ php artisan test tests/Unit/LoanScheduleServiceTest.php
 | [API.md](docs/API.md) | GraphQL API documentation |
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines |
 
+## ⏭️ Immediate Next Steps
+
+1. Run final manual verification across the SPA for finance report, subscriptions, and cross-resource posting flows.
+2. Ensure the production/deployment environment runs Laravel scheduler continuously.
+3. Regenerate and publish API docs if you want the new subscription frequency and dashboard payloads reflected in generated docs.
+4. Run the broader full-suite regression pass when ready for release.
+
 ---
 
 ## 🔐 Security Features
@@ -206,10 +228,11 @@ php artisan test tests/Unit/LoanScheduleServiceTest.php
 - Subscriptions with renewal tracking
 - Filament admin panel
 
-### Phase 2 — API Layer (Next)
-- GraphQL schema + REST endpoints
-- JWT authentication with token refresh
-- Rate limiting and API documentation
+### Phase 2 — Finance stabilization
+- Complete final SPA verification and cleanup
+- Reduce remaining GraphQL dependency for legacy screens
+- Regenerate API docs and refresh contributor documentation
+- Harden scheduler/deployment guidance
 
 ### Phase 3+ — Enhancements
 - Mobile-friendly frontend (Vue.js or React Native)
@@ -238,5 +261,5 @@ This project is open source and available under the [MIT license](LICENSE).
 
 ---
 
-**Last Updated:** 2026-04-21  
+**Last Updated:** 2026-04-23  
 **Version:** 1.0.0
