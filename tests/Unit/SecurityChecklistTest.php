@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 class SecurityChecklistTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function password_is_hashed()
     {
         $plain = 'password123';
@@ -16,7 +16,7 @@ class SecurityChecklistTest extends TestCase
         $this->assertNotEquals($plain, $hashed);
     }
 
-    /** @test */
+    #[Test]
     public function env_file_is_not_committed()
     {
         $this->assertFileExists(base_path('.env.example'), '.env.example deve essere committato');

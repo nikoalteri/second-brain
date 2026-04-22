@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class CreditCardCycleServiceTest extends TestCase
 {
-    /** @test */
+    #[Test]
     public function revolving_breakdown_with_12_percent_rate(): void
     {
         $service = new CreditCardCycleService();
@@ -32,7 +32,7 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertFalse($result['invalid_installment']);
     }
 
-    /** @test */
+    #[Test]
     public function revolving_breakdown_with_14_percent_rate_matches_bank_statement(): void
     {
         $service = new CreditCardCycleService();
@@ -56,7 +56,7 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertFalse($result['invalid_installment']);
     }
 
-    /** @test */
+    #[Test]
     public function revolving_breakdown_marks_invalid_when_installment_does_not_cover_interest(): void
     {
         $service = new CreditCardCycleService();
@@ -77,7 +77,7 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertSame(7.0, $result['total_due']);
     }
 
-    /** @test */
+    #[Test]
     public function revolving_breakdown_is_invalid_when_fixed_installment_is_missing(): void
     {
         $service = new CreditCardCycleService();
@@ -95,7 +95,7 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertSame(2.0, $result['total_due']);
     }
 
-    /** @test */
+    #[Test]
     public function revolving_breakdown_caps_installment_when_balance_is_lower_than_max_installment(): void
     {
         $service = new CreditCardCycleService();
@@ -118,7 +118,7 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertFalse($result['invalid_installment']);
     }
 
-    /** @test */
+    #[Test]
     public function charge_card_breakdown_has_no_interest(): void
     {
         $service = new CreditCardCycleService();

@@ -22,7 +22,7 @@ class LoanPaymentPostingServiceTest extends TestCase
         parent::tearDown();
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_a_single_negative_transaction_when_payment_is_paid(): void
     {
         Carbon::setTestNow('2026-03-18 12:00:00');
@@ -59,7 +59,7 @@ class LoanPaymentPostingServiceTest extends TestCase
         $this->assertSame(750.0, (float) $account->balance);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_duplicate_posting_for_paid_payment_updates(): void
     {
         Carbon::setTestNow('2026-03-20 12:00:00');
@@ -88,7 +88,7 @@ class LoanPaymentPostingServiceTest extends TestCase
         $this->assertDatabaseCount('transactions', 1);
     }
 
-    /** @test */
+    #[Test]
     public function it_soft_deletes_posting_when_future_payment_returns_to_pending(): void
     {
         Carbon::setTestNow('2026-03-20 12:00:00');
@@ -123,7 +123,7 @@ class LoanPaymentPostingServiceTest extends TestCase
         $this->assertSame(1000.0, (float) $account->balance);
     }
 
-    /** @test */
+    #[Test]
     public function it_creates_a_transaction_for_due_pending_payments_when_synced(): void
     {
         Carbon::setTestNow('2026-03-26 12:00:00');

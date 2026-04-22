@@ -23,7 +23,7 @@ class SettingsModuleTest extends TestCase
     }
 
     // UserSetting Tests
-    /** @test */
+    #[Test]
     public function user_can_create_setting()
     {
         $data = [
@@ -41,7 +41,7 @@ class SettingsModuleTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_setting_has_user_scoping()
     {
         UserSetting::create([
@@ -60,7 +60,7 @@ class SettingsModuleTest extends TestCase
         $this->assertEquals(1, $this->user->userSettings()->count());
     }
 
-    /** @test */
+    #[Test]
     public function user_setting_can_be_soft_deleted()
     {
         $setting = UserSetting::create([
@@ -76,7 +76,7 @@ class SettingsModuleTest extends TestCase
         $this->assertEquals(1, UserSetting::withTrashed()->count());
     }
 
-    /** @test */
+    #[Test]
     public function user_setting_validates_keys()
     {
         $validKeys = ['theme', 'language', 'notifications', 'privacy'];
@@ -92,7 +92,7 @@ class SettingsModuleTest extends TestCase
     }
 
     // Notification Tests
-    /** @test */
+    #[Test]
     public function user_can_create_notification()
     {
         $data = [
@@ -112,7 +112,7 @@ class SettingsModuleTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function notification_has_read_tracking()
     {
         $notification = Notification::create([
@@ -129,7 +129,7 @@ class SettingsModuleTest extends TestCase
         $this->assertNotNull($notification->fresh()->read_at);
     }
 
-    /** @test */
+    #[Test]
     public function notification_validates_types()
     {
         $validTypes = ['email', 'sms', 'in_app'];
@@ -145,7 +145,7 @@ class SettingsModuleTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function notification_can_have_action_url()
     {
         $notification = Notification::create([
@@ -159,7 +159,7 @@ class SettingsModuleTest extends TestCase
         $this->assertEquals('/orders/123', $notification->action_url);
     }
 
-    /** @test */
+    #[Test]
     public function notification_can_be_soft_deleted()
     {
         $notification = Notification::create([
@@ -175,7 +175,7 @@ class SettingsModuleTest extends TestCase
     }
 
     // AuditLog Tests
-    /** @test */
+    #[Test]
     public function user_can_create_audit_log()
     {
         $data = [
@@ -197,7 +197,7 @@ class SettingsModuleTest extends TestCase
         $this->assertEquals(['name' => 'John Doe'], $log->changes);
     }
 
-    /** @test */
+    #[Test]
     public function audit_log_validates_actions()
     {
         $validActions = ['create', 'update', 'delete'];
@@ -213,7 +213,7 @@ class SettingsModuleTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function audit_log_tracks_changes()
     {
         $log = AuditLog::create([
@@ -232,7 +232,7 @@ class SettingsModuleTest extends TestCase
         $this->assertArrayHasKey('name', $log->changes);
     }
 
-    /** @test */
+    #[Test]
     public function audit_log_can_store_ip_address()
     {
         $log = AuditLog::create([
@@ -246,7 +246,7 @@ class SettingsModuleTest extends TestCase
         $this->assertEquals('192.168.1.100', $log->ip_address);
     }
 
-    /** @test */
+    #[Test]
     public function audit_log_can_be_soft_deleted()
     {
         $log = AuditLog::create([
@@ -262,7 +262,7 @@ class SettingsModuleTest extends TestCase
     }
 
     // Backup Tests
-    /** @test */
+    #[Test]
     public function user_can_create_backup()
     {
         $data = [
@@ -282,7 +282,7 @@ class SettingsModuleTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function backup_validates_types()
     {
         $validTypes = ['auto', 'manual'];
@@ -298,7 +298,7 @@ class SettingsModuleTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function backup_tracks_file_metadata()
     {
         $backup = Backup::create([
@@ -312,7 +312,7 @@ class SettingsModuleTest extends TestCase
         $this->assertEquals(5242880, $backup->file_size);
     }
 
-    /** @test */
+    #[Test]
     public function backup_can_be_soft_deleted()
     {
         $backup = Backup::create([
@@ -329,7 +329,7 @@ class SettingsModuleTest extends TestCase
         $this->assertEquals(1, Backup::withTrashed()->count());
     }
 
-    /** @test */
+    #[Test]
     public function backup_has_user_scoping()
     {
         Backup::create([

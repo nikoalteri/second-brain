@@ -16,7 +16,7 @@ class CreditCardPaymentPostingServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_posts_a_single_negative_transaction_when_credit_card_payment_is_paid(): void
     {
         $account = Account::factory()->create(['balance' => 1000]);
@@ -55,7 +55,7 @@ class CreditCardPaymentPostingServiceTest extends TestCase
         $this->assertSame(748.0, (float) $account->balance);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_duplicate_posting_on_credit_card_payment_updates(): void
     {
         $account = Account::factory()->create(['balance' => 1000]);

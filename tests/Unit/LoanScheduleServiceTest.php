@@ -14,7 +14,7 @@ class LoanScheduleServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_generates_payments_for_a_loan()
     {
         $loan = Loan::factory()->create([
@@ -35,7 +35,7 @@ class LoanScheduleServiceTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_syncs_loan_status_and_amount()
     {
         $loan = Loan::factory()->create([

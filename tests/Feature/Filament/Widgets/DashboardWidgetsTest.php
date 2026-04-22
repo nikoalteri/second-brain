@@ -54,7 +54,7 @@ class DashboardWidgetsTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function user_has_all_required_data()
     {
         $this->assertGreaterThan(0, $this->user->accounts()->count(), 'User should have accounts');
@@ -62,7 +62,7 @@ class DashboardWidgetsTest extends TestCase
         $this->assertGreaterThan(0, $this->user->subscriptions()->count(), 'User should have subscriptions');
     }
 
-    /** @test */
+    #[Test]
     public function net_worth_calculates_correctly()
     {
         $accounts = $this->user->accounts()->where('is_active', true)->get();
@@ -72,7 +72,7 @@ class DashboardWidgetsTest extends TestCase
         $this->assertIsNumeric($netWorth);
     }
 
-    /** @test */
+    #[Test]
     public function total_debts_calculates_correctly()
     {
         $loans = $this->user->loans()->sum('remaining_amount');
@@ -83,7 +83,7 @@ class DashboardWidgetsTest extends TestCase
         $this->assertGreaterThanOrEqual(0, $totalDebts, 'Total debts should be >= 0');
     }
 
-    /** @test */
+    #[Test]
     public function monthly_subscription_cost_calculates_correctly()
     {
         $subs = $this->user->subscriptions()
@@ -100,7 +100,7 @@ class DashboardWidgetsTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function expenses_by_category_query_works()
     {
         $expenses = $this->user->transactions()
@@ -116,7 +116,7 @@ class DashboardWidgetsTest extends TestCase
         $this->assertGreaterThan(0, $expenses->count(), 'Should have categorized expenses');
     }
 
-    /** @test */
+    #[Test]
     public function monthly_cashflow_query_works()
     {
         $byType = $this->user->transactions()
@@ -128,7 +128,7 @@ class DashboardWidgetsTest extends TestCase
         $this->assertGreaterThan(0, $byType->count(), 'Should have transactions by type');
     }
 
-    /** @test */
+    #[Test]
     public function all_widgets_queries_scope_to_user()
     {
         $otherUser = User::factory()->create();

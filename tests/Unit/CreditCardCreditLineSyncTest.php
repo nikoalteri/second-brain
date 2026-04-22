@@ -16,7 +16,7 @@ class CreditCardCreditLineSyncTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function expense_create_update_delete_syncs_used_credit_with_deltas(): void
     {
         $account = Account::factory()->create();
@@ -56,7 +56,7 @@ class CreditCardCreditLineSyncTest extends TestCase
         $this->assertSame(100.0, (float) $card->current_balance);
     }
 
-    /** @test */
+    #[Test]
     public function payments_reintegrate_only_principal_on_status_changes(): void
     {
         $account = Account::factory()->create();

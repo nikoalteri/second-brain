@@ -13,7 +13,7 @@ class CreditCardAvailableCreditTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_returns_null_available_credit_for_unlimited_cards(): void
     {
         $account = Account::factory()->create();
@@ -36,7 +36,7 @@ class CreditCardAvailableCreditTest extends TestCase
         $this->assertNull($card->available_credit);
     }
 
-    /** @test */
+    #[Test]
     public function it_calculates_available_credit_for_limited_cards(): void
     {
         $account = Account::factory()->create();
@@ -61,7 +61,7 @@ class CreditCardAvailableCreditTest extends TestCase
         $this->assertSame(680.0, $card->available_credit);
     }
 
-    /** @test */
+    #[Test]
     public function it_clamps_available_credit_to_zero_when_used_credit_exceeds_limit(): void
     {
         $account = Account::factory()->create();

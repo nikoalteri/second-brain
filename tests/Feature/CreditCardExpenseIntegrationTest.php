@@ -18,7 +18,7 @@ class CreditCardExpenseIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function creating_expense_assigns_cycle_and_updates_total_spent(): void
     {
         $account = Account::factory()->create();
@@ -55,7 +55,7 @@ class CreditCardExpenseIntegrationTest extends TestCase
         $this->assertSame(120.0, (float) $card->current_balance);
     }
 
-    /** @test */
+    #[Test]
     public function deleting_expense_recomputes_cycle_total_spent(): void
     {
         $account = Account::factory()->create();
@@ -117,7 +117,7 @@ class CreditCardExpenseIntegrationTest extends TestCase
         $this->assertSame(0.0, (float) $card->current_balance);
     }
 
-    /** @test */
+    #[Test]
     public function creating_expense_over_limit_is_blocked(): void
     {
         $account = Account::factory()->create();
@@ -151,7 +151,7 @@ class CreditCardExpenseIntegrationTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function creating_expense_on_unlimited_card_is_allowed(): void
     {
         $account = Account::factory()->create();

@@ -89,7 +89,7 @@ php artisan test
 npm run build
 ```
 
-If PHPUnit exits non-zero because of existing suite-wide deprecation warnings, review the actual failing tests separately before treating the run as a release blocker.
+The latest maintenance cleanup removed the previous PHPUnit doc-comment metadata deprecation noise, so a non-zero exit should now be treated as a real regression signal.
 
 ## 5. Phase 7 completion criteria
 

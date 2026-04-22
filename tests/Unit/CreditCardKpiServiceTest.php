@@ -20,7 +20,7 @@ class CreditCardKpiServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_returns_expected_credit_card_kpis_for_user(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-18'));

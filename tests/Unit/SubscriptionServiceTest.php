@@ -34,7 +34,7 @@ class SubscriptionServiceTest extends TestCase
         $this->biennialFrequency = SubscriptionFrequency::query()->where('slug', 'biennial')->firstOrFail();
     }
 
-    /** @test */
+    #[Test]
     public function calculate_monthly_cost_uses_frequency_interval(): void
     {
         $this->assertEquals(12.00, $this->service->calculateMonthlyCost(12.00, $this->monthlyFrequency));
@@ -42,7 +42,7 @@ class SubscriptionServiceTest extends TestCase
         $this->assertEquals(10.00, $this->service->calculateMonthlyCost(240.00, $this->biennialFrequency));
     }
 
-    /** @test */
+    #[Test]
     public function calculate_annual_cost_uses_frequency_interval(): void
     {
         $this->assertEquals(12.00, $this->service->calculateAnnualCost(12.00, $this->monthlyFrequency));
@@ -50,7 +50,7 @@ class SubscriptionServiceTest extends TestCase
         $this->assertEquals(240.00, $this->service->calculateAnnualCost(10.00, $this->biennialFrequency));
     }
 
-    /** @test */
+    #[Test]
     public function get_monthly_total_for_user_subscriptions(): void
     {
         Subscription::factory()->create([
@@ -80,7 +80,7 @@ class SubscriptionServiceTest extends TestCase
         $this->assertEquals(20.00, $this->service->getMonthlyTotal($this->user->id));
     }
 
-    /** @test */
+    #[Test]
     public function get_upcoming_renewals(): void
     {
         $now = Carbon::parse('2026-03-23');
@@ -115,7 +115,7 @@ class SubscriptionServiceTest extends TestCase
         Carbon::setTestNow();
     }
 
-    /** @test */
+    #[Test]
     public function calculate_next_renewal_date_respects_frequency_interval(): void
     {
         $monthlySubscription = Subscription::factory()->make([
@@ -143,7 +143,7 @@ class SubscriptionServiceTest extends TestCase
         $this->assertEquals('2028-03-15', $this->service->calculateNextRenewalDate($biennialSubscription, $from)->toDateString());
     }
 
-    /** @test */
+    #[Test]
     public function observer_calculates_monthly_equivalent_on_creation(): void
     {
         $subscription = Subscription::factory()->create([
@@ -156,7 +156,7 @@ class SubscriptionServiceTest extends TestCase
         $this->assertEquals(10.00, (float) $subscription->monthly_cost);
     }
 
-    /** @test */
+    #[Test]
     public function due_account_backed_subscription_posts_transaction_and_advances_date(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-04-23'));
@@ -187,7 +187,7 @@ class SubscriptionServiceTest extends TestCase
         Carbon::setTestNow();
     }
 
-    /** @test */
+    #[Test]
     public function due_credit_card_backed_subscription_posts_card_expense_and_advances_date(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-04-23'));
@@ -224,7 +224,7 @@ class SubscriptionServiceTest extends TestCase
         Carbon::setTestNow();
     }
 
-    /** @test */
+    #[Test]
     public function has_posting_for_renewal_detects_existing_transaction(): void
     {
         $account = Account::factory()->create(['user_id' => $this->user->id]);

@@ -208,10 +208,10 @@ php artisan test tests/Unit/LoanScheduleServiceTest.php
 
 ## ⏭️ Immediate Next Steps
 
-1. Follow [PHASE7_CLOSEOUT.md](docs/PHASE7_CLOSEOUT.md) for final verification and release hardening.
-2. Ensure the production/deployment environment runs Laravel scheduler continuously.
-3. Regenerate and publish API docs if you want the new subscription frequency and dashboard payloads reflected in generated docs.
-4. Run the broader full-suite regression pass when ready for release.
+1. Treat Phase 7 as closed and choose whether to start a new milestone.
+2. Keep the production/deployment environment running Laravel scheduler continuously.
+3. Use [PROJECT_ROADMAP_EN.md](docs/PROJECT_ROADMAP_EN.md) to decide whether the next milestone should focus on advanced analytics, budgeting, or forecasting.
+4. Regenerate and publish API docs again whenever endpoint shapes change.
 
 ---
 

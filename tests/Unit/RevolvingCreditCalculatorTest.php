@@ -21,7 +21,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->calculator = app(RevolvingCreditCalculator::class);
     }
 
-    /** @test */
+    #[Test]
     public function it_calculates_daily_balances_for_a_cycle()
     {
         $card = CreditCard::factory()->create([
@@ -73,7 +73,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertCount(20, $dailyBalances);
     }
 
-    /** @test */
+    #[Test]
     public function it_calculates_interest_from_daily_balances()
     {
         $dailyBalances = [
@@ -106,7 +106,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertEqualsWithDelta(4.16, $interest, 0.01);
     }
 
-    /** @test */
+    #[Test]
     public function first_cycle_has_zero_interest()
     {
         $card = CreditCard::factory()->create([
@@ -142,7 +142,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertGreaterThan(0.0, $breakdown['interest_amount']);
     }
 
-    /** @test */
+    #[Test]
     public function second_cycle_calculates_interest_correctly()
     {
         $card = CreditCard::factory()->create([
@@ -180,7 +180,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertLessThan(5.0, $breakdown['interest_amount']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_user_bank_statement_14_percent()
     {
         // User's real case: 542 debt, 14% rate, expects 75.88 interest
@@ -227,7 +227,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertLessThan(8.0, $breakdown['interest_amount']);
     }
 
-    /** @test */
+    #[Test]
     public function charge_card_has_no_interest()
     {
         $card = CreditCard::factory()->create([
@@ -251,7 +251,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertEquals(0.0, $breakdown['next_balance']);
     }
 
-    /** @test */
+    #[Test]
     public function payment_respects_fixed_payment_limit()
     {
         $card = CreditCard::factory()->create([
@@ -279,7 +279,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertLessThanOrEqual(250.00, $breakdown['installment_amount']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_empty_array_when_no_card()
     {
         // Create a cycle without loading card
@@ -291,7 +291,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertEmpty($breakdown);
     }
 
-    /** @test */
+    #[Test]
     public function it_calculates_interest_using_direct_monthly_method()
     {
         $currentBalance = 542.00;
@@ -303,7 +303,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertEqualsWithDelta(75.88, $interest, 0.01);
     }
 
-    /** @test */
+    #[Test]
     public function it_uses_direct_monthly_method_when_configured()
     {
         $card = CreditCard::factory()->create([
@@ -332,7 +332,7 @@ class RevolvingCreditCalculatorTest extends TestCase
         $this->assertEqualsWithDelta(75.88, $breakdown['interest_amount'], 0.01);
     }
 
-    /** @test */
+    #[Test]
     public function daily_balance_and_direct_monthly_produce_different_results()
     {
         $card = CreditCard::factory()->create([

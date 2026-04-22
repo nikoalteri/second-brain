@@ -19,7 +19,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->service = app(CreditCardBalanceService::class);
     }
 
-    /** @test */
+    #[Test]
     public function add_expense_increases_balance()
     {
         $card = CreditCard::factory()->create([
@@ -33,7 +33,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(600.00, $card->fresh()->current_balance);
     }
 
-    /** @test */
+    #[Test]
     public function add_expense_respects_credit_limit()
     {
         $card = CreditCard::factory()->create([
@@ -47,7 +47,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->service->addExpense($card, 600.00);
     }
 
-    /** @test */
+    #[Test]
     public function add_expense_allows_exactly_at_limit()
     {
         $card = CreditCard::factory()->create([
@@ -61,7 +61,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(4000.00, $newBalance);
     }
 
-    /** @test */
+    #[Test]
     public function add_expense_ignores_unlimited_cards()
     {
         $card = CreditCard::factory()->create([
@@ -75,7 +75,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(60000.00, $newBalance);
     }
 
-    /** @test */
+    #[Test]
     public function remove_expense_decreases_balance()
     {
         $card = CreditCard::factory()->create([
@@ -88,7 +88,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(500.00, $card->fresh()->current_balance);
     }
 
-    /** @test */
+    #[Test]
     public function remove_expense_never_goes_below_zero()
     {
         $card = CreditCard::factory()->create([
@@ -100,7 +100,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(0.0, $newBalance);
     }
 
-    /** @test */
+    #[Test]
     public function apply_principal_payment_decreases_balance()
     {
         $card = CreditCard::factory()->create([
@@ -113,7 +113,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(311.72, $card->fresh()->current_balance);
     }
 
-    /** @test */
+    #[Test]
     public function apply_principal_payment_never_goes_below_zero()
     {
         $card = CreditCard::factory()->create([
@@ -125,7 +125,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(0.0, $newBalance);
     }
 
-    /** @test */
+    #[Test]
     public function reverse_principal_payment_increases_balance()
     {
         $card = CreditCard::factory()->create([
@@ -137,7 +137,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(542.00, $newBalance);
     }
 
-    /** @test */
+    #[Test]
     public function get_current_debt_returns_balance()
     {
         $card = CreditCard::factory()->create([
@@ -149,7 +149,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(542.00, $debt);
     }
 
-    /** @test */
+    #[Test]
     public function get_available_credit_for_limited_card()
     {
         $card = CreditCard::factory()->create([
@@ -163,7 +163,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(2500.00, $available);
     }
 
-    /** @test */
+    #[Test]
     public function get_available_credit_for_unlimited_card()
     {
         $card = CreditCard::factory()->create([
@@ -176,7 +176,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertNull($available);
     }
 
-    /** @test */
+    #[Test]
     public function operations_return_rounded_values()
     {
         $card = CreditCard::factory()->create([
@@ -189,7 +189,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(166.67, $newBalance);
     }
 
-    /** @test */
+    #[Test]
     public function zero_amount_operations_do_nothing()
     {
         $card = CreditCard::factory()->create([
@@ -205,7 +205,7 @@ class CreditCardBalanceServiceTest extends TestCase
         $this->assertEquals(100.00, $balance3);
     }
 
-    /** @test */
+    #[Test]
     public function negative_amount_operations_do_nothing()
     {
         $card = CreditCard::factory()->create([

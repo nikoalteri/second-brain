@@ -15,7 +15,7 @@ use Tests\TestCase;
 class CreditCardDailyBalanceTest extends TestCase
 {
     use RefreshDatabase;
-    /** @test */
+    #[Test]
     public function calculates_daily_balances_from_expenses(): void
     {
         $calculator = new RevolvingCreditCalculator();
@@ -77,7 +77,7 @@ class CreditCardDailyBalanceTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function calculates_cycle_interest_from_daily_balances(): void
     {
         $calculator = new RevolvingCreditCalculator();
@@ -105,7 +105,7 @@ class CreditCardDailyBalanceTest extends TestCase
         $this->assertEqualsWithDelta(0.69, $interest, 0.01);
     }
 
-    /** @test */
+    #[Test]
     public function calculates_payment_breakdown_from_cycle_with_daily_balance(): void
     {
         $calculator = new RevolvingCreditCalculator();
@@ -146,7 +146,7 @@ class CreditCardDailyBalanceTest extends TestCase
         $this->assertSame(252.0, $breakdown['total_due']);
     }
 
-    /** @test */
+    #[Test]
     public function daily_balance_interest_is_lower_than_direct_monthly_rate(): void
     {
         $calculator = new RevolvingCreditCalculator();

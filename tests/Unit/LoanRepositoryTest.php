@@ -13,7 +13,7 @@ class LoanRepositoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_can_create_and_find_a_loan()
     {
         $repo = new LoanRepository();
@@ -39,7 +39,7 @@ class LoanRepositoryTest extends TestCase
         $this->assertEquals('Test Loan', $found->name);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_update_a_loan()
     {
         $repo = new LoanRepository();
@@ -49,7 +49,7 @@ class LoanRepositoryTest extends TestCase
         $this->assertEquals('New Name', $loan->name);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_delete_a_loan()
     {
         $repo = new LoanRepository();

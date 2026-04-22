@@ -21,7 +21,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function charge_cycle_issue_and_payment_sync_everything(): void
     {
         $account = Account::factory()->create(['balance' => 1000]);
@@ -82,7 +82,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $this->assertSame(-300.0, (float) $posting->amount);
     }
 
-    /** @test */
+    #[Test]
     public function revolving_issue_and_payment_reduce_residual_balance_by_principal(): void
     {
         $account = Account::factory()->create(['balance' => 1000]);
@@ -142,7 +142,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $this->assertSame(748.0, (float) $account->balance);
     }
 
-    /** @test */
+    #[Test]
     public function adding_expense_after_issue_is_rejected_and_preserves_statement(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-03-20'));
@@ -200,7 +200,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         Carbon::setTestNow();
     }
 
-    /** @test */
+    #[Test]
     public function scheduled_command_creates_month_cycle_for_active_cards(): void
     {
         $account = Account::factory()->create();
@@ -227,7 +227,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function cycle_without_due_date_does_not_become_overdue(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-05-20'));
@@ -271,7 +271,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         Carbon::setTestNow();
     }
 
-    /** @test */
+    #[Test]
     public function expense_is_assigned_to_existing_custom_range_cycle(): void
     {
         $account = Account::factory()->create();
@@ -313,7 +313,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $this->assertSame(120.0, (float) $cycle->total_spent);
     }
 
-    /** @test */
+    #[Test]
     public function same_month_allows_multiple_cycles_when_date_ranges_differ(): void
     {
         $account = Account::factory()->create();
