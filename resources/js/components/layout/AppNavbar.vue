@@ -11,24 +11,27 @@ import {
     ChartPieIcon,
     CreditCardIcon,
     ChevronDownIcon,
+    Cog6ToothIcon,
     DocumentTextIcon,
     HomeIcon,
     UserCircleIcon,
     XMarkIcon,
 } from '@heroicons/vue/24/outline';
+import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
+const { profileIsPrivate } = useUserPreferences();
 const mobileMenuOpen = ref(false);
 const userMenuOpen = ref(false);
 const userMenuRef = ref(null);
 const adminUrl = '/admin';
 const adminLinkLabel = computed(() => auth.isAdmin ? 'Open Admin' : null);
-const isProfileRoute = computed(() => route.name === 'profile');
+const isUserMenuRoute = computed(() => ['profile', 'settings'].includes(route.name));
 const userDisplayName = computed(() => auth.user?.name || 'Account');
-const userEmail = computed(() => auth.user?.email || 'Signed in');
+const userEmail = computed(() => profileIsPrivate.value ? 'Private account' : (auth.user?.email || 'Signed in'));
 const userInitials = computed(() => {
     const name = auth.user?.name?.trim();
 
@@ -109,7 +112,7 @@ onBeforeUnmount(() => {
                     type="button"
                     :aria-expanded="userMenuOpen"
                     class="flex h-10 items-center gap-3 rounded-xl border px-2.5 py-2 text-left shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-300"
-                    :class="userMenuOpen || isProfileRoute
+                    :class="userMenuOpen || isUserMenuRoute
                         ? 'border-amber-200 bg-amber-50'
                         : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'"
                     @click.stop="toggleUserMenu"
@@ -141,6 +144,15 @@ onBeforeUnmount(() => {
                         >
                             <UserCircleIcon class="h-5 w-5" />
                             User details
+                        </router-link>
+
+                        <router-link
+                            to="/settings"
+                            class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            @click="closeUserMenu"
+                        >
+                            <Cog6ToothIcon class="h-5 w-5" />
+                            Settings
                         </router-link>
 
                         <a
@@ -197,6 +209,16 @@ onBeforeUnmount(() => {
             >
                 <UserCircleIcon class="h-5 w-5 shrink-0" />
                 User details
+            </router-link>
+
+            <router-link
+                to="/settings"
+                class="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                active-class="bg-amber-100 text-amber-900"
+                @click="closeMobileMenu"
+            >
+                <Cog6ToothIcon class="h-5 w-5 shrink-0" />
+                Settings
             </router-link>
 
             <router-link

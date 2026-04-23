@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\UserSettings\Tables;
 
+use App\Models\UserSetting;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -17,13 +18,16 @@ class UserSettingsTable
     {
         return $table
             ->columns([
-                TextColumn::make('user_id')
-                    ->numeric()
+                TextColumn::make('user.name')
+                    ->label('User')
+                    ->searchable()
                     ->sortable(),
                 TextColumn::make('setting_key')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (string $state): string => UserSetting::keyLabels()[$state] ?? $state),
                 TextColumn::make('setting_value')
-                    ->searchable(),
+                    ->searchable()
+                    ->formatStateUsing(fn (?string $state, UserSetting $record): string => UserSetting::labelFor($record->setting_key, $state)),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

@@ -1,4 +1,4 @@
-import { createApp } from 'vue';
+import { createApp, watchEffect } from 'vue';
 import { createPinia } from 'pinia';
 import { createRouter, createWebHistory } from 'vue-router';
 import { DefaultApolloClient } from '@vue/apollo-composable';
@@ -35,6 +35,28 @@ app.use(router);
 app.provide(DefaultApolloClient, apolloClient);
 
 const auth = useAuthStore(pinia);
+const themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+function applyTheme() {
+    const theme = auth.user?.settings?.theme ?? 'system';
+    const prefersDark = themeMediaQuery.matches;
+    const useDarkTheme = theme === 'dark' || (theme === 'system' && prefersDark);
+
+    document.documentElement.classList.toggle('dark', useDarkTheme);
+    document.documentElement.style.colorScheme = useDarkTheme ? 'dark' : 'light';
+}
+
+watchEffect(() => {
+    const language = auth.user?.settings?.language === 'it' ? 'it' : 'en';
+    document.documentElement.lang = language;
+    applyTheme();
+});
+
+if (typeof themeMediaQuery.addEventListener === 'function') {
+    themeMediaQuery.addEventListener('change', applyTheme);
+} else if (typeof themeMediaQuery.addListener === 'function') {
+    themeMediaQuery.addListener(applyTheme);
+}
 
 if (auth.isAuthenticated) {
     auth.fetchCurrentUser().finally(() => {

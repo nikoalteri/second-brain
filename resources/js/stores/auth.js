@@ -48,6 +48,20 @@ export const useAuthStore = defineStore('auth', () => {
         void clearApolloCache();
     }
 
+    function updateUserSettings(settings) {
+        if (!user.value) {
+            return;
+        }
+
+        setUser({
+            ...user.value,
+            settings: {
+                ...(user.value.settings ?? {}),
+                ...settings,
+            },
+        });
+    }
+
     async function fetchCurrentUser() {
         if (!accessToken.value) {
             setUser(null);
@@ -134,5 +148,6 @@ export const useAuthStore = defineStore('auth', () => {
         setUser,
         clearTokens,
         fetchCurrentUser,
+        updateUserSettings,
     };
 });

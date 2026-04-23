@@ -31,6 +31,10 @@ class UserSettingResourceTest extends TestCase
         $response->assertOk()
             ->assertSee('User')
             ->assertSee('Setting key')
-            ->assertSee('Setting value');
+            ->assertSee('Setting value')
+            ->assertSee('Theme')
+            ->assertSee('Language')
+            ->assertSee('Notifications')
+            ->assertSee('Privacy');
     }
 }

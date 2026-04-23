@@ -12,12 +12,14 @@ import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
 import { useToast } from '@/composables/useToast.js';
+import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const { formatCurrency } = useCurrency();
 const { addToast } = useToast();
+const { locale } = useUserPreferences();
 const auth = useAuthStore();
 
 const report = ref(null);
@@ -48,8 +50,8 @@ const detailState = ref({
 });
 
 const months = Array.from({ length: 12 }, (_, index) => index + 1);
-const monthFormatter = new Intl.DateTimeFormat('en', { month: 'short' });
-const monthLabelFormatter = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' });
+const monthFormatter = computed(() => new Intl.DateTimeFormat(locale.value, { month: 'short' }));
+const monthLabelFormatter = computed(() => new Intl.DateTimeFormat(locale.value, { month: 'long', year: 'numeric' }));
 const pieColors = ['#3b82f6', '#f97316', '#22c55e', '#a855f7', '#ef4444', '#eab308', '#14b8a6', '#ec4899', '#64748b', '#f43f5e'];
 
 const years = computed(() => report.value?.years ?? []);
@@ -98,11 +100,11 @@ const pieOptions = {
 };
 
 function getMonthName(month) {
-    return monthFormatter.format(new Date(2024, month - 1, 1));
+    return monthFormatter.value.format(new Date(2024, month - 1, 1));
 }
 
 function getMonthLabel(month) {
-    return monthLabelFormatter.format(new Date(selectedYear.value ?? new Date().getFullYear(), month - 1, 1));
+    return monthLabelFormatter.value.format(new Date(selectedYear.value ?? new Date().getFullYear(), month - 1, 1));
 }
 
 function authHeaders(extra = {}) {

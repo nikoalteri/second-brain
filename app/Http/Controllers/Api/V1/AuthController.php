@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,19 +15,6 @@ use Illuminate\Support\Facades\Auth;
  */
 class AuthController extends Controller
 {
-    private function serializeUser(User $user): array
-    {
-        $roles = $user->getRoleNames()->values()->all();
-
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'roles' => $roles,
-            'is_admin' => in_array('superadmin', $roles, true),
-        ];
-    }
-
     /**
      * Authenticate user and issue access + refresh tokens.
      *
@@ -58,7 +44,7 @@ class AuthController extends Controller
             'refresh_token' => $refresh->plainTextToken,
             'token_type'    => 'Bearer',
             'expires_in'    => 1800,
-            'user'          => $this->serializeUser($user),
+            'user'          => $user->toFrontendPayload(),
         ]);
     }
 
@@ -84,7 +70,7 @@ class AuthController extends Controller
             'access_token' => $access->plainTextToken,
             'token_type'   => 'Bearer',
             'expires_in'   => 1800,
-            'user'         => $this->serializeUser($user),
+            'user'         => $user->toFrontendPayload(),
         ]);
     }
 
@@ -100,7 +86,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'user' => $this->serializeUser($user),
+            'user' => $user->toFrontendPayload(),
         ]);
     }
 

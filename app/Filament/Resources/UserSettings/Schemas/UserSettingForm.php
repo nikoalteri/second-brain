@@ -2,9 +2,9 @@
 
 namespace App\Filament\Resources\UserSettings\Schemas;
 
+use App\Models\UserSetting;
 use App\Models\User;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
 
 class UserSettingForm
@@ -21,17 +21,15 @@ class UserSettingForm
                     ->required(),
                 Select::make('setting_key')
                     ->label('Setting key')
-                    ->options([
-                        'theme' => 'Theme',
-                        'language' => 'Language',
-                        'notifications' => 'Notifications',
-                        'privacy' => 'Privacy',
-                    ])
+                    ->options(UserSetting::keyLabels())
+                    ->live()
                     ->required(),
-                TextInput::make('setting_value')
+                Select::make('setting_value')
                     ->label('Setting value')
-                    ->helperText('Examples: dark, en, enabled, private')
-                    ->maxLength(255),
+                    ->options(fn (callable $get): array => UserSetting::optionsFor((string) $get('setting_key')))
+                    ->helperText(fn (callable $get): ?string => UserSetting::helperTextFor((string) $get('setting_key')))
+                    ->disabled(fn (callable $get): bool => blank($get('setting_key')))
+                    ->required(),
             ]);
     }
 }

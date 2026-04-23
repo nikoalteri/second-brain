@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api;
 
 use App\Models\Account;
+use App\Models\UserSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -30,12 +31,16 @@ class AuthApiTest extends TestCase
                 'refresh_token',
                 'token_type',
                 'expires_in',
-                'user' => ['id', 'name', 'email', 'roles', 'is_admin'],
+                'user' => ['id', 'name', 'email', 'roles', 'is_admin', 'settings'],
             ])
             ->assertJsonPath('token_type', 'Bearer')
             ->assertJsonPath('expires_in', 1800)
             ->assertJsonPath('user.email', $user->email)
-            ->assertJsonPath('user.is_admin', false);
+            ->assertJsonPath('user.is_admin', false)
+            ->assertJsonPath('user.settings.theme', 'system')
+            ->assertJsonPath('user.settings.language', 'en')
+            ->assertJsonPath('user.settings.notifications', 'all')
+            ->assertJsonPath('user.settings.privacy', 'visible');
 
         $this->assertNotEmpty($response->json('access_token'));
         $this->assertNotEmpty($response->json('refresh_token'));
@@ -123,7 +128,65 @@ class AuthApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('user.email', $user->email)
             ->assertJsonPath('user.is_admin', true)
-            ->assertJsonPath('user.roles.0', 'superadmin');
+            ->assertJsonPath('user.roles.0', 'superadmin')
+            ->assertJsonPath('user.settings.theme', 'system')
+            ->assertJsonPath('user.settings.language', 'en');
+    }
+
+    public function test_authenticated_user_can_update_frontend_settings(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/settings', [
+            'theme' => 'dark',
+            'language' => 'it',
+            'notifications' => 'important_only',
+            'privacy' => 'private',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('user.settings.theme', 'dark')
+            ->assertJsonPath('user.settings.language', 'it')
+            ->assertJsonPath('user.settings.notifications', 'important_only')
+            ->assertJsonPath('user.settings.privacy', 'private');
+
+        $this->assertDatabaseHas('user_settings', [
+            'user_id' => $user->id,
+            'setting_key' => UserSetting::KEY_THEME,
+            'setting_value' => 'dark',
+        ]);
+        $this->assertDatabaseHas('user_settings', [
+            'user_id' => $user->id,
+            'setting_key' => UserSetting::KEY_LANGUAGE,
+            'setting_value' => 'it',
+        ]);
+        $this->assertDatabaseHas('user_settings', [
+            'user_id' => $user->id,
+            'setting_key' => UserSetting::KEY_NOTIFICATIONS,
+            'setting_value' => 'important_only',
+        ]);
+        $this->assertDatabaseHas('user_settings', [
+            'user_id' => $user->id,
+            'setting_key' => UserSetting::KEY_PRIVACY,
+            'setting_value' => 'private',
+        ]);
+    }
+
+    public function test_authenticated_user_settings_rejects_invalid_values(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/settings', [
+            'theme' => 'auto',
+            'language' => 'fr',
+            'notifications' => 'all',
+            'privacy' => 'visible',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['theme', 'language']);
     }
 
     public function test_unauthenticated_request_to_protected_route_returns_401_json(): void

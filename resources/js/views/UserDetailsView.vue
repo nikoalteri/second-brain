@@ -2,12 +2,16 @@
 import { computed } from 'vue';
 import { ArrowTopRightOnSquareIcon, UserCircleIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const auth = useAuthStore();
+const { profileIsPrivate } = useUserPreferences();
 
 const user = computed(() => auth.user ?? {});
 const roles = computed(() => user.value.roles ?? []);
+const emailDisplay = computed(() => profileIsPrivate.value ? 'Hidden by privacy setting' : (user.value.email ?? 'No email available'));
+const userIdDisplay = computed(() => profileIsPrivate.value ? 'Hidden by privacy setting' : (user.value.id ?? '—'));
 const initials = computed(() => {
     const name = user.value.name?.trim();
 
@@ -21,6 +25,7 @@ const initials = computed(() => {
         .map((part) => part.charAt(0).toUpperCase())
         .join('');
 });
+
 </script>
 
 <template>
@@ -39,14 +44,14 @@ const initials = computed(() => {
 
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">{{ user.name ?? 'User' }}</h2>
-                        <p class="mt-1 text-sm text-gray-500">{{ user.email ?? 'No email available' }}</p>
+                        <p class="mt-1 text-sm text-gray-500">{{ emailDisplay }}</p>
                     </div>
                 </div>
 
                 <dl class="mt-8 grid gap-4 sm:grid-cols-2">
                     <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">User ID</dt>
-                        <dd class="mt-2 text-sm font-medium text-gray-900">{{ user.id ?? '—' }}</dd>
+                        <dd class="mt-2 text-sm font-medium text-gray-900">{{ userIdDisplay }}</dd>
                     </div>
                     <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Frontend access</dt>
@@ -98,6 +103,14 @@ const initials = computed(() => {
                             class="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
                         >
                             <span>Back to dashboard</span>
+                            <span aria-hidden="true">→</span>
+                        </router-link>
+
+                        <router-link
+                            to="/settings"
+                            class="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                        >
+                            <span>Open settings</span>
                             <span aria-hidden="true">→</span>
                         </router-link>
                     </div>

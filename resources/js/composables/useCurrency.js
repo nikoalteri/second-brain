@@ -1,6 +1,10 @@
+import { useUserPreferences } from '@/composables/useUserPreferences.js';
+
 export function useCurrency() {
+    const { locale } = useUserPreferences();
+
     function formatCurrency(amount, currency = 'EUR') {
-        return new Intl.NumberFormat('it-IT', {
+        return new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency,
             minimumFractionDigits: 2,

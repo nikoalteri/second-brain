@@ -20,12 +20,14 @@ import KpiCard from '@/components/ui/KpiCard.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
 import { useToast } from '@/composables/useToast.js';
+import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Title, Tooltip, Legend);
 
 const { formatCurrency } = useCurrency();
 const { addToast } = useToast();
+const { locale } = useUserPreferences();
 const auth = useAuthStore();
 const now = new Date();
 const year = now.getFullYear();
@@ -38,7 +40,7 @@ const chartsLoading = ref(false);
 const budgetAlertsLoading = ref(false);
 const budgetAlerts = ref([]);
 const dashboardCharts = ref({
-    month_label: now.toLocaleString('en-US', { month: 'long' }),
+    month_label: now.toLocaleString(locale.value, { month: 'long' }),
     cashflow: {
         income: 0,
         expenses: 0,
@@ -66,8 +68,8 @@ const totalPayments = computed(() => cashflow.value.payments ?? 0);
 const totalOutflow = computed(() => totalExpense.value + totalPayments.value);
 const netCashflow = computed(() => cashflow.value.net ?? (totalIncome.value - totalExpense.value - totalPayments.value));
 const loading = computed(() => chartsLoading.value || accountsLoading.value || upcomingLoading.value);
-const monthLabel = computed(() => dashboardCharts.value.month_label ?? now.toLocaleString('en-US', { month: 'long' }));
-const budgetMonthLabel = computed(() => now.toLocaleString('en-US', { month: 'long', year: 'numeric' }));
+const monthLabel = computed(() => dashboardCharts.value.month_label ?? now.toLocaleString(locale.value, { month: 'long' }));
+const budgetMonthLabel = computed(() => now.toLocaleString(locale.value, { month: 'long', year: 'numeric' }));
 const accountCount = computed(() => accounts.value.length);
 const upcomingCount = computed(() => upcomingPayments.value.length);
 const upcomingDueTotal = computed(() =>
@@ -379,7 +381,7 @@ async function fetchUpcomingPayments() {
 async function fetchDashboardCharts() {
     if (!auth.accessToken) {
         dashboardCharts.value = {
-            month_label: now.toLocaleString('en-US', { month: 'long' }),
+            month_label: now.toLocaleString(locale.value, { month: 'long' }),
             cashflow: {
                 income: 0,
                 expenses: 0,
@@ -404,7 +406,7 @@ async function fetchDashboardCharts() {
 
         if (!response.ok) {
             dashboardCharts.value = {
-                month_label: now.toLocaleString('en-US', { month: 'long' }),
+                month_label: now.toLocaleString(locale.value, { month: 'long' }),
                 cashflow: {
                     income: 0,
                     expenses: 0,

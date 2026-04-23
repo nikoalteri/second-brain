@@ -111,4 +111,40 @@ class User extends Authenticatable implements FilamentUser
                 || $this->getAllPermissions()->contains('name', 'module.adminpanel')
             );
     }
+
+    public function resolvedSettings(): array
+    {
+        $settings = $this->relationLoaded('userSettings')
+            ? $this->userSettings
+            : $this->userSettings()->get();
+
+        $resolved = UserSetting::DEFAULTS;
+
+        foreach ($settings as $setting) {
+            if (! in_array($setting->setting_key, UserSetting::activeKeys(), true)) {
+                continue;
+            }
+
+            $resolved[$setting->setting_key] = UserSetting::normalizeValue(
+                $setting->setting_key,
+                $setting->setting_value,
+            );
+        }
+
+        return $resolved;
+    }
+
+    public function toFrontendPayload(): array
+    {
+        $roles = $this->getRoleNames()->values()->all();
+
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'roles' => $roles,
+            'is_admin' => in_array('superadmin', $roles, true),
+            'settings' => $this->resolvedSettings(),
+        ];
+    }
 }
