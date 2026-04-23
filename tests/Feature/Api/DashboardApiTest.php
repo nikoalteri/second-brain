@@ -144,6 +144,10 @@ class DashboardApiTest extends TestCase
             ['name' => 'Credit Card payment'],
             ['is_income' => false]
         );
+        $genericPaymentType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Payment'],
+            ['is_income' => false]
+        );
         $card = CreditCard::factory()->create([
             'user_id' => $user->id,
             'account_id' => $account->id,
@@ -184,9 +188,20 @@ class DashboardApiTest extends TestCase
             'user_id' => $user->id,
             'account_id' => $account->id,
             'transaction_type_id' => $paymentType->id,
+            'transaction_category_id' => null,
             'credit_card_payment_id' => $cardPayment->id,
             'amount' => -180,
             'date' => now()->startOfMonth()->addDays(5)->toDateString(),
+        ]);
+
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $genericPaymentType->id,
+            'transaction_category_id' => null,
+            'description' => 'Manual payment',
+            'amount' => -90,
+            'date' => now()->startOfMonth()->addDays(6)->toDateString(),
         ]);
 
         Sanctum::actingAs($user);
@@ -201,14 +216,60 @@ class DashboardApiTest extends TestCase
             ->assertJsonPath('data.month_label', now()->format('F'))
             ->assertJsonPath('data.cashflow.income', 1500)
             ->assertJsonPath('data.cashflow.expenses', 320)
-            ->assertJsonPath('data.cashflow.payments', 180)
-            ->assertJsonPath('data.cashflow.net', 1000)
+            ->assertJsonPath('data.cashflow.payments', 270)
+            ->assertJsonPath('data.cashflow.net', 910)
             ->assertJsonPath('data.expense_categories.0.category', 'Groceries')
             ->assertJsonPath('data.expense_categories.0.total', 320)
             ->assertJsonPath('data.expense_categories.1.category', 'Credit card payments')
             ->assertJsonPath('data.expense_categories.1.total', 180)
+            ->assertJsonMissing(['category' => 'Uncategorised', 'total' => 90.0])
             ->assertJsonCount(12, 'data.net_worth_trend')
             ->assertJsonPath('data.net_worth_trend.10.value', 0)
-            ->assertJsonPath('data.net_worth_trend.11.value', 1000);
+            ->assertJsonPath('data.net_worth_trend.11.value', 910);
+    }
+
+    public function test_dashboard_charts_keeps_shared_category_names_for_pie_data(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-23'));
+
+        $user = User::factory()->create();
+        $owner = User::factory()->create();
+        $account = Account::factory()->create([
+            'user_id' => $user->id,
+            'opening_balance' => 0,
+            'balance' => 0,
+            'type' => 'checking',
+            'created_at' => now()->startOfMonth(),
+        ]);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false]
+        );
+        $sharedCategory = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $owner->id,
+            'name' => 'Shared groceries',
+        ]);
+
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $sharedCategory->id,
+            'amount' => -125,
+            'date' => now()->startOfMonth()->addDays(4)->toDateString(),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson(sprintf(
+            '/api/v1/dashboard/charts?year=%d&month=%d',
+            now()->year,
+            now()->month,
+        ));
+
+        $response->assertOk()
+            ->assertJsonPath('data.expense_categories.0.category', 'Shared groceries')
+            ->assertJsonPath('data.expense_categories.0.total', 125);
     }
 }

@@ -88,8 +88,15 @@ const loanDueCount = computed(() => upcomingPayments.value.filter((payment) => p
 const creditCardDueCount = computed(() => upcomingPayments.value.filter((payment) => payment.type === 'credit-card').length);
 const subscriptionDueCount = computed(() => upcomingPayments.value.filter((payment) => payment.type === 'subscription').length);
 const nextDuePayment = computed(() => upcomingPayments.value[0] ?? null);
+const specialHighlightCategories = ['Uncategorised', 'Credit card payments'];
+const categorizedSpending = computed(() =>
+    categories.value.filter((category) => !specialHighlightCategories.includes(category.category)),
+);
+const creditCardPaymentHighlight = computed(() =>
+    categories.value.find((category) => category.category === 'Credit card payments') ?? null,
+);
 const topCategories = computed(() =>
-    [...categories.value]
+    [...categorizedSpending.value]
         .sort((left, right) => (right.total ?? 0) - (left.total ?? 0))
         .slice(0, 5)
 );
@@ -97,12 +104,15 @@ const topCategory = computed(() => topCategories.value[0] ?? null);
 const topCategoryMax = computed(() =>
     topCategories.value.length ? Math.max(...topCategories.value.map((category) => category.total ?? 0)) : 0
 );
+const categorizedSpendingTotal = computed(() =>
+    categorizedSpending.value.reduce((sum, category) => sum + (category.total ?? 0), 0),
+);
 const topCategoryShare = computed(() => {
-    if (!topCategory.value || totalExpense.value <= 0) {
+    if (!topCategory.value || categorizedSpendingTotal.value <= 0) {
         return 0;
     }
 
-    return (topCategory.value.total ?? 0) / totalExpense.value;
+    return (topCategory.value.total ?? 0) / categorizedSpendingTotal.value;
 });
 const categoryTransactionCount = computed(() =>
     categories.value.reduce((sum, category) => sum + (category.count ?? 0), 0)
@@ -151,12 +161,12 @@ const expenseChartColors = [
 ];
 
 const expenseBreakdownChartData = computed(() => ({
-    labels: categories.value.map((category) => category.category),
+    labels: categorizedSpending.value.map((category) => category.category),
     datasets: [
         {
             label: 'Amount',
-            data: categories.value.map((category) => category.total ?? 0),
-            backgroundColor: categories.value.map((_, index) => expenseChartColors[index % expenseChartColors.length]),
+            data: categorizedSpending.value.map((category) => category.total ?? 0),
+            backgroundColor: categorizedSpending.value.map((_, index) => expenseChartColors[index % expenseChartColors.length]),
             borderColor: '#ffffff',
             borderWidth: 2,
         },
@@ -699,9 +709,28 @@ onMounted(() => {
                         <h2 class="text-lg font-semibold text-gray-900">Spending highlights</h2>
                         <p class="mt-1 text-sm text-gray-500">The Filament-style category breakdown plus the largest expense buckets for this month.</p>
 
-                        <div v-if="topCategories.length" class="mt-4 space-y-4">
-                            <div class="h-64 rounded-xl bg-gray-50 p-4">
+                        <div class="mt-4 space-y-4">
+                            <div v-if="categorizedSpending.length" class="h-64 rounded-xl bg-gray-50 p-4">
                                 <Doughnut :data="expenseBreakdownChartData" :options="expenseBreakdownChartOptions" />
+                            </div>
+                            <div
+                                v-else
+                                class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-500"
+                            >
+                                No categorized expense data yet for this month.
+                            </div>
+
+                            <div
+                                v-if="creditCardPaymentHighlight"
+                                class="rounded-xl border border-amber-200 bg-amber-50 p-4"
+                            >
+                                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Credit card payments</p>
+                                <div class="mt-2 flex items-end justify-between gap-3">
+                                    <p class="text-base font-semibold text-gray-900">Kept separate from the category pie chart</p>
+                                    <p class="font-mono text-lg font-semibold text-amber-700">
+                                        {{ formatCurrency(creditCardPaymentHighlight.total) }}
+                                    </p>
+                                </div>
                             </div>
 
                             <div v-if="topCategory" class="rounded-xl bg-gray-50 p-4">
@@ -724,10 +753,6 @@ onMounted(() => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div v-else class="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-500">
-                            No categorized expense data yet for this month.
                         </div>
                     </div>
                 </section>

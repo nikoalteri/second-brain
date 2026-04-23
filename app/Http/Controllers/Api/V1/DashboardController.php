@@ -172,7 +172,10 @@ class DashboardController extends Controller
     private function getExpenseCategoriesChartData(Request $request, Carbon $referenceDate): array
     {
         return Transaction::withoutGlobalScopes()
-            ->with(['category', 'type'])
+            ->with([
+                'category' => fn ($query) => $query->withoutUserScope(),
+                'type',
+            ])
             ->when(
                 ! $request->user()->hasRole('superadmin'),
                 fn ($query) => $query->where('transactions.user_id', $request->user()->id)
@@ -183,23 +186,13 @@ class DashboardController extends Controller
             ->whereNull('transactions.deleted_at')
             ->get()
             ->filter(fn (Transaction $transaction) => ! (bool) $transaction->type?->is_income)
-            ->filter(function (Transaction $transaction) {
-                if ($transaction->credit_card_payment_id) {
-                    return true;
-                }
-
-                if ($transaction->loan_payment_id || $this->isPaymentTransaction($transaction)) {
-                    return false;
-                }
-
-                return true;
-            })
+            ->filter(fn (Transaction $transaction) => $this->shouldAppearInExpenseHighlights($transaction))
             ->groupBy(function (Transaction $transaction) {
                 if ($transaction->category?->name) {
                     return $transaction->category->name;
                 }
 
-                if ($transaction->credit_card_payment_id) {
+                if ($this->isCreditCardPaymentHighlight($transaction)) {
                     return 'Credit card payments';
                 }
 
@@ -213,6 +206,36 @@ class DashboardController extends Controller
             ->sortByDesc('total')
             ->values()
             ->toArray();
+    }
+
+    private function shouldAppearInExpenseHighlights(Transaction $transaction): bool
+    {
+        if ($this->isCreditCardPaymentHighlight($transaction)) {
+            return true;
+        }
+
+        if ($transaction->loan_payment_id || $this->isPaymentLikeTransaction($transaction)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function isCreditCardPaymentHighlight(Transaction $transaction): bool
+    {
+        return (bool) $transaction->credit_card_payment_id;
+    }
+
+    private function isPaymentLikeTransaction(Transaction $transaction): bool
+    {
+        $typeName = strtolower(trim((string) ($transaction->type?->name ?? '')));
+        $description = strtolower(trim((string) $transaction->description));
+
+        if ($typeName !== '' && str_contains($typeName, 'payment')) {
+            return true;
+        }
+
+        return $description !== '' && str_contains($description, 'payment');
     }
 
     private function getNetWorthTrendChartData(Request $request, Carbon $referenceDate): array
