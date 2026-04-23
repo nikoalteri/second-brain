@@ -3,12 +3,22 @@
     {{-- SELETTORE ANNO --}}
     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
         <h2 style="font-size: 1.5rem; font-weight: bold; margin: 0;">📊 Report Finance {{ $selectedYear }}</h2>
-        <div style="border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; padding: 0.25rem 0.5rem;">
-            <select wire:model.live="selectedYear" style="border: none; font-size: 1rem; outline: none;">
-                @foreach ($years as $year)
-                    <option value="{{ $year }}">{{ $year }}</option>
-                @endforeach
-            </select>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <div style="border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; padding: 0.25rem 0.5rem;">
+                <select wire:model.live="selectedYear" style="border: none; font-size: 1rem; outline: none;">
+                    @foreach ($years as $year)
+                        <option value="{{ $year }}">{{ $year }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <a href="{{ $this->getExportUrl('csv') }}" target="_blank"
+                    style="display: inline-flex; align-items: center; padding: 0.45rem 0.8rem; border-radius: 0.375rem; background: #111827; color: white; text-decoration: none; font-size: 0.875rem;">CSV</a>
+                <a href="{{ $this->getExportUrl('xlsx') }}" target="_blank"
+                    style="display: inline-flex; align-items: center; padding: 0.45rem 0.8rem; border-radius: 0.375rem; background: #1d4ed8; color: white; text-decoration: none; font-size: 0.875rem;">XLSX</a>
+                <a href="{{ $this->getExportUrl('pdf') }}" target="_blank"
+                    style="display: inline-flex; align-items: center; padding: 0.45rem 0.8rem; border-radius: 0.375rem; background: #7c3aed; color: white; text-decoration: none; font-size: 0.875rem;">PDF</a>
+            </div>
         </div>
     </div>
 
@@ -52,6 +62,73 @@
                     @endforeach
                 </select>
             </div>
+        </div>
+    </div>
+
+    @php
+        $budgetOverview = $this->getBudgetOverview();
+    @endphp
+    <div
+        style="margin-bottom: 1.5rem; background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <div>
+                <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: #111827;">Budget Status</h3>
+                <p style="margin: 0.25rem 0 0; color: #6b7280; font-size: 0.875rem;">Budgets use actual monthly spend and ignore report filters.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <label style="font-size: 0.875rem; font-weight: 600; color: #374151;">Budget Month</label>
+                <div style="border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; padding: 0.25rem 0.5rem;">
+                    <select wire:model.live="selectedBudgetMonth" style="border: none; font-size: 0.875rem; outline: none;">
+                        @for ($month = 1; $month <= 12; $month++)
+                            <option value="{{ $month }}">{{ \Carbon\Carbon::create($selectedYear, $month, 1)->translatedFormat('F') }}</option>
+                        @endfor
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead>
+                    <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                        <th style="padding: 0.75rem; text-align: left;">Category</th>
+                        <th style="padding: 0.75rem; text-align: left;">Budget</th>
+                        <th style="padding: 0.75rem; text-align: right;">Spent</th>
+                        <th style="padding: 0.75rem; text-align: right;">Usage</th>
+                        <th style="padding: 0.75rem; text-align: left;">Status</th>
+                        <th style="padding: 0.75rem; text-align: left;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($budgetOverview['categories'] as $category)
+                        <tr style="border-bottom: 1px solid #f3f4f6;">
+                            <td style="padding: 0.75rem;">
+                                <div style="font-weight: 600; color: #111827;">{{ $category['name'] }}</div>
+                                <div style="font-size: 0.75rem; color: #6b7280;">{{ $category['parent_name'] ?? 'Uncategorized' }}</div>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <input type="number" step="0.01" min="0" wire:model.live="budgetInputs.{{ $category['transaction_category_id'] }}"
+                                    style="width: 110px; border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.4rem 0.5rem; font-size: 0.85rem;">
+                            </td>
+                            <td style="padding: 0.75rem; text-align: right; font-family: monospace;">€{{ number_format($category['spent_amount'], 2, ',', '.') }}</td>
+                            <td style="padding: 0.75rem; text-align: right; font-family: monospace;">{{ $this->getBudgetUsageLabel($category['usage_ratio']) }}</td>
+                            <td style="padding: 0.75rem;">
+                                <span style="display: inline-flex; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: lowercase; background: {{ $this->getBudgetStatusColor($category['alert_status']) }}15; color: {{ $this->getBudgetStatusColor($category['alert_status']) }};">
+                                    {{ $category['alert_status'] }}
+                                </span>
+                            </td>
+                            <td style="padding: 0.75rem;">
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <button type="button" wire:click="saveBudget({{ $category['transaction_category_id'] }})"
+                                        style="border: none; border-radius: 0.375rem; background: #111827; color: white; padding: 0.4rem 0.7rem; font-size: 0.8rem; cursor: pointer;">Save</button>
+                                    <button type="button" wire:click="clearBudget({{ $category['transaction_category_id'] }})"
+                                        style="border: 1px solid #d1d5db; border-radius: 0.375rem; background: white; color: #374151; padding: 0.4rem 0.7rem; font-size: 0.8rem; cursor: pointer;">Clear</button>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
 

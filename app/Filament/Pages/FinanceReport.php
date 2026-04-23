@@ -2,17 +2,22 @@
 
 namespace App\Filament\Pages;
 
+use App\Services\BudgetService;
 use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Pages\Page;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class FinanceReport extends Page
 {
     protected string $view = 'filament.pages.finance-report';
 
     public int $selectedYear = 2026;
+    public int $selectedBudgetMonth = 1;
     public array $years = [];
+    public array $budgetInputs = [];
 
     public function getTitle(): string
     {
@@ -57,11 +62,22 @@ class FinanceReport extends Page
         $this->years = app(\App\Services\FinanceReportService::class)
             ->loadYears(Auth::id());
         $this->selectedYear = $this->years[0] ?? now()->year;
+        $this->selectedBudgetMonth = (int) now()->month;
     }
 
     public function getHeaderActions(): array
     {
-        return [];
+        return [
+            Action::make('exportCsv')
+                ->label('CSV')
+                ->url(fn (): string => $this->getExportUrl('csv'), shouldOpenInNewTab: true),
+            Action::make('exportXlsx')
+                ->label('XLSX')
+                ->url(fn (): string => $this->getExportUrl('xlsx'), shouldOpenInNewTab: true),
+            Action::make('exportPdf')
+                ->label('PDF')
+                ->url(fn (): string => $this->getExportUrl('pdf'), shouldOpenInNewTab: true),
+        ];
     }
 
     public function loadData(): void
@@ -161,49 +177,87 @@ class FinanceReport extends Page
             ->getPieData($this->selectedYear, $this->selectedTypes, $this->selectedNote, Auth::id());
     }
 
-    public function exportCsv(): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function getBudgetOverview(): array
     {
-        $pivotData = $this->getPivotData();
-        $tree = $pivotData['tree'];
-        $pivot = $pivotData['pivot'];
+        $overview = app(BudgetService::class)->getMonthlyOverview(
+            Auth::id(),
+            $this->selectedYear,
+            $this->selectedBudgetMonth,
+        );
 
-        $csv = "Finance Report - Year {$this->selectedYear}\n";
-        $csv .= "Category";
-        for ($m = 1; $m <= 12; $m++) {
-            $csv .= "," . Carbon::create(2026, $m, 1)->format('M');
-        }
-        $csv .= ",Total\n";
-
-        foreach ($tree as $parent) {
-            $parentData = $pivot[$parent['key']] ?? [];
-            $csv .= $parent['label'];
-            for ($m = 1; $m <= 12; $m++) {
-                $csv .= "," . number_format($parentData[$m] ?? 0, 2, '.', '');
-            }
-            $csv .= "," . number_format($parentData['total'] ?? 0, 2, '.', '') . "\n";
-
-            if ($parent['has_children']) {
-                foreach ($parent['children'] as $child) {
-                    $childData = $pivot[$child['key']] ?? [];
-                    $csv .= "  " . $child['label'];
-                    for ($m = 1; $m <= 12; $m++) {
-                        $csv .= "," . number_format($childData[$m] ?? 0, 2, '.', '');
-                    }
-                    $csv .= "," . number_format($childData['total'] ?? 0, 2, '.', '') . "\n";
-                }
-            }
+        foreach ($overview['categories'] as $category) {
+            $this->budgetInputs[$category['transaction_category_id']] ??= $category['budget_amount'] === null
+                ? ''
+                : number_format((float) $category['budget_amount'], 2, '.', '');
         }
 
-        return response()->streamDownload(
-            fn() => print($csv),
-            "finance-report-{$this->selectedYear}.csv",
-            ['Content-Type' => 'text/csv']
+        return $overview;
+    }
+
+    public function saveBudget(int $transactionCategoryId): void
+    {
+        $value = $this->budgetInputs[$transactionCategoryId] ?? null;
+
+        if ($value === null || $value === '') {
+            throw ValidationException::withMessages([
+                "budgetInputs.$transactionCategoryId" => 'Budget amount is required.',
+            ]);
+        }
+
+        if (! is_numeric($value) || (float) $value <= 0) {
+            throw ValidationException::withMessages([
+                "budgetInputs.$transactionCategoryId" => 'Budget amount must be greater than zero.',
+            ]);
+        }
+
+        app(BudgetService::class)->upsertMonthlyBudget(
+            Auth::id(),
+            $transactionCategoryId,
+            $this->selectedYear,
+            $this->selectedBudgetMonth,
+            (float) $value,
         );
     }
 
-    public function exportPdf(): void
+    public function clearBudget(int $transactionCategoryId): void
     {
-        // TODO: Implement PDF export using barryvdh/laravel-dompdf
-        session()->flash('warning', 'PDF export coming soon! Please use CSV export for now.');
+        app(BudgetService::class)->clearMonthlyBudget(
+            Auth::id(),
+            $transactionCategoryId,
+            $this->selectedYear,
+            $this->selectedBudgetMonth,
+        );
+
+        $this->budgetInputs[$transactionCategoryId] = '';
+    }
+
+    public function getExportUrl(string $format): string
+    {
+        return url('/api/v1/reports/finance/export?' . http_build_query(array_filter([
+            'year' => $this->selectedYear,
+            'types' => $this->selectedTypes,
+            'note' => $this->selectedNote,
+            'format' => $format,
+        ], static fn (mixed $value): bool => $value !== null && $value !== [] && $value !== '')));
+    }
+
+    public function getBudgetStatusColor(string $status): string
+    {
+        return match ($status) {
+            'warning' => '#d97706',
+            'exceeded' => '#dc2626',
+            'critical' => '#991b1b',
+            'ok' => '#16a34a',
+            default => '#6b7280',
+        };
+    }
+
+    public function getBudgetUsageLabel(?float $usageRatio): string
+    {
+        if ($usageRatio === null) {
+            return '—';
+        }
+
+        return number_format($usageRatio * 100, 1, '.', '') . '%';
     }
 }

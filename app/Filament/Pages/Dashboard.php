@@ -18,6 +18,7 @@ class Dashboard extends BaseDashboard
     protected function getFooterWidgets(): array
     {
         return [
+            \App\Filament\Widgets\BudgetAlertsWidget::class,
             \App\Filament\Widgets\ExpensesByCategoryChart::class,
             \App\Filament\Widgets\NetWorthTrendChart::class,
             \App\Filament\Widgets\MonthlyCashflowChart::class,
