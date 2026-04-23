@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('budgets/monthly', [BudgetController::class, 'index']);
         Route::get('reports/finance', [FinanceReportController::class, 'summary']);
+        Route::get('reports/finance/export', [FinanceReportController::class, 'export']);
         Route::get('reports/finance/details', [FinanceReportController::class, 'details']);
     });
 

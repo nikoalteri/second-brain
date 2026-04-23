@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — Finance Backend ✅
-current_plan: 1
+current_plan: 3
 status: executing
-stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-04-22T19:27:07.575Z"
+stopped_at: Plan 08-02 completed
+last_updated: "2026-04-23T19:05:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 10
+  completed_phases: 2
+  total_plans: 17
+  completed_plans: 14
 ---
 
-# v2.0 Project State
+# v4.0 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
-**Milestone:** v2.0 (API Layer)  
-**Phases:** 6  
-**Status:** Executing Phase 07
-**Updated:** 2026-04-21
+**Milestone:** v4.0 (Advanced Analytics)  
+**Phases:** 2  
+**Status:** Executing Phase 08
+**Updated:** 2026-04-23
 
 ---
 
@@ -39,33 +39,26 @@ All finance backend phases delivered:
 - Phase 4: Credit Cards ✅
 - Phase 5: Finance Dashboard & Reports ✅
 
-## Current Phase: 6 — API Layer
+## Current Phase: 8 — Budget Planning & Exports
 
-**Goal:** REST + GraphQL API with JWT auth, rate limiting, and OpenAPI docs.
+**Goal:** Add optional category budgets, in-app budget alerts, and full report exports for existing finance report data.
 
-**Current Plan:** 1
+**Current Plan:** 3
 
 ### Plans:
 
-- Plan 1: API Foundation — Config Fixes, Package Installation, Rate Limiters ✅
-- Plan 2: Auth + Error Handling ✅
-- Plan 3: Accounts & Transactions REST endpoints ✅
-- Plan 4: Loans, Credit Cards & Subscriptions REST endpoints ✅
-- Plan 5: GraphQL API
-- Plan 6: API Documentation
-- Plan 7: Tests
+- Plan 08-01 completed: monthly budget backend, alert service, and budget API
+- Plan 08-02 completed: shared finance report export backend for CSV, XLSX, and PDF
+- Plan 08-03 next: Filament budget surfaces and export wiring
 
 ## Decisions
 
-- **2026-04-21:** Set Sanctum token expiration to 30 minutes (security default)
-- **2026-04-21:** Named rate limiters registered in AppServiceProvider: api-read (100/min), api-write (20/min)
-- **2026-04-21:** Lighthouse guards set to ['sanctum'] for Bearer token auth in GraphQL
-- [Phase 06]: Renamed Subscription type to ServiceSubscription to avoid Lighthouse built-in Subscription conflict
-- [Phase 06]: Replaced @scope directive with HasUserScoping global scope on all 5 finance models (Lighthouse 6 @scope is argument-only)
-- [Phase 06]: Used type=laravel for Scribe so /docs route is served via Blade; copied openapi.yaml to public/docs/ for static access
-- [Phase 06]: Cross-user access returns 404 not 403 due to HasUserScoping global scope filtering at route model binding
+- **2026-04-23:** Phase 8 budgets use monthly leaf-category budgets and are optional
+- **2026-04-23:** Budget alerts are in-app only with 80/100/120 thresholds
+- **2026-04-23:** Phase 8 exports cover existing finance report data via PDF, CSV, and Excel
+- **2026-04-23:** Forecasting is out of scope for the project and should be removed from roadmap wording
 
 ## Last Session
 
-**Stopped at:** Phase 7 UI-SPEC approved
-**Timestamp:** 2026-04-21T21:30:00Z
+**Stopped at:** Plan 08-02 completed
+**Timestamp:** 2026-04-23T19:05:00Z

@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Services\FinanceReportExportService;
+use App\Services\FinanceReportSnapshotService;
 use App\Services\FinanceReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class FinanceReportController extends Controller
 {
     public function __construct(
         private readonly FinanceReportService $financeReportService,
+        private readonly FinanceReportSnapshotService $financeReportSnapshotService,
+        private readonly FinanceReportExportService $financeReportExportService,
     ) {
     }
 
@@ -77,5 +82,35 @@ class FinanceReportController extends Controller
             ])->values(),
             'total' => (float) $transactions->sum('amount'),
         ]);
+    }
+
+    public function export(Request $request): Response
+    {
+        $validated = $request->validate([
+            'year' => ['nullable', 'integer', 'min:2000', 'max:2100'],
+            'types' => ['nullable', 'array'],
+            'types.*' => ['integer'],
+            'note' => ['nullable', 'string'],
+            'format' => ['required', 'in:csv,xlsx,pdf'],
+        ]);
+
+        $userId = $request->user()->hasRole('superadmin')
+            ? null
+            : $request->user()->id;
+
+        $years = $this->financeReportService->loadYears($userId);
+        $year = (int) ($validated['year'] ?? ($years[0] ?? now()->year));
+
+        $snapshot = $this->financeReportSnapshotService->build(
+            $year,
+            $validated['types'] ?? [],
+            $validated['note'] ?? null,
+            $userId,
+        );
+
+        return $this->financeReportExportService->export(
+            $snapshot,
+            $validated['format'],
+        );
     }
 }
