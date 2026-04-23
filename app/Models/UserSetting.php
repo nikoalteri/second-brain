@@ -102,14 +102,4 @@ class UserSetting extends Model
         return self::optionsFor($key)[$value ?? ''] ?? self::normalizeValue($key, $value);
     }
 
-    public static function helperTextFor(string $key): ?string
-    {
-        return match ($key) {
-            self::KEY_THEME => 'Choose light, dark, or follow the operating system preference.',
-            self::KEY_LANGUAGE => 'Controls currency and month formatting across the SPA.',
-            self::KEY_NOTIFICATIONS => 'Choose whether success toasts appear or only blocking errors remain visible.',
-            self::KEY_PRIVACY => 'Hide or show your email address and user ID on the profile page.',
-            default => null,
-        };
-    }
 }

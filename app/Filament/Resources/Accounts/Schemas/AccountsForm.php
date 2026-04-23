@@ -37,16 +37,14 @@ class AccountsForm
                     ->numeric()
                     ->prefix('€')
                     ->disabled()
-                    ->dehydrated(false)
-                    ->helperText('Calculated automatically by the system'),
+                    ->dehydrated(false),
                 TextInput::make('opening_balance')
                     ->label('Opening Balance')
                     ->numeric()
                     ->prefix('€')
                     ->default(0)
                     ->minValue(null)
-                    ->rules(['nullable', 'numeric'])
-                    ->helperText('Balance at the time of system adoption'),
+                    ->rules(['nullable', 'numeric']),
                 TextInput::make('currency')
                     ->label('Currency')
                     ->required()

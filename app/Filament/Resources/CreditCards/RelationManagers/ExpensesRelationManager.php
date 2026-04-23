@@ -28,8 +28,7 @@ class ExpensesRelationManager extends RelationManager
                     ->required()
                     ->default(now()),
                 DatePicker::make('posted_at')
-                    ->label('Posted date (contabilizzazione)')
-                    ->helperText('Leave blank if same as transaction date. Used for interest calculation (Amex-style).'),
+                    ->label('Posted date (contabilizzazione)'),
                 TextInput::make('amount')
                     ->label('Amount')
                     ->numeric()

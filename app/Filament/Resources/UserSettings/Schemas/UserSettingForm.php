@@ -27,7 +27,6 @@ class UserSettingForm
                 Select::make('setting_value')
                     ->label('Setting value')
                     ->options(fn (callable $get): array => UserSetting::optionsFor((string) $get('setting_key')))
-                    ->helperText(fn (callable $get): ?string => UserSetting::helperTextFor((string) $get('setting_key')))
                     ->disabled(fn (callable $get): bool => blank($get('setting_key')))
                     ->required(),
             ]);

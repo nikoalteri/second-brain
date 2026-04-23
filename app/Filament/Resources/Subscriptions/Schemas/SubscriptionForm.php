@@ -42,16 +42,14 @@ class SubscriptionForm
                             ->numeric()
                             ->prefix('€')
                             ->step(0.01)
-                            ->required()
-                            ->helperText('Charge applied each time the subscription renews.'),
+                            ->required(),
                         TextInput::make('monthly_cost')
                             ->label('Monthly equivalent')
                             ->numeric()
                             ->prefix('€')
                             ->step(0.01)
                             ->disabled()
-                            ->dehydrated(false)
-                            ->helperText('Calculated from the renewal amount and selected frequency.'),
+                            ->dehydrated(false),
                     ])
                     ->columns(2),
 
@@ -61,12 +59,10 @@ class SubscriptionForm
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(31)
-                            ->default(1)
-                            ->helperText('Day of month for renewal'),
+                            ->default(1),
 
                         DatePicker::make('next_renewal_date')
-                            ->required()
-                            ->helperText('Next scheduled renewal'),
+                            ->required(),
                     ])
                     ->columns(2),
 
@@ -78,8 +74,7 @@ class SubscriptionForm
                             ->preload()
                             ->requiredWithout('credit_card_id')
                             ->live()
-                            ->afterStateUpdated(fn ($state, Set $set) => $state ? $set('credit_card_id', null) : null)
-                            ->helperText('Pick a bank/cash account, or leave empty and choose a credit card.'),
+                            ->afterStateUpdated(fn ($state, Set $set) => $state ? $set('credit_card_id', null) : null),
 
                         Select::make('credit_card_id')
                             ->relationship('creditCard', 'name')
@@ -87,14 +82,12 @@ class SubscriptionForm
                             ->preload()
                             ->requiredWithout('account_id')
                             ->live()
-                            ->afterStateUpdated(fn ($state, Set $set) => $state ? $set('account_id', null) : null)
-                            ->helperText('Use this when the subscription is charged directly to a credit card.'),
+                            ->afterStateUpdated(fn ($state, Set $set) => $state ? $set('account_id', null) : null),
 
                         Select::make('category_id')
                             ->relationship('category', 'name')
                             ->searchable()
-                            ->preload()
-                            ->helperText('Transaction category (optional)'),
+                            ->preload(),
                     ])
                     ->columns(3),
 
@@ -106,8 +99,7 @@ class SubscriptionForm
                             ->default(SubscriptionStatus::ACTIVE),
 
                         Toggle::make('auto_create_transaction')
-                            ->default(false)
-                            ->helperText('Auto-create transaction on renewal'),
+                            ->default(false),
                     ])
                     ->columns(2),
 

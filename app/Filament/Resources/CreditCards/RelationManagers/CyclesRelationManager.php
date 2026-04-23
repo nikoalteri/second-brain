@@ -31,17 +31,14 @@ class CyclesRelationManager extends RelationManager
             ->components([
                 DatePicker::make('period_start_date')
                     ->label('Period start')
-                    ->helperText('First day of the billing cycle.')
                     ->required()
                     ->native(false),
                 DatePicker::make('statement_date')
                     ->label('Statement date')
-                    ->helperText('Date when statement is issued (end of cycle).')
                     ->required()
                     ->native(false),
                 DatePicker::make('due_date')
                     ->label('Due date')
-                    ->helperText('Payment deadline.')
                     ->native(false),
                 TextInput::make('total_spent')
                     ->label('Total spent')

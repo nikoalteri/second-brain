@@ -148,14 +148,12 @@ class LoanForm
                             ->prefix('€')
                             ->numeric()
                             ->readOnly()
-                            ->helperText('Calculated: (Total Amount + Interest) / Total Installments')
                             ->placeholder('Auto-calculated'),
                         TextInput::make('remaining_amount')
                             ->label('Remaining Amount')
                             ->prefix('€')
                             ->numeric()
                             ->readOnly()
-                            ->helperText('Outstanding principal balance after paid installments')
                             ->placeholder('Auto-calculated'),
                         Placeholder::make('total_interest_value')
                             ->label('Total Interest (Full Loan)')

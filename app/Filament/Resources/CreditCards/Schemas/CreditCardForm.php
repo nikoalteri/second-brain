@@ -23,7 +23,6 @@ class CreditCardForm
                     ->components([
                         TextInput::make('name')
                             ->label('Name')
-                            ->helperText('Use a clear name, e.g. Bank + card nickname.')
                             ->required()
                             ->maxLength(255),
                         Select::make('account_id')
@@ -40,12 +39,10 @@ class CreditCardForm
                             )
                             ->searchable()
                             ->preload()
-                            ->helperText('This account will be charged when card payments are posted.')
                             ->required(),
                         Select::make('type')
                             ->label('Type')
                             ->options(CreditCardType::class)
-                            ->helperText('Charge: full statement payment. Revolving: fixed monthly installment with interest.')
                             ->required()
                             ->default(CreditCardType::CHARGE->value)
                             ->live()
@@ -58,12 +55,10 @@ class CreditCardForm
                         Select::make('status')
                             ->label('Status')
                             ->options(CreditCardStatus::class)
-                            ->helperText('Set Active to include the card in cycle generation and KPIs.')
                             ->required()
                             ->default(CreditCardStatus::ACTIVE->value),
                         DatePicker::make('start_date')
-                            ->label('Start date')
-                            ->helperText('Optional. If set, cycles and expenses should start from this date.'),
+                            ->label('Start date'),
                     ])
                     ->columns(2),
                 Section::make('Regole')
@@ -73,14 +68,12 @@ class CreditCardForm
                             ->numeric()
                             ->prefix('€')
                             ->step(0.01)
-                            ->helperText('Maximum facility for the card. Leave empty for unlimited credit.')
                             ->nullable(),
                         TextInput::make('fixed_payment')
                             ->label('Max monthly installment')
                             ->numeric()
                             ->prefix('€')
                             ->step(0.01)
-                            ->helperText('Maximum monthly amount for revolving cards. If residual balance is lower, the generated installment is reduced automatically.')
                             ->nullable()
                             ->live()
                             ->disabled(fn (callable $get) => $get('type') !== CreditCardType::REVOLVING->value),
@@ -89,7 +82,6 @@ class CreditCardForm
                             ->numeric()
                             ->suffix('%')
                             ->step(0.01)
-                            ->helperText('Nominal monthly interest rate applied to revolving residual balance.')
                             ->nullable()
                             ->live()
                             ->disabled(fn (callable $get) => $get('type') !== CreditCardType::REVOLVING->value),
@@ -99,25 +91,21 @@ class CreditCardForm
                             ->prefix('€')
                             ->default(0)
                             ->step(0.01)
-                            ->helperText('Fixed fee added to each statement (if applicable).')
                             ->required(),
                         TextInput::make('statement_day')
                             ->label('Statement day')
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(31)
-                            ->helperText('Day of month when the statement cycle is closed.')
                             ->required(),
                         TextInput::make('due_day')
                             ->label('Due day')
                             ->numeric()
                             ->minValue(1)
                             ->maxValue(31)
-                            ->nullable()
-                            ->helperText('Optional: leave empty if there is no due date'),
+                            ->nullable(),
                         Toggle::make('skip_weekends')
                             ->label('Skip weekends')
-                            ->helperText('If enabled, generated dates are shifted away from Saturdays and Sundays.')
                             ->default(true),
                         TextInput::make('current_balance')
                             ->label('Current balance')
@@ -125,7 +113,6 @@ class CreditCardForm
                             ->prefix('€')
                             ->step(0.01)
                             ->default(0)
-                            ->helperText('Used credit (outstanding principal). Available credit is limit minus this value.')
                             ->required(),
                     ])
                     ->columns(2),

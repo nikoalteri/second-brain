@@ -61,8 +61,7 @@ class UserForm
                     ->components([
                         Toggle::make('is_active')
                             ->label('Active account')
-                            ->default(true)
-                            ->helperText('If disabled, the user cannot log in.'),
+                            ->default(true),
                     ]),
             ]);
     }
