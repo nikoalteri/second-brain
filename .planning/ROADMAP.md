@@ -67,6 +67,17 @@ Plans:
 ### Phase 10: Localization Foundation & Shared Settings ⏳
 **Goal:** Establish the English/Italian localization infrastructure, safe fallback behavior, and one shared per-user language preference editable from both frontend and backend.
 
+**Requirements:** [I18N-01, I18N-02, I18N-03, I18N-04, I18N-12, I18N-13]
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 10-01-shared-locale-contract-PLAN.md — Freeze the en/it locale contract, English fallback, and shared settings write path
+- [ ] 10-02-backend-locale-middleware-PLAN.md — Apply the saved locale to authenticated API and Filament requests
+- [ ] 10-03-spa-i18n-foundation-PLAN.md — Bootstrap vue-i18n and sync SPA boot/settings to the shared language
+- [ ] 10-04-backend-profile-locale-settings-PLAN.md — Add a backend profile language selector that writes the same persisted setting
+- [ ] 10-05-manual-verification-PLAN.md — Verify backend/SPA language synchronization and fallback behavior manually
+
 ### Phase 11: Frontend Localization Rollout ⏳
 **Goal:** Translate the SPA's navigation, settings, finance workflows, validation copy, reports, and dashboards so the current frontend is usable in English and Italian.
 
