@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\CreditCardController;
 use App\Http\Controllers\Api\V1\CreditCardCycleController;
 use App\Http\Controllers\Api\V1\CreditCardExpenseController;
@@ -45,6 +46,7 @@ Route::prefix('v1')->group(function () {
         Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
         Route::get('subscription-frequencies', [SubscriptionFrequencyController::class, 'index']);
 
+        Route::get('budgets/monthly', [BudgetController::class, 'index']);
         Route::get('reports/finance', [FinanceReportController::class, 'summary']);
         Route::get('reports/finance/details', [FinanceReportController::class, 'details']);
     });
@@ -87,5 +89,8 @@ Route::prefix('v1')->group(function () {
         Route::put('subscriptions/{subscription}', [SubscriptionController::class, 'update']);
         Route::patch('subscriptions/{subscription}', [SubscriptionController::class, 'update']);
         Route::delete('subscriptions/{subscription}', [SubscriptionController::class, 'destroy']);
+
+        Route::put('budgets/monthly/{transactionCategory}', [BudgetController::class, 'upsert']);
+        Route::delete('budgets/monthly/{transactionCategory}', [BudgetController::class, 'destroy']);
     });
 });

@@ -108,6 +108,13 @@ class BudgetApiTest extends TestCase
             'is_active' => true,
         ]);
 
+        TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $user->id,
+            'parent_id' => $housing->id,
+            'name' => 'Rent',
+            'is_active' => true,
+        ]);
+
         Sanctum::actingAs($user);
 
         $response = $this->putJson("/api/v1/budgets/monthly/{$housing->id}", [
@@ -151,7 +158,7 @@ class BudgetApiTest extends TestCase
         $this->assertDatabaseHas('category_budgets', [
             'user_id' => $user->id,
             'transaction_category_id' => $rent->id,
-            'period_start' => '2026-04-01',
+            'period_start' => '2026-04-01 00:00:00',
             'amount' => '500.00',
         ]);
 
@@ -170,13 +177,13 @@ class BudgetApiTest extends TestCase
         $this->assertDatabaseMissing('category_budgets', [
             'user_id' => $user->id,
             'transaction_category_id' => $rent->id,
-            'period_start' => '2026-04-01',
+            'period_start' => '2026-04-01 00:00:00',
         ]);
 
         $this->assertDatabaseHas('category_budgets', [
             'user_id' => $user->id,
             'transaction_category_id' => $rent->id,
-            'period_start' => '2026-05-01',
+            'period_start' => '2026-05-01 00:00:00',
             'amount' => '450.00',
         ]);
     }
