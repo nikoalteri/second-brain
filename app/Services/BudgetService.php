@@ -6,6 +6,7 @@ use App\Models\CategoryBudget;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class BudgetService
@@ -18,12 +19,8 @@ class BudgetService
     public function getMonthlyOverview(int $userId, int $year, int $month): array
     {
         $periodStart = $this->periodStart($year, $month);
-        $categories = TransactionCategory::query()
-            ->withoutUserScope()
-            ->with('parent')
-            ->where('user_id', $userId)
-            ->where('is_active', true)
-            ->whereDoesntHave('children')
+        $categories = $this->accessibleLeafCategoriesQuery($userId)
+            ->with(['parent' => fn ($query) => $query->withoutUserScope()])
             ->orderBy('name')
             ->get();
 
@@ -60,12 +57,11 @@ class BudgetService
         ];
     }
 
-    public function findUserCategory(int $userId, int $categoryId): ?TransactionCategory
+    public function findAccessibleCategory(int $userId, int $categoryId): ?TransactionCategory
     {
-        return TransactionCategory::query()
-            ->withoutUserScope()
-            ->where('user_id', $userId)
-            ->find($categoryId);
+        return $this->accessibleLeafCategoriesQuery($userId)
+            ->whereKey($categoryId)
+            ->first();
     }
 
     public function isLeafCategory(TransactionCategory $category): bool
@@ -123,5 +119,26 @@ class BudgetService
     private function periodStart(int $year, int $month): CarbonImmutable
     {
         return CarbonImmutable::create($year, $month, 1)->startOfMonth();
+    }
+
+    private function accessibleLeafCategoriesQuery(int $userId): Builder
+    {
+        return TransactionCategory::query()
+            ->withoutUserScope()
+            ->where('is_active', true)
+            ->whereDoesntHave('children')
+            ->where(function (Builder $query) use ($userId) {
+                $query
+                    ->where('user_id', $userId)
+                    ->orWhereIn('id', function ($subQuery) use ($userId) {
+                        $subQuery
+                            ->select('transaction_category_id')
+                            ->from('transactions')
+                            ->where('user_id', $userId)
+                            ->whereNull('deleted_at')
+                            ->whereNotNull('transaction_category_id')
+                            ->where('is_transfer', false);
+                    });
+            });
     }
 }

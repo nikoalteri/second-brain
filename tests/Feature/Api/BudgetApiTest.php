@@ -187,4 +187,65 @@ class BudgetApiTest extends TestCase
             'amount' => '450.00',
         ]);
     }
+
+    public function test_budget_overview_and_upsert_allow_categories_used_by_the_users_transactions(): void
+    {
+        Carbon::setTestNow('2026-04-23 12:00:00');
+
+        $user = User::factory()->create();
+        $categoryOwner = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false],
+        );
+
+        $housing = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $categoryOwner->id,
+            'name' => 'Housing',
+            'is_active' => true,
+        ]);
+
+        $rent = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $categoryOwner->id,
+            'parent_id' => $housing->id,
+            'name' => 'Rent',
+            'is_active' => true,
+        ]);
+
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $rent->id,
+            'amount' => -150.00,
+            'date' => '2026-04-12',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $overview = $this->getJson('/api/v1/budgets/monthly?year=2026&month=4');
+
+        $overview->assertOk()
+            ->assertJsonCount(1, 'categories')
+            ->assertJsonPath('categories.0.transaction_category_id', $rent->id)
+            ->assertJsonPath('categories.0.parent_name', 'Housing')
+            ->assertJsonPath('categories.0.name', 'Rent');
+
+        $upsert = $this->putJson("/api/v1/budgets/monthly/{$rent->id}", [
+            'year' => 2026,
+            'month' => 4,
+            'amount' => 500,
+        ]);
+
+        $upsert->assertOk();
+
+        $this->assertDatabaseHas('category_budgets', [
+            'user_id' => $user->id,
+            'transaction_category_id' => $rent->id,
+            'period_start' => '2026-04-01 00:00:00',
+            'amount' => '500.00',
+        ]);
+    }
 }

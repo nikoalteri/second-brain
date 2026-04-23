@@ -84,11 +84,11 @@ class BudgetController extends Controller
 
     private function assertLeafCategory(int $userId, int $transactionCategoryId): void
     {
-        $category = $this->budgetService->findUserCategory($userId, $transactionCategoryId);
+        $category = $this->budgetService->findAccessibleCategory($userId, $transactionCategoryId);
 
         if ($category === null || ! $this->budgetService->isLeafCategory($category)) {
             throw ValidationException::withMessages([
-                'transaction_category_id' => 'Budgets can only be set for leaf categories owned by the authenticated user.',
+                'transaction_category_id' => 'Budgets can only be set for accessible leaf categories used by the authenticated user.',
             ]);
         }
     }
