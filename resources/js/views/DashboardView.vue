@@ -15,14 +15,17 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'vue-chartjs';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import KpiCard from '@/components/ui/KpiCard.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Title, Tooltip, Legend);
 
 const { formatCurrency } = useCurrency();
+const { addToast } = useToast();
 const auth = useAuthStore();
 const now = new Date();
 const year = now.getFullYear();
@@ -32,6 +35,8 @@ const accountsLoading = ref(false);
 const upcomingPayments = ref([]);
 const upcomingLoading = ref(false);
 const chartsLoading = ref(false);
+const budgetAlertsLoading = ref(false);
+const budgetAlerts = ref([]);
 const dashboardCharts = ref({
     month_label: now.toLocaleString('en-US', { month: 'long' }),
     cashflow: {
@@ -62,6 +67,7 @@ const totalOutflow = computed(() => totalExpense.value + totalPayments.value);
 const netCashflow = computed(() => cashflow.value.net ?? (totalIncome.value - totalExpense.value - totalPayments.value));
 const loading = computed(() => chartsLoading.value || accountsLoading.value || upcomingLoading.value);
 const monthLabel = computed(() => dashboardCharts.value.month_label ?? now.toLocaleString('en-US', { month: 'long' }));
+const budgetMonthLabel = computed(() => now.toLocaleString('en-US', { month: 'long', year: 'numeric' }));
 const accountCount = computed(() => accounts.value.length);
 const upcomingCount = computed(() => upcomingPayments.value.length);
 const upcomingDueTotal = computed(() =>
@@ -446,10 +452,44 @@ async function fetchAccounts() {
     }
 }
 
+async function fetchBudgetAlerts() {
+    if (!auth.accessToken) {
+        budgetAlerts.value = [];
+        return;
+    }
+
+    budgetAlertsLoading.value = true;
+
+    try {
+        const response = await fetch(`/api/v1/budgets/monthly?year=${year}&month=${month}`, {
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            budgetAlerts.value = [];
+            return;
+        }
+
+        const data = await response.json();
+        budgetAlerts.value = (data.categories ?? []).filter((category) =>
+            ['warning', 'exceeded', 'critical'].includes(category.alert_status)
+        );
+    } catch (error) {
+        budgetAlerts.value = [];
+        addToast('Could not load current budget alerts. Please try again.', 'error');
+    } finally {
+        budgetAlertsLoading.value = false;
+    }
+}
+
 onMounted(() => {
     void fetchDashboardCharts();
     void fetchAccounts();
     void fetchUpcomingPayments();
+    void fetchBudgetAlerts();
 });
 </script>
 
@@ -559,6 +599,19 @@ onMounted(() => {
                     :value="topCategory ? topCategory.category : 'No data'"
                     color="purple"
                     :delta="topCategory ? `${formatCurrency(topCategory.total)} · ${formatPercent(topCategoryShare)}` : 'No categorized spending yet'"
+                />
+            </div>
+
+            <div class="mt-6">
+                <LoadingSpinner v-if="budgetAlertsLoading" class="py-10" />
+                <BudgetAlertPanel
+                    v-else
+                    :alerts="budgetAlerts"
+                    title="Budget Alerts"
+                    description="Current-month warning, exceeded, and critical categories from the shared budget contract."
+                    :month-label="budgetMonthLabel"
+                    empty-label="No current dashboard budget alerts."
+                    compact
                 />
             </div>
 

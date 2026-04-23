@@ -8,6 +8,7 @@ import {
 } from 'chart.js';
 import { Doughnut } from 'vue-chartjs';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
 import { useToast } from '@/composables/useToast.js';
@@ -22,10 +23,21 @@ const auth = useAuthStore();
 const report = ref(null);
 const loading = ref(false);
 const loadingDetails = ref(false);
+const budgetLoading = ref(false);
+const budgetSavingId = ref(null);
+const exportingFormat = ref(null);
 const selectedYear = ref(null);
+const selectedBudgetMonth = ref(new Date().getMonth() + 1);
 const selectedTypes = ref([]);
 const selectedNote = ref('');
 const expandedCategories = ref([]);
+const budgetOverview = ref({
+    selected_year: new Date().getFullYear(),
+    selected_month: new Date().getMonth() + 1,
+    period_start: null,
+    categories: [],
+});
+const budgetInputs = ref({});
 const detailState = ref({
     open: false,
     month: null,
@@ -52,6 +64,11 @@ const noteOptions = computed(() => Object.entries(report.value?.note_options ?? 
 const pivot = computed(() => report.value?.pivot ?? { tree: [], pivot: {}, monthTotals: {}, grandTotal: 0 });
 const pie = computed(() => report.value?.pie ?? []);
 const table = computed(() => report.value?.table ?? []);
+const budgetCategories = computed(() => budgetOverview.value?.categories ?? []);
+const budgetAlerts = computed(() =>
+    budgetCategories.value.filter((category) => ['warning', 'exceeded', 'critical'].includes(category.alert_status)),
+);
+const budgetMonthLabel = computed(() => getMonthLabel(selectedBudgetMonth.value));
 
 const pieData = computed(() => ({
     labels: pie.value.map((item) => item.label),
@@ -86,6 +103,49 @@ function getMonthName(month) {
 
 function getMonthLabel(month) {
     return monthLabelFormatter.format(new Date(selectedYear.value ?? new Date().getFullYear(), month - 1, 1));
+}
+
+function authHeaders(extra = {}) {
+    return {
+        Authorization: `Bearer ${auth.accessToken}`,
+        Accept: 'application/json',
+        ...extra,
+    };
+}
+
+function getBudgetStatusClasses(status) {
+    switch (status) {
+    case 'warning':
+        return 'border-amber-200 bg-amber-50 text-amber-700';
+    case 'exceeded':
+        return 'border-red-200 bg-red-50 text-red-700';
+    case 'critical':
+        return 'border-rose-300 bg-rose-100 text-rose-800';
+    case 'ok':
+        return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    default:
+        return 'border-gray-200 bg-gray-50 text-gray-600';
+    }
+}
+
+function getBudgetUsageLabel(category) {
+    if (category.usage_ratio === null || category.usage_ratio === undefined) {
+        return '—';
+    }
+
+    return `${(category.usage_ratio * 100).toFixed(1)}%`;
+}
+
+function syncBudgetInputs(categories) {
+    const nextInputs = {};
+
+    categories.forEach((category) => {
+        nextInputs[category.transaction_category_id] = category.budget_amount === null
+            ? ''
+            : Number(category.budget_amount).toFixed(2);
+    });
+
+    budgetInputs.value = nextInputs;
 }
 
 function isExpanded(categoryKey) {
@@ -148,10 +208,7 @@ async function loadReport() {
         });
 
         const response = await fetch(`/api/v1/reports/finance?${params.toString()}`, {
-            headers: {
-                Authorization: `Bearer ${auth.accessToken}`,
-                Accept: 'application/json',
-            },
+            headers: authHeaders(),
         });
 
         if (!response.ok) {
@@ -198,10 +255,7 @@ async function openDetail(month, categoryKey, categoryLabel) {
         });
 
         const response = await fetch(`/api/v1/reports/finance/details?${params.toString()}`, {
-            headers: {
-                Authorization: `Bearer ${auth.accessToken}`,
-                Accept: 'application/json',
-            },
+            headers: authHeaders(),
         });
 
         if (!response.ok) {
@@ -233,12 +287,170 @@ function closeDetail() {
     };
 }
 
+async function loadBudgetOverview() {
+    if (!auth.accessToken || !selectedYear.value) {
+        budgetOverview.value = {
+            selected_year: selectedYear.value ?? new Date().getFullYear(),
+            selected_month: selectedBudgetMonth.value,
+            period_start: null,
+            categories: [],
+        };
+        budgetInputs.value = {};
+        return;
+    }
+
+    budgetLoading.value = true;
+
+    try {
+        const params = new URLSearchParams({
+            year: String(selectedYear.value),
+            month: String(selectedBudgetMonth.value),
+        });
+
+        const response = await fetch(`/api/v1/budgets/monthly?${params.toString()}`, {
+            headers: authHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load monthly budgets.');
+        }
+
+        const payload = await response.json();
+        budgetOverview.value = payload;
+        syncBudgetInputs(payload.categories ?? []);
+    } catch (error) {
+        addToast('Could not load monthly budgets. Please try again.', 'error');
+    } finally {
+        budgetLoading.value = false;
+    }
+}
+
+async function saveBudget(transactionCategoryId) {
+    const value = budgetInputs.value[transactionCategoryId];
+
+    if (!value || Number(value) <= 0) {
+        addToast('Budget amount must be greater than zero.', 'error');
+        return;
+    }
+
+    budgetSavingId.value = transactionCategoryId;
+
+    try {
+        const response = await fetch(`/api/v1/budgets/monthly/${transactionCategoryId}`, {
+            method: 'PUT',
+            headers: authHeaders({
+                'Content-Type': 'application/json',
+            }),
+            body: JSON.stringify({
+                year: selectedYear.value,
+                month: selectedBudgetMonth.value,
+                amount: Number(value),
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to save budget.');
+        }
+
+        addToast('Monthly budget saved.', 'success');
+        await loadBudgetOverview();
+    } catch (error) {
+        addToast('Could not save the budget. Please try again.', 'error');
+    } finally {
+        budgetSavingId.value = null;
+    }
+}
+
+async function clearBudget(transactionCategoryId) {
+    budgetSavingId.value = transactionCategoryId;
+
+    try {
+        const params = new URLSearchParams({
+            year: String(selectedYear.value),
+            month: String(selectedBudgetMonth.value),
+        });
+
+        const response = await fetch(`/api/v1/budgets/monthly/${transactionCategoryId}?${params.toString()}`, {
+            method: 'DELETE',
+            headers: authHeaders(),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to clear budget.');
+        }
+
+        addToast('Monthly budget cleared.', 'success');
+        await loadBudgetOverview();
+    } catch (error) {
+        addToast('Could not clear the budget. Please try again.', 'error');
+    } finally {
+        budgetSavingId.value = null;
+    }
+}
+
+function getExportFilename(response, fallback) {
+    const disposition = response.headers.get('content-disposition') ?? '';
+    const match = disposition.match(/filename="?([^"]+)"?/i);
+
+    return match?.[1] ?? fallback;
+}
+
+async function downloadExport(format) {
+    if (!auth.accessToken || !selectedYear.value) {
+        return;
+    }
+
+    exportingFormat.value = format;
+
+    try {
+        const params = new URLSearchParams({
+            year: String(selectedYear.value),
+            format,
+        });
+
+        if (selectedNote.value) {
+            params.set('note', selectedNote.value);
+        }
+
+        selectedTypes.value.forEach((typeId) => {
+            params.append('types[]', typeId);
+        });
+
+        const response = await fetch(`/api/v1/reports/finance/export?${params.toString()}`, {
+            headers: authHeaders({
+                Accept: '*/*',
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to export report.');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const extension = format === 'xlsx' ? 'xlsx' : format;
+
+        link.href = url;
+        link.download = getExportFilename(response, `finance-report-${selectedYear.value}.${extension}`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        addToast('Could not export the finance report. Please try again.', 'error');
+    } finally {
+        exportingFormat.value = null;
+    }
+}
+
 watch([selectedYear, selectedNote], ([year]) => {
     if (!year) {
         return;
     }
 
-    loadReport();
+    void loadReport();
+    void loadBudgetOverview();
 });
 
 watch(selectedTypes, () => {
@@ -246,10 +458,21 @@ watch(selectedTypes, () => {
         return;
     }
 
-    loadReport();
+    void loadReport();
 }, { deep: true });
 
-onMounted(loadReport);
+watch(selectedBudgetMonth, () => {
+    if (!selectedYear.value) {
+        return;
+    }
+
+    void loadBudgetOverview();
+});
+
+onMounted(async () => {
+    await loadReport();
+    await loadBudgetOverview();
+});
 </script>
 
 <template>
@@ -261,6 +484,36 @@ onMounted(loadReport);
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <div class="flex flex-wrap gap-2">
+                    <button
+                        type="button"
+                        class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
+                        :class="exportingFormat === 'csv' ? 'opacity-60' : ''"
+                        :disabled="exportingFormat !== null"
+                        @click="downloadExport('csv')"
+                    >
+                        CSV
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 shadow-sm transition hover:border-blue-300 hover:text-blue-900"
+                        :class="exportingFormat === 'xlsx' ? 'opacity-60' : ''"
+                        :disabled="exportingFormat !== null"
+                        @click="downloadExport('xlsx')"
+                    >
+                        XLSX
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-sm font-medium text-purple-700 shadow-sm transition hover:border-purple-300 hover:text-purple-900"
+                        :class="exportingFormat === 'pdf' ? 'opacity-60' : ''"
+                        :disabled="exportingFormat !== null"
+                        @click="downloadExport('pdf')"
+                    >
+                        PDF
+                    </button>
+                </div>
+
                 <label class="flex items-center gap-2 text-sm font-medium text-gray-600">
                     <span>Year</span>
                     <span class="relative">
@@ -295,6 +548,117 @@ onMounted(loadReport);
         <LoadingSpinner v-if="loading" class="py-16" />
 
         <template v-else>
+            <div class="mb-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+                <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                        <div>
+                            <h2 class="text-base font-semibold text-gray-900">Monthly budgets</h2>
+                            <p class="mt-1 text-sm text-gray-500">
+                                Budget math always uses actual monthly spending and stays independent from note and type filters.
+                            </p>
+                        </div>
+
+                        <label class="flex items-center gap-2 text-sm font-medium text-gray-600">
+                            <span>Budget month</span>
+                            <span class="relative">
+                                <select
+                                    v-model="selectedBudgetMonth"
+                                    class="min-w-36 appearance-none rounded-lg border border-gray-200 bg-white py-2 pl-3 pr-9 text-sm text-gray-700 shadow-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200"
+                                    style="background-image: none;"
+                                >
+                                    <option v-for="month in months" :key="`budget-${month}`" :value="month">
+                                        {{ getMonthLabel(month) }}
+                                    </option>
+                                </select>
+                                <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">▼</span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <LoadingSpinner v-if="budgetLoading" class="py-10" />
+
+                    <div v-else class="mt-4 overflow-x-auto rounded-2xl border border-gray-200">
+                        <table class="min-w-full border-collapse text-sm">
+                            <thead class="bg-gray-50">
+                                <tr class="border-b border-gray-200">
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Category</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Budget</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-700">Spent</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-700">Usage</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Status</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="category in budgetCategories"
+                                    :key="category.transaction_category_id"
+                                    class="border-b border-gray-100"
+                                >
+                                    <td class="px-4 py-3">
+                                        <p class="font-medium text-gray-900">{{ category.name }}</p>
+                                        <p class="mt-1 text-xs text-gray-500">{{ category.parent_name ?? 'Uncategorized' }}</p>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input
+                                            v-model="budgetInputs[category.transaction_category_id]"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            class="w-28 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 shadow-sm outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-200"
+                                        >
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-mono text-gray-700">
+                                        {{ formatCurrency(Number(category.spent_amount ?? 0)) }}
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-medium text-gray-700">
+                                        {{ getBudgetUsageLabel(category) }}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span
+                                            class="rounded-full border px-2.5 py-1 text-xs font-semibold capitalize"
+                                            :class="getBudgetStatusClasses(category.alert_status)"
+                                        >
+                                            {{ category.alert_status }}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                class="rounded-lg bg-gray-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-700"
+                                                :class="budgetSavingId === category.transaction_category_id ? 'opacity-60' : ''"
+                                                :disabled="budgetSavingId !== null"
+                                                @click="saveBudget(category.transaction_category_id)"
+                                            >
+                                                Save
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 transition hover:border-gray-300 hover:text-gray-900"
+                                                :class="budgetSavingId === category.transaction_category_id ? 'opacity-60' : ''"
+                                                :disabled="budgetSavingId !== null"
+                                                @click="clearBudget(category.transaction_category_id)"
+                                            >
+                                                Clear
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <BudgetAlertPanel
+                    :alerts="budgetAlerts"
+                    title="Budget alerts"
+                    description="In-app alerts for the selected budget month."
+                    :month-label="budgetMonthLabel"
+                    empty-label="No warning, exceeded, or critical budget alerts for this month."
+                />
+            </div>
+
             <div class="mb-6 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="mb-4 flex flex-wrap gap-2">
                     <label
