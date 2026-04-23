@@ -7,21 +7,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Traits\HasUserScoping;
 
-class TransactionCategory extends Model
-{
-    use HasUserScoping;
+ class TransactionCategory extends Model
+ {
+     use HasUserScoping;
 
     protected $fillable = [
         'user_id',
         'parent_id',
         'name',
         'is_active'
-    ];
-
-    protected $casts = [
-        'budget_monthly' => 'decimal:2',
-        'is_active' => 'boolean',
-    ];
+     ];
+ 
+     protected $casts = [
+         'is_active' => 'boolean',
+     ];
 
     public function user(): BelongsTo
     {
@@ -38,9 +37,14 @@ class TransactionCategory extends Model
         return $this->hasMany(TransactionCategory::class, 'parent_id');
     }
 
-    public function transactions(): HasMany
+     public function transactions(): HasMany
+     {
+         return $this->hasMany(Transaction::class);
+     }
+
+    public function budgets(): HasMany
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasMany(CategoryBudget::class);
     }
 
     public function scopeActive($query)
