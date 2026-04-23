@@ -8,16 +8,11 @@ import AppLayout from '@/components/layout/AppLayout.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 
 const route = useRoute();
 const { formatCurrency, colorClass, formatSigned } = useCurrency();
-const accountTypeLabels = {
-    bank: 'Bank',
-    cash: 'Cash',
-    investment: 'Investment',
-    emergency_fund: 'Emergency Fund',
-    debt: 'Debt',
-};
+const { translateAccountType, translateCategoryName } = useLocalizedLabels();
 
 const ACCOUNT_DETAIL_QUERY = gql`
     query GetAccount($id: ID!) {
@@ -56,7 +51,7 @@ const transactions = computed(() => account.value?.transactions ?? []);
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-gray-900">{{ account.name }}</h1>
-                    <p class="mt-1 text-sm text-gray-500">{{ accountTypeLabels[account.type] ?? account.type }} · {{ account.currency }}</p>
+                    <p class="mt-1 text-sm text-gray-500">{{ translateAccountType(account.type) }} · {{ account.currency }}</p>
                 </div>
                 <router-link
                     :to="`/accounts/${account.id}/edit`"
@@ -94,7 +89,7 @@ const transactions = computed(() => account.value?.transactions ?? []);
                     <tr v-for="transaction in transactions" :key="transaction.id" class="transition-colors duration-100 hover:bg-gray-100/40">
                         <td class="py-3 pr-4 text-sm text-gray-500">{{ transaction.date }}</td>
                         <td class="py-3 pr-4 text-sm text-gray-900">{{ transaction.description }}</td>
-                        <td class="py-3 pr-4 text-sm text-gray-500">{{ transaction.category?.name ?? '—' }}</td>
+                        <td class="py-3 pr-4 text-sm text-gray-500">{{ transaction.category?.name ? translateCategoryName(transaction.category.name) : '—' }}</td>
                         <td class="py-3 text-right font-mono text-sm" :class="colorClass(transaction.amount, 'signed')">
                             {{ formatSigned(transaction.amount) }}
                         </td>

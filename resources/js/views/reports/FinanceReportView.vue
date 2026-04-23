@@ -11,6 +11,7 @@ import AppLayout from '@/components/layout/AppLayout.vue';
 import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
@@ -18,6 +19,7 @@ import { useAuthStore } from '@/stores/auth.js';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const { formatCurrency } = useCurrency();
+const { translateCategoryName, translateOptionalCategory } = useLocalizedLabels();
 const { addToast } = useToast();
 const { locale } = useUserPreferences();
 const auth = useAuthStore();
@@ -594,8 +596,8 @@ onMounted(async () => {
                                     class="border-b border-gray-100"
                                 >
                                     <td class="px-4 py-3">
-                                        <p class="font-medium text-gray-900">{{ category.name }}</p>
-                                        <p class="mt-1 text-xs text-gray-500">{{ category.parent_name ?? 'Uncategorized' }}</p>
+                                        <p class="font-medium text-gray-900">{{ translateCategoryName(category.name) }}</p>
+                                        <p class="mt-1 text-xs text-gray-500">{{ translateOptionalCategory(category.parent_name) }}</p>
                                     </td>
                                     <td class="px-4 py-3">
                                         <input

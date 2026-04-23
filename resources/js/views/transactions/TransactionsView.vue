@@ -7,10 +7,12 @@ import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
 const { colorClass, formatSigned } = useCurrency();
+const { translateCategoryName } = useLocalizedLabels();
 const auth = useAuthStore();
 
 const page = ref(1);
@@ -66,7 +68,7 @@ const accountNameById = computed(() =>
     Object.fromEntries(accounts.value.map((account) => [String(account.id), account.name]))
 );
 const categoryNameById = computed(() =>
-    Object.fromEntries(categories.value.map((category) => [String(category.id), category.name]))
+    Object.fromEntries(categories.value.map((category) => [String(category.id), translateCategoryName(category.name)]))
 );
 const transactions = computed(() => result.value?.transactions?.data ?? []);
 const filteredTransactions = computed(() =>

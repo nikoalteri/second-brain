@@ -2,18 +2,22 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useMutation, useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const { addToast } = useToast();
+const { translateCategoryName, translateCategoryPath, translateTransactionType } = useLocalizedLabels();
 const auth = useAuthStore();
 
 const isEdit = computed(() => !!route.params.id);
@@ -112,7 +116,7 @@ const { result: txResult, loading: loadingTx } = useQuery(
 const accounts = ref([]);
 
 const typeOptions = computed(() =>
-    (typesResult.value?.transactionTypes ?? []).map((type) => ({ value: type.id, label: type.name }))
+    (typesResult.value?.transactionTypes ?? []).map((type) => ({ value: type.id, label: translateTransactionType(type.name) }))
 );
 const categoryOptions = computed(() => {
     const categories = categoriesResult.value?.transactionCategories ?? [];
@@ -126,7 +130,7 @@ const categoryOptions = computed(() => {
         childrenByParentId.set(key, bucket);
     }
 
-    const options = [{ value: '', label: 'No category' }];
+    const options = [{ value: '', label: t('labels.categories.none') }];
 
     for (const parent of parents) {
         const children = (childrenByParentId.get(String(parent.id)) ?? [])
@@ -135,21 +139,21 @@ const categoryOptions = computed(() => {
         if (children.length === 0) {
             options.push({
                 value: parent.id,
-                label: parent.name,
+                label: translateCategoryName(parent.name),
             });
             continue;
         }
 
         options.push({
-            value: `group-${parent.id}`,
-            label: parent.name,
-            disabled: true,
+                value: `group-${parent.id}`,
+                label: translateCategoryName(parent.name),
+                disabled: true,
         });
 
         for (const child of children) {
             options.push({
                 value: child.id,
-                label: `${parent.name} › ${child.name}`,
+                label: translateCategoryPath(parent.name, child.name),
             });
         }
     }

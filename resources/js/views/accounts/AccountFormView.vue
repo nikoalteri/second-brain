@@ -3,24 +3,20 @@ import { computed, ref, watch } from 'vue';
 import { useMutation, useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useToast } from '@/composables/useToast.js';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const { addToast } = useToast();
-
-const accountTypeLabels = {
-    bank: 'Bank',
-    cash: 'Cash',
-    investment: 'Investment',
-    emergency_fund: 'Emergency Fund',
-    debt: 'Debt',
-};
+const { translateAccountType } = useLocalizedLabels();
 
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
@@ -29,7 +25,7 @@ const errors = ref({});
 
 const typeOptions = ['bank', 'cash', 'investment', 'emergency_fund', 'debt'].map((value) => ({
     value,
-    label: accountTypeLabels[value] ?? value,
+    label: translateAccountType(value),
 }));
 const currencyOptions = ['EUR', 'USD', 'GBP', 'CHF'].map((value) => ({ value, label: value }));
 
@@ -186,7 +182,7 @@ async function handleDelete() {
                         type="checkbox"
                         class="h-4 w-4 rounded border-gray-300 bg-white text-amber-500 focus:ring-amber-400"
                     >
-                    <label for="is_active" class="text-sm font-medium text-gray-700">Active</label>
+                    <label for="is_active" class="text-sm font-medium text-gray-700">{{ t('labels.status.active') }}</label>
                 </div>
             </div>
 

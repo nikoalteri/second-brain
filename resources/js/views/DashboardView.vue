@@ -19,6 +19,7 @@ import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import KpiCard from '@/components/ui/KpiCard.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
@@ -26,6 +27,7 @@ import { useAuthStore } from '@/stores/auth.js';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Title, Tooltip, Legend);
 
 const { formatCurrency } = useCurrency();
+const { translateCategoryName } = useLocalizedLabels();
 const { addToast } = useToast();
 const { locale } = useUserPreferences();
 const auth = useAuthStore();
@@ -161,7 +163,7 @@ const expenseChartColors = [
 ];
 
 const expenseBreakdownChartData = computed(() => ({
-    labels: categorizedSpending.value.map((category) => category.category),
+    labels: categorizedSpending.value.map((category) => translateCategoryName(category.category)),
     datasets: [
         {
             label: 'Amount',
@@ -718,7 +720,7 @@ onMounted(() => {
                                 v-if="creditCardPaymentHighlight"
                                 class="rounded-xl border border-amber-200 bg-amber-50 p-4"
                             >
-                                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Credit card payments</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">{{ translateCategoryName('Credit card payments') }}</p>
                                 <div class="mt-2 flex items-end justify-between gap-3">
                                     <p class="text-base font-semibold text-gray-900">Kept separate from the category pie chart</p>
                                     <p class="font-mono text-lg font-semibold text-amber-700">
@@ -730,7 +732,7 @@ onMounted(() => {
                             <div v-if="topCategory" class="rounded-xl bg-gray-50 p-4">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Largest category</p>
                                 <div class="mt-2 flex items-end justify-between gap-3">
-                                    <p class="text-base font-semibold text-gray-900">{{ topCategory.category }}</p>
+                                    <p class="text-base font-semibold text-gray-900">{{ translateCategoryName(topCategory.category) }}</p>
                                     <p class="font-mono text-lg font-semibold text-red-500">{{ formatCurrency(topCategory.total) }}</p>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-500">{{ formatPercent(topCategoryShare) }} of this month's total expenses</p>
@@ -739,7 +741,7 @@ onMounted(() => {
                             <div class="space-y-3">
                                 <div v-for="category in topCategories" :key="category.category">
                                     <div class="mb-1 flex items-center justify-between gap-3 text-sm">
-                                        <p class="truncate text-gray-700">{{ category.category }}</p>
+                                        <p class="truncate text-gray-700">{{ translateCategoryName(category.category) }}</p>
                                         <p class="font-mono font-medium text-gray-900">{{ formatCurrency(category.total) }}</p>
                                     </div>
                                     <div class="h-2 rounded-full bg-gray-100">

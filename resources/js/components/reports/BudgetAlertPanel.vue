@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 
 const props = defineProps({
     alerts: {
@@ -30,6 +32,8 @@ const props = defineProps({
 });
 
 const { formatCurrency } = useCurrency();
+const { t } = useI18n();
+const { translateCategoryName, translateOptionalCategory } = useLocalizedLabels();
 
 const hasAlerts = computed(() => props.alerts.length > 0);
 
@@ -48,7 +52,7 @@ function statusClasses(status) {
 
 function usageLabel(alert) {
     if (alert.usage_ratio === null || alert.usage_ratio === undefined) {
-        return 'No budget';
+        return t('labels.budget.noBudget');
     }
 
     return `${Math.round(alert.usage_ratio * 100)}% used`;
@@ -79,9 +83,9 @@ function usageLabel(alert) {
             >
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-sm font-semibold text-gray-900">{{ alert.name }}</p>
+                        <p class="text-sm font-semibold text-gray-900">{{ translateCategoryName(alert.name) }}</p>
                         <p class="mt-1 text-xs text-gray-500">
-                            {{ alert.parent_name ?? 'Uncategorized' }}
+                            {{ translateOptionalCategory(alert.parent_name) }}
                         </p>
                     </div>
                     <span class="rounded-full border px-2.5 py-1 text-xs font-semibold capitalize">

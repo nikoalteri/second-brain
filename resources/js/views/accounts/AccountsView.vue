@@ -4,21 +4,18 @@ import { useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { BanknotesIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 
 const router = useRouter();
+const { t } = useI18n();
 const { formatCurrency } = useCurrency();
+const { translateAccountType } = useLocalizedLabels();
 const page = ref(1);
-const accountTypeLabels = {
-    bank: 'Bank',
-    cash: 'Cash',
-    investment: 'Investment',
-    emergency_fund: 'Emergency Fund',
-    debt: 'Debt',
-};
 
 const ACCOUNTS_QUERY = gql`
     query GetAccounts($page: Int) {
@@ -81,13 +78,13 @@ const paginator = computed(() => result.value?.accounts?.paginatorInfo);
                     <div class="mb-3 flex items-start justify-between">
                         <div>
                             <h3 class="text-base font-normal text-gray-900">{{ account.name }}</h3>
-                            <span class="text-sm text-gray-500">{{ accountTypeLabels[account.type] ?? account.type }}</span>
+                            <span class="text-sm text-gray-500">{{ translateAccountType(account.type) }}</span>
                         </div>
                         <span
                             class="rounded px-2 py-0.5 text-sm"
                             :class="account.is_active ? 'bg-emerald-500/10 text-emerald-400' : 'bg-gray-500/10 text-gray-500'"
                         >
-                            {{ account.is_active ? 'Active' : 'Inactive' }}
+                            {{ account.is_active ? t('labels.status.active') : t('labels.status.inactive') }}
                         </span>
                     </div>
 
