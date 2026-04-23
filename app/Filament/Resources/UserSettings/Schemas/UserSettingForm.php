@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\UserSettings\Schemas;
 
+use App\Models\User;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -12,6 +13,12 @@ class UserSettingForm
     {
         return $schema
             ->components([
+                Select::make('user_id')
+                    ->label('User')
+                    ->options(fn () => User::query()->orderBy('name')->pluck('name', 'id')->toArray())
+                    ->searchable()
+                    ->preload()
+                    ->required(),
                 Select::make('setting_key')
                     ->label('Setting key')
                     ->options([

@@ -20,11 +20,16 @@ class UserSettingResourceTest extends TestCase
         $user = User::factory()->create([
             'is_active' => true,
         ]);
+        User::factory()->create([
+            'name' => 'Target User',
+            'is_active' => true,
+        ]);
         $user->assignRole('superadmin');
 
         $response = $this->actingAs($user)->get('/admin/user-settings/create');
 
         $response->assertOk()
+            ->assertSee('User')
             ->assertSee('Setting key')
             ->assertSee('Setting value');
     }
