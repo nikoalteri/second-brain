@@ -67,6 +67,6 @@ class CreditCardsKpiOverview extends BaseWidget
 
     private function formatCurrency(float $amount): string
     {
-        return Number::currency($amount, 'EUR', locale: 'it');
+        return Number::currency($amount, 'EUR');
     }
 }

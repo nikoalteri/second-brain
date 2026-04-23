@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\EditProfile;
 use App\Filament\Pages\Dashboard;
 use App\Http\Middleware\SetLocaleFromUserPreference;
 use Filament\Enums\ThemeMode;
@@ -47,6 +48,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->brandName('Fluxa')
             ->login()
+            ->profile(EditProfile::class, isSimple: false)
             ->darkMode(false, true)
             ->defaultThemeMode(ThemeMode::Light)
             ->topNavigation()
@@ -56,7 +58,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->userMenuItems([
                 MenuItem::make()
-                    ->label('Open frontend')
+                    ->label(__('Open frontend'))
                     ->url(url('/dashboard'))
                     ->icon('heroicon-o-arrow-top-right-on-square'),
             ])
@@ -69,24 +71,24 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->navigationGroups([
-                NavigationGroup::make('Finance')
+                NavigationGroup::make(__('Finance'))
                     ->items([
-                        NavigationItem::make('Accounts')
+                        NavigationItem::make(__('Accounts'))
                             ->url('/admin/accounts')
                             ->icon('heroicon-o-banknotes'),
-                        NavigationItem::make('Transactions')
+                        NavigationItem::make(__('Transactions'))
                             ->url('/admin/transactions')
                             ->icon('heroicon-o-arrow-path'),
-                        NavigationItem::make('Subscriptions')
+                        NavigationItem::make(__('Subscriptions'))
                             ->url('/admin/subscriptions')
                             ->icon('heroicon-o-sparkles'),
-                        NavigationItem::make('Loans')
+                        NavigationItem::make(__('Loans'))
                             ->url('/admin/loans')
                             ->icon('heroicon-o-document-text'),
-                        NavigationItem::make('Credit Cards')
+                        NavigationItem::make(__('Credit Cards'))
                             ->url('/admin/credit-cards')
                             ->icon('heroicon-o-credit-card'),
-                        NavigationItem::make('Reports')
+                        NavigationItem::make(__('Reports'))
                             ->url('/admin/finance-report')
                             ->icon('heroicon-o-chart-bar'),
                     ]),
