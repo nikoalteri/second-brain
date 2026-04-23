@@ -2,8 +2,8 @@
 phase: 10-localization-foundation-shared-settings
 plan: 03
 type: execute
-wave: 1
-depends_on: []
+wave: 2
+depends_on: [10-01]
 files_modified:
   - package.json
   - package-lock.json
@@ -11,6 +11,7 @@ files_modified:
   - resources/js/i18n/index.js
   - resources/js/i18n/messages/en.json
   - resources/js/i18n/messages/it.json
+  - tests/Frontend/i18n-fallback-smoke.mjs
   - resources/js/app.js
   - resources/js/stores/auth.js
   - resources/js/composables/useUserPreferences.js
@@ -91,23 +92,24 @@ From resources/js/views/SettingsView.vue:
 
 <task type="auto">
   <name>Task 1: Create the SPA locale helper and Vue i18n bootstrap</name>
-  <files>package.json, package-lock.json, resources/js/i18n/supportedLocales.js, resources/js/i18n/index.js, resources/js/i18n/messages/en.json, resources/js/i18n/messages/it.json</files>
+  <files>package.json, package-lock.json, resources/js/i18n/supportedLocales.js, resources/js/i18n/index.js, resources/js/i18n/messages/en.json, resources/js/i18n/messages/it.json, tests/Frontend/i18n-fallback-smoke.mjs</files>
   <read_first>
     - package.json
     - resources/js/app.js
     - resources/js/composables/useUserPreferences.js
     - .planning/phases/10-localization-foundation-shared-settings/10-RESEARCH.md
   </read_first>
-  <action>Install `vue-i18n` and add a dedicated `resources/js/i18n/` foundation. Create `supportedLocales.js` with `appLocale(value)` and `browserLocale(value)` helpers so the SPA also constrains itself to `en|it` while mapping to `en-US|it-IT` only for browser formatting. Initialize `createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en' })` and add only the Phase 10 shell/settings keys needed now. Do not start translating dashboard, finance workflows, or validation copy yet.</action>
+  <action>Install `vue-i18n` and add a dedicated `resources/js/i18n/` foundation. Create `supportedLocales.js` with `appLocale(value)` and `browserLocale(value)` helpers so the SPA also constrains itself to `en|it` while mapping to `en-US|it-IT` only for browser formatting. Initialize `createI18n({ legacy: false, locale: 'en', fallbackLocale: 'en' })` and add only the Phase 10 shell/settings keys needed now. Add a lightweight Node smoke test in `tests/Frontend/i18n-fallback-smoke.mjs` that imports the i18n instance, switches to Italian, requests a key intentionally defined only in English, and asserts the returned value falls back to English without throwing. Do not start translating dashboard, finance workflows, or validation copy yet.</action>
   <acceptance_criteria>
     - `grep -q "vue-i18n" package.json`
     - `grep -q "createI18n" resources/js/i18n/index.js`
     - `grep -q "fallbackLocale" resources/js/i18n/index.js`
     - `grep -q "\"settings.title\"" resources/js/i18n/messages/en.json`
     - `grep -q "\"settings.title\"" resources/js/i18n/messages/it.json`
+    - `grep -q "fallback probe" tests/Frontend/i18n-fallback-smoke.mjs`
   </acceptance_criteria>
   <verify>
-    <automated>npm run build</automated>
+    <automated>node tests/Frontend/i18n-fallback-smoke.mjs && npm run build</automated>
   </verify>
   <done>The SPA has one i18n instance with starter English/Italian message files and English fallback behavior.</done>
 </task>
@@ -130,7 +132,7 @@ From resources/js/views/SettingsView.vue:
     - `grep -q "browserLocale" resources/js/composables/useUserPreferences.js`
   </acceptance_criteria>
   <verify>
-    <automated>npm run build && php artisan test tests/Feature/Api/AuthApiTest.php --filter=language --stop-on-failure</automated>
+    <automated>node tests/Frontend/i18n-fallback-smoke.mjs && npm run build && php artisan test tests/Feature/Api/AuthApiTest.php --filter=language --stop-on-failure</automated>
   </verify>
   <done>The SPA boot path, formatting helpers, and settings page all derive locale from the shared auth/settings payload with English fallback.</done>
 </task>
@@ -138,7 +140,7 @@ From resources/js/views/SettingsView.vue:
 </tasks>
 
 <verification>
-Run `npm run build` and `php artisan test tests/Feature/Api/AuthApiTest.php --filter=language --stop-on-failure`.
+Run `node tests/Frontend/i18n-fallback-smoke.mjs`, `npm run build`, and `php artisan test tests/Feature/Api/AuthApiTest.php --filter=language --stop-on-failure`.
 </verification>
 
 <success_criteria>

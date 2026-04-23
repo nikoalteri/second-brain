@@ -64,7 +64,7 @@ Output: explicit approval or concrete defects tied to the failing surface.
   <action>Before asking for approval, run the automated checks below and start the local app if needed. Then hand off the exact manual steps without asking the user to do setup the agent can do automatically.</action>
   <how-to-verify>
     1. Sign in to Filament and open the backend profile/settings page.
-    2. Change language to Italian, save, reload the page, and navigate at least one additional backend page to confirm the user stays on Italian-capable locale wiring.
+    2. Change language to Italian, save, reload the page, and navigate at least one additional backend page that previously hardcoded Italian formatting (for example Accounts, Loans, or a shared dashboard widget) to confirm the request locale now controls the visible formatting path.
     3. Open the SPA settings page for the same user, refresh the page, and confirm the language select already shows Italian without reconfiguring it.
     4. Change the SPA language back to English, save, refresh the SPA, then refresh the backend profile page and confirm English is now selected there too.
     5. Confirm there is only one shared preference flow: no second backend-only language field, no duplicate browser-only toggle, and no lost selection after refresh.

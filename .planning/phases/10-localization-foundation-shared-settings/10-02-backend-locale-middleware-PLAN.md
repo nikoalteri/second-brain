@@ -6,6 +6,8 @@ wave: 2
 depends_on: [10-01]
 files_modified:
   - tests/Feature/Localization/LocaleMiddlewareTest.php
+  - lang/en/localization.php
+  - lang/it/localization.php
   - app/Http/Middleware/SetLocaleFromUserPreference.php
   - bootstrap/app.php
   - routes/api.php
@@ -16,6 +18,7 @@ must_haves:
   truths:
     - Authenticated API requests pick up the saved user language automatically
     - Missing or invalid saved values fall back to English without breaking request handling
+    - Backend translation lookups fall back safely to English when an Italian key is intentionally missing
     - Filament request handling is wired for persistent locale resolution instead of config-only defaults
   artifacts:
     - path: app/Http/Middleware/SetLocaleFromUserPreference.php
@@ -88,8 +91,9 @@ From app/Models/User.php:
     - Test 1: an authenticated user with `language=it` sees `app()->getLocale()` resolve to `it` inside a middleware-protected request.
     - Test 2: missing or invalid saved values resolve to `en`.
     - Test 3: number/date helpers used inside the same request do not throw and use the resolved locale path.
+    - Test 4: a backend translation key defined only in `lang/en` still resolves to its English value while the authenticated request locale is `it`.
   </behavior>
-  <action>Create the missing Wave 0 file `tests/Feature/Localization/LocaleMiddlewareTest.php`. Register a test-only JSON route inside the test class that returns the current locale plus one formatted number/date sample from inside the middleware pipeline so the behavior is observable without adding debug routes to production.</action>
+  <action>Create the missing Wave 0 file `tests/Feature/Localization/LocaleMiddlewareTest.php`. Register a test-only JSON route inside the test class that returns the current locale plus one formatted number/date sample and one translation probe from inside the middleware pipeline so the behavior is observable without adding debug routes to production. Use a small app-owned translation file where one probe key exists in English but is intentionally absent from Italian so the fallback path is proven, not assumed.</action>
   <acceptance_criteria>
     - `grep -q "class LocaleMiddlewareTest" tests/Feature/Localization/LocaleMiddlewareTest.php`
     - `grep -q "app()->getLocale" tests/Feature/Localization/LocaleMiddlewareTest.php`
@@ -103,7 +107,7 @@ From app/Models/User.php:
 
 <task type="auto" tdd="true">
   <name>Task 2: Implement locale middleware and wire it into API + Filament</name>
-  <files>app/Http/Middleware/SetLocaleFromUserPreference.php, bootstrap/app.php, routes/api.php, app/Providers/Filament/AdminPanelProvider.php</files>
+  <files>lang/en/localization.php, lang/it/localization.php, app/Http/Middleware/SetLocaleFromUserPreference.php, bootstrap/app.php, routes/api.php, app/Providers/Filament/AdminPanelProvider.php</files>
   <read_first>
     - app/Providers/Filament/AdminPanelProvider.php
     - bootstrap/app.php
@@ -111,9 +115,10 @@ From app/Models/User.php:
     - app/Support/Localization/SupportedLocales.php
     - .planning/phases/10-localization-foundation-shared-settings/10-RESEARCH.md
   </read_first>
-  <action>Create `SetLocaleFromUserPreference` to resolve the authenticated user's saved language through `SupportedLocales::appLocale()`, then call `App::setLocale()`, `Number::useLocale()`, and `Carbon::setLocale()`. Register a middleware alias in `bootstrap/app.php`, apply it after `auth:sanctum` on auth/read/write API groups, and add the middleware to the Filament panel with `isPersistent: true` so Livewire requests keep the same locale. Do not add a second session-only locale source and do not run the middleware before authentication.</action>
+  <action>Create `SetLocaleFromUserPreference` to resolve the authenticated user's saved language through `SupportedLocales::appLocale()`, then call `App::setLocale()`, `Number::useLocale()`, and `Carbon::setLocale()`. Add a minimal app translation probe file in `lang/en` and `lang/it` where one English key is intentionally missing from Italian to make fallback behavior observable during automated tests. Register a middleware alias in `bootstrap/app.php`, apply it after `auth:sanctum` on auth/read/write API groups, and add the middleware to the Filament panel with `isPersistent: true` so Livewire requests keep the same locale. Do not add a second session-only locale source and do not run the middleware before authentication.</action>
   <acceptance_criteria>
     - `grep -q "class SetLocaleFromUserPreference" app/Http/Middleware/SetLocaleFromUserPreference.php`
+    - `grep -q "fallback_probe" lang/en/localization.php`
     - `grep -q "set.locale" bootstrap/app.php`
     - `grep -q "set.locale" routes/api.php`
     - `grep -q "SetLocaleFromUserPreference" app/Providers/Filament/AdminPanelProvider.php`

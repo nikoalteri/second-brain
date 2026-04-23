@@ -2,8 +2,8 @@
 phase: 10
 slug: localization-foundation-shared-settings
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-04-23
 ---
 
@@ -41,7 +41,7 @@ created: 2026-04-23
 | 10-01-01 | 01 | 1 | I18N-01/I18N-02 | feature | `php artisan test tests/Feature/Localization/FallbackBehaviorTest.php --stop-on-failure` | ❌ W0 | ⬜ pending |
 | 10-01-02 | 01 | 1 | I18N-03 | feature | `php artisan test tests/Feature/Api/AuthApiTest.php --stop-on-failure` | ✅ partial | ⬜ pending |
 | 10-02-01 | 02 | 2 | I18N-02/I18N-04 | feature | `php artisan test tests/Feature/Localization/LocaleMiddlewareTest.php --stop-on-failure` | ❌ W0 | ⬜ pending |
-| 10-03-01 | 03 | 1 | I18N-01/I18N-03/I18N-04 | build | `npm run build` | ❌ W0 | ⬜ pending |
+| 10-03-01 | 03 | 2 | I18N-01/I18N-03/I18N-04 | node smoke + build | `node tests/Frontend/i18n-fallback-smoke.mjs && npm run build` | ❌ W0 | ⬜ pending |
 | 10-04-01 | 04 | 3 | I18N-12/I18N-13 | Filament feature | `php artisan test tests/Feature/Filament/ProfileLocaleSettingsTest.php --stop-on-failure` | ❌ W0 | ⬜ pending |
 | 10-05-01 | 05 | 4 | I18N-03/I18N-12/I18N-13 | manual gate + automated smoke | `php artisan test tests/Feature/Localization/FallbackBehaviorTest.php --stop-on-failure && php artisan test tests/Feature/Localization/LocaleMiddlewareTest.php --stop-on-failure && php artisan test tests/Feature/Filament/ProfileLocaleSettingsTest.php --stop-on-failure && npm run build` | ✅ by prior plans | ⬜ pending |
 
@@ -52,6 +52,7 @@ created: 2026-04-23
 ## Wave 0 Requirements
 
 - [ ] `resources/js/i18n/index.js` — SPA i18n bootstrap with English fallback
+- [ ] `tests/Frontend/i18n-fallback-smoke.mjs` — missing SPA key fallback coverage
 - [ ] `tests/Feature/Localization/LocaleMiddlewareTest.php` — backend locale resolution and fallback coverage
 - [ ] `tests/Feature/Filament/ProfileLocaleSettingsTest.php` — backend language settings surface and persistence coverage
 - [ ] `tests/Feature/Localization/FallbackBehaviorTest.php` — missing-key fallback behavior for frontend/backend foundations
@@ -70,11 +71,11 @@ created: 2026-04-23
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
 - [ ] No watch-mode flags
-- [ ] Feedback latency < 60s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] Feedback latency < 60s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-04-23
