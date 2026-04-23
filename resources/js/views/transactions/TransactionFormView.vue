@@ -309,7 +309,6 @@ async function handleDelete() {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Transaction' : 'Add Transaction' }}</h1>
-            <p class="mt-1 text-sm text-gray-500">Use the same account, type, category, and transfer logic as the Filament transaction form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingTx" class="py-16" />
@@ -352,7 +351,6 @@ async function handleDelete() {
                         :options="destinationAccountOptions"
                         placeholder="Select destination account"
                         :error="errors.to_account_id"
-                        helper="Shown automatically when the selected transaction type is a transfer."
                     />
                 </div>
 
@@ -364,7 +362,6 @@ async function handleDelete() {
                         min="0.01"
                         step="0.01"
                         placeholder="0.00"
-                        helper="Enter a positive amount."
                         :error="errors.amount"
                     />
                     <FormInput label="Date *" v-model="form.date" type="date" :error="errors.date" />

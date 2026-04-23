@@ -13,7 +13,7 @@ const props = defineProps({
     },
     description: {
         type: String,
-        default: 'Current month warning, exceeded, and critical categories.',
+        default: '',
     },
     emptyLabel: {
         type: String,
@@ -60,7 +60,7 @@ function usageLabel(alert) {
         <div class="flex items-start justify-between gap-4">
             <div>
                 <h2 class="text-base font-semibold text-gray-900">{{ title }}</h2>
-                <p class="mt-1 text-sm text-gray-500">{{ description }}</p>
+                <p v-if="description" class="mt-1 text-sm text-gray-500">{{ description }}</p>
             </div>
             <span
                 v-if="monthLabel"

@@ -71,7 +71,6 @@ onMounted(() => {
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Credit Cards</h1>
-                <p class="mt-1 text-sm text-gray-500">Track your credit card spending cycles</p>
             </div>
             <router-link
                 to="/credit-cards/new"

@@ -32,7 +32,6 @@ const initials = computed(() => {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">User details</h1>
-            <p class="mt-1 text-sm text-gray-500">Your profile information and session shortcuts.</p>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
@@ -84,7 +83,6 @@ const initials = computed(() => {
                         <UserCircleIcon class="mt-0.5 h-5 w-5 text-amber-600" />
                         <div>
                             <h2 class="text-base font-semibold text-gray-900">Quick actions</h2>
-                            <p class="mt-1 text-sm text-gray-500">Shortcuts for your current session.</p>
                         </div>
                     </div>
 

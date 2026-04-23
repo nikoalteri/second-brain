@@ -442,7 +442,6 @@ onMounted(() => {
             <div class="mb-4 flex items-center justify-between gap-4">
                 <div>
                     <h2 class="text-xl font-semibold text-gray-900">Billing Cycles</h2>
-                    <p class="mt-1 text-sm text-gray-500">Same cycle records as Filament: period start, statement date, due date, total spent, and issue action.</p>
                 </div>
                 <button
                     type="button"
@@ -457,7 +456,6 @@ onMounted(() => {
                 <div class="mb-4 flex items-center justify-between gap-4">
                     <div>
                         <h3 class="text-lg font-semibold text-gray-900">{{ isEditingCycle ? 'Edit cycle' : 'New cycle' }}</h3>
-                        <p class="mt-1 text-sm text-gray-500">Mirror the backend cycle manager. Leave due date empty to apply the backend default.</p>
                     </div>
                     <button
                         type="button"
@@ -483,7 +481,6 @@ onMounted(() => {
                         label="Due date"
                         v-model="cycleForm.due_date"
                         type="date"
-                        helper="Optional. When empty, the backend applies its default due-date rule."
                     />
                     <FormInput
                         label="Total spent"
@@ -611,7 +608,6 @@ onMounted(() => {
                 <div class="mb-4 flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-xl font-semibold text-gray-900">Payments</h2>
-                        <p class="mt-1 text-sm text-gray-500">Same as the backend payments relation: mark a pending payment as paid and it posts automatically to transactions.</p>
                     </div>
                 </div>
 
@@ -674,7 +670,6 @@ onMounted(() => {
                 <div class="mb-4 flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-xl font-semibold text-gray-900">Expenses</h2>
-                        <p class="mt-1 text-sm text-gray-500">Same fields as the backend expenses relation. Cycle assignment stays automatic.</p>
                     </div>
                     <button
                         type="button"
@@ -697,7 +692,6 @@ onMounted(() => {
                             label="Posted date"
                             v-model="expenseForm.posted_at"
                             type="date"
-                            helper="Leave empty if it matches the transaction date."
                         />
                         <FormInput label="Amount" v-model="expenseForm.amount" type="number" min="0.01" step="0.01" />
                         <FormInput label="Description" v-model="expenseForm.description" />

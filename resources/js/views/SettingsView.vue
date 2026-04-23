@@ -84,7 +84,6 @@ async function saveSettings() {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
-            <p class="mt-1 text-sm text-gray-500">Manage the preferences available from your user menu.</p>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
@@ -93,7 +92,6 @@ async function saveSettings() {
                     <Cog6ToothIcon class="mt-0.5 h-5 w-5 text-amber-600" />
                     <div>
                         <h2 class="text-base font-semibold text-gray-900">Preferences</h2>
-                        <p class="mt-1 text-sm text-gray-500">These options affect your SPA formatting, toasts, and profile visibility.</p>
                     </div>
                 </div>
 
@@ -108,7 +106,6 @@ async function saveSettings() {
                             <option value="dark">Dark</option>
                             <option value="system">System</option>
                         </select>
-                        <p class="mt-1 text-xs text-gray-500">Re-enable SPA dark mode and choose how it should be activated.</p>
                     </label>
 
                     <label class="block">
@@ -120,7 +117,6 @@ async function saveSettings() {
                             <option value="en">English</option>
                             <option value="it">Italiano</option>
                         </select>
-                        <p class="mt-1 text-xs text-gray-500">Changes month labels and currency formatting across the SPA.</p>
                     </label>
 
                     <label class="block">
@@ -132,7 +128,6 @@ async function saveSettings() {
                             <option value="all">All toasts</option>
                             <option value="important_only">Errors only</option>
                         </select>
-                        <p class="mt-1 text-xs text-gray-500">Keep the app quiet while still surfacing blocking problems.</p>
                     </label>
 
                     <label class="block">
@@ -144,7 +139,6 @@ async function saveSettings() {
                             <option value="visible">Show profile details</option>
                             <option value="private">Hide email and user ID</option>
                         </select>
-                        <p class="mt-1 text-xs text-gray-500">Controls what appears on your profile screen.</p>
                     </label>
                 </div>
 
@@ -162,7 +156,6 @@ async function saveSettings() {
             <aside class="space-y-6">
                 <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                     <h2 class="text-base font-semibold text-gray-900">Preview</h2>
-                    <p class="mt-1 text-sm text-gray-500">What these settings do right now.</p>
 
                     <dl class="mt-4 space-y-4">
                         <div

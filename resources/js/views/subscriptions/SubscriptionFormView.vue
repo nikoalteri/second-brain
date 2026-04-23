@@ -77,13 +77,6 @@ const amountLabel = computed(() => {
 
     return monthsInterval === 1 ? 'Monthly charge *' : 'Renewal amount *';
 });
-const amountHelper = computed(() => {
-    const monthsInterval = selectedFrequency.value?.months_interval ?? 1;
-
-    return monthsInterval === 1
-        ? 'Amount charged every month.'
-        : `Amount charged every ${monthsInterval} month${monthsInterval === 1 ? '' : 's'}.`;
-});
 const categoryOptions = computed(() => {
     const categories = categoriesResult.value?.transactionCategories ?? [];
     const parents = categories.filter((category) => !category.parent_id);
@@ -335,7 +328,6 @@ async function handleDelete() {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Subscription' : 'Add Subscription' }}</h1>
-            <p class="mt-1 text-sm text-gray-500">Use the same renewal, payment source, category, and automation settings available in the backend.</p>
         </div>
 
         <LoadingSpinner v-if="loadingSub" class="py-16" />
@@ -370,7 +362,6 @@ async function handleDelete() {
                             type="number"
                             min="0"
                             step="0.01"
-                            :helper="amountHelper"
                             :error="errors.billing_amount"
                         />
                         <FormInput
@@ -380,7 +371,6 @@ async function handleDelete() {
                             min="1"
                             max="31"
                             step="1"
-                            helper="Day of month for renewal."
                             :error="errors.day_of_month"
                         />
                     </div>
@@ -393,7 +383,6 @@ async function handleDelete() {
                             label="Next renewal date *"
                             v-model="form.next_renewal_date"
                             type="date"
-                            helper="Next scheduled renewal."
                             :error="errors.next_renewal_date"
                         />
                         <FormSelect label="Status *" v-model="form.status" :options="statusOptions" :error="errors.status" />
@@ -409,7 +398,6 @@ async function handleDelete() {
                             :options="accountOptions"
                             placeholder="Select account"
                             :error="errors.account_id"
-                            helper="Use an account for direct debit."
                         />
                         <FormSelect
                             label="Credit card"
@@ -417,7 +405,6 @@ async function handleDelete() {
                             :options="creditCardOptions"
                             placeholder="Select credit card"
                             :error="errors.credit_card_id"
-                            helper="Use a credit card to create card expenses automatically."
                         />
                         <FormSelect
                             label="Category"

@@ -50,7 +50,6 @@ const paginator = computed(() => result.value?.accounts?.paginatorInfo);
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Accounts</h1>
-                <p class="mt-1 text-sm text-gray-500">All your bank accounts</p>
             </div>
             <router-link
                 to="/accounts/new"

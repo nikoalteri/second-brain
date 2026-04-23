@@ -275,7 +275,6 @@ async function handleDelete() {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Loan' : 'Record Loan' }}</h1>
-            <p class="mt-1 text-sm text-gray-500">Mirror the same calculated fields and schedule settings used in the Filament loan form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingLoan" class="py-16" />
@@ -330,7 +329,6 @@ async function handleDelete() {
                             type="number"
                             step="0.01"
                             readonly
-                            helper="Calculated automatically from amount, rate, and installments."
                         />
                         <FormInput
                             label="Remaining Amount"
@@ -338,7 +336,6 @@ async function handleDelete() {
                             type="number"
                             step="0.01"
                             readonly
-                            helper="Outstanding principal balance after paid installments."
                         />
                     </div>
 

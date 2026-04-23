@@ -242,7 +242,6 @@ onMounted(() => {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Card' : 'Add Card' }}</h1>
-                    <p class="mt-1 text-sm text-gray-500">Use the same settlement account, rules, and balance fields available in the Filament credit card form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingCard" class="py-16" />
@@ -256,32 +255,27 @@ onMounted(() => {
                             label="Name *"
                             v-model="form.name"
                             placeholder="e.g. Bank + card nickname"
-                            helper="Use a clear name, e.g. Bank + card nickname."
                         />
                         <FormSelect
                             label="Settlement account *"
                             v-model="form.account_id"
                             :options="accountOptions"
                             placeholder="Select account"
-                            helper="This account will be charged when card payments are posted."
                         />
                         <FormSelect
                             label="Type *"
                             v-model="form.type"
                             :options="typeOptions"
-                            helper="Charge: full statement payment. Revolving: fixed monthly installment with interest."
                         />
                         <FormSelect
                             label="Status *"
                             v-model="form.status"
                             :options="statusOptions"
-                            helper="Set Active to include the card in cycle generation and KPIs."
                         />
                         <FormInput
                             label="Start date"
                             v-model="form.start_date"
                             type="date"
-                            helper="Optional. If set, cycles and expenses should start from this date."
                         />
                     </div>
                 </section>
@@ -296,7 +290,6 @@ onMounted(() => {
                             min="0"
                             step="0.01"
                             placeholder="0.00"
-                            helper="Maximum facility for the card. Leave empty for unlimited credit."
                         />
                         <FormInput
                             label="Max monthly installment"
@@ -306,7 +299,6 @@ onMounted(() => {
                             step="0.01"
                             placeholder="0.00"
                             :disabled="!isRevolving"
-                            :helper="isRevolving ? 'Maximum monthly amount for revolving cards.' : 'Not used for charge cards.'"
                         />
                         <FormInput
                             label="Interest rate (%)"
@@ -317,7 +309,6 @@ onMounted(() => {
                             step="0.01"
                             placeholder="0.00"
                             :disabled="!isRevolving"
-                            :helper="isRevolving ? 'Nominal monthly interest rate applied to revolving residual balance.' : 'Charge cards do not calculate interest.'"
                         />
                         <FormInput
                             label="Stamp duty"
@@ -326,7 +317,6 @@ onMounted(() => {
                             min="0"
                             step="0.01"
                             placeholder="0.00"
-                            helper="Fixed fee added to each statement (if applicable)."
                         />
                         <FormInput
                             label="Statement day *"
@@ -335,7 +325,6 @@ onMounted(() => {
                             min="1"
                             max="31"
                             step="1"
-                            helper="Day of month when the statement cycle is closed."
                         />
                         <FormInput
                             label="Due day *"
@@ -344,7 +333,6 @@ onMounted(() => {
                             min="1"
                             max="31"
                             step="1"
-                            helper="Current API requires a due date day for each card."
                         />
                         <FormInput
                             label="Current balance *"
@@ -352,7 +340,6 @@ onMounted(() => {
                             type="number"
                             min="0"
                             step="0.01"
-                            helper="Used credit (outstanding principal). Available credit is limit minus this value."
                         />
                         <FormSelect
                             label="Interest calculation method"

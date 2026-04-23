@@ -482,7 +482,6 @@ onMounted(async () => {
         <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Finance report</h1>
-                <p class="mt-1 text-sm text-gray-500">Frontend parity for the Filament finance report.</p>
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -555,9 +554,6 @@ onMounted(async () => {
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <h2 class="text-base font-semibold text-gray-900">Monthly budgets</h2>
-                            <p class="mt-1 text-sm text-gray-500">
-                                Budget math always uses actual monthly spending and stays independent from note and type filters.
-                            </p>
                         </div>
 
                         <label class="flex items-center gap-2 text-sm font-medium text-gray-600">
@@ -655,7 +651,6 @@ onMounted(async () => {
                 <BudgetAlertPanel
                     :alerts="budgetAlerts"
                     title="Budget alerts"
-                    description="In-app alerts for the selected budget month."
                     :month-label="budgetMonthLabel"
                     empty-label="No warning, exceeded, or critical budget alerts for this month."
                 />

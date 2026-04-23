@@ -510,7 +510,6 @@ onMounted(() => {
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Dashboard</h1>
-                <p class="mt-1 text-sm text-gray-500">Overview first, urgent items next, and deeper finance insights after that.</p>
             </div>
         </div>
 
@@ -523,7 +522,6 @@ onMounted(() => {
                         <div>
                             <p class="text-sm font-semibold uppercase tracking-wide text-gray-500">{{ monthLabel }} pulse</p>
                             <h2 class="mt-2 text-2xl font-semibold text-gray-900">Financial overview</h2>
-                            <p class="mt-2 text-sm text-gray-500">A faster snapshot of what is healthy, what is due soon, and where money is moving this month.</p>
                         </div>
                         <div class="rounded-2xl bg-gray-50 px-4 py-3 text-right">
                             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Net cashflow</p>
@@ -620,7 +618,6 @@ onMounted(() => {
                     v-else
                     :alerts="budgetAlerts"
                     title="Budget Alerts"
-                    description="Current-month warning, exceeded, and critical categories from the shared budget contract."
                     :month-label="budgetMonthLabel"
                     empty-label="No current dashboard budget alerts."
                     compact
@@ -632,7 +629,6 @@ onMounted(() => {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900">Upcoming payments</h2>
-                            <p class="mt-1 text-sm text-gray-500">Urgent reminders for loans, credit cards, and subscriptions with posting-state context.</p>
                         </div>
                         <div class="grid shrink-0 grid-cols-3 gap-2 text-center text-sm">
                             <div class="rounded-xl bg-gray-50 px-3 py-2">
@@ -687,7 +683,6 @@ onMounted(() => {
                 <section class="grid gap-6">
                     <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 class="text-lg font-semibold text-gray-900">Automation snapshot</h2>
-                        <p class="mt-1 text-sm text-gray-500">Shows how much of the upcoming work is already reflected automatically.</p>
 
                         <div class="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                             <div class="rounded-xl bg-emerald-50 p-4">
@@ -707,7 +702,6 @@ onMounted(() => {
 
                     <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                         <h2 class="text-lg font-semibold text-gray-900">Spending highlights</h2>
-                        <p class="mt-1 text-sm text-gray-500">The Filament-style category breakdown plus the largest expense buckets for this month.</p>
 
                         <div class="mt-4 space-y-4">
                             <div v-if="categorizedSpending.length" class="h-64 rounded-xl bg-gray-50 p-4">
@@ -763,7 +757,6 @@ onMounted(() => {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900">Cashflow comparison</h2>
-                            <p class="mt-1 text-sm text-gray-500">Mirrors the Filament monthly cashflow graph with income, expenses, and payments.</p>
                         </div>
                         <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                             {{ monthLabel }}
@@ -779,7 +772,6 @@ onMounted(() => {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-semibold text-gray-900">Net worth trend</h2>
-                            <p class="mt-1 text-sm text-gray-500">A 12-month line chart so the dashboard matches the Filament trend view.</p>
                         </div>
                         <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                             12 months
@@ -796,7 +788,6 @@ onMounted(() => {
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Quick health checks</h2>
-                        <p class="mt-1 text-sm text-gray-500">Short answers to the questions you usually need first.</p>
                     </div>
                     <div class="rounded-xl bg-gray-50 px-3 py-2 text-right">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Payments this month</p>

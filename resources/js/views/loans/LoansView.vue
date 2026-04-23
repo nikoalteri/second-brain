@@ -68,7 +68,6 @@ onMounted(() => {
         <div class="mb-6 flex items-center justify-between">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Loans</h1>
-                <p class="mt-1 text-sm text-gray-500">Track your loan repayment progress</p>
             </div>
             <router-link
                 to="/loans/new"

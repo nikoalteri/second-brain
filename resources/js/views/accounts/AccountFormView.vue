@@ -152,7 +152,6 @@ async function handleDelete() {
     <AppLayout>
         <div class="mb-6">
             <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Account' : 'Add Account' }}</h1>
-            <p class="mt-1 text-sm text-gray-500">Use the same account type, balance, currency, and activation fields defined in the Filament account form.</p>
         </div>
 
         <LoadingSpinner v-if="loadingAccount" class="py-16" />
@@ -168,7 +167,6 @@ async function handleDelete() {
                         type="number"
                         step="0.01"
                         readonly
-                        helper="Calculated automatically by the system."
                     />
                     <FormInput
                         label="Opening Balance"
@@ -177,7 +175,6 @@ async function handleDelete() {
                         step="0.01"
                         min="0"
                         :readonly="isEdit"
-                        helper="Balance at the time of system adoption."
                     />
                     <FormSelect label="Currency *" v-model="form.currency" :options="currencyOptions" :error="errors.currency" />
                 </div>
