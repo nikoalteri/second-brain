@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — Finance Backend ✅
-current_plan: 3
+current_plan: 5
 status: executing
-stopped_at: Plan 08-02 completed
-last_updated: "2026-04-23T19:05:00.000Z"
+stopped_at: Plan 08-04 completed
+last_updated: "2026-04-23T21:20:00.000Z"
 progress:
   total_phases: 10
   completed_phases: 2
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 16
 ---
 
 # v4.0 Project State
@@ -43,13 +43,15 @@ All finance backend phases delivered:
 
 **Goal:** Add optional category budgets, in-app budget alerts, and full report exports for existing finance report data.
 
-**Current Plan:** 3
+**Current Plan:** 5
 
 ### Plans:
 
 - Plan 08-01 completed: monthly budget backend, alert service, and budget API
 - Plan 08-02 completed: shared finance report export backend for CSV, XLSX, and PDF
-- Plan 08-03 next: Filament budget surfaces and export wiring
+- Plan 08-03 completed: Filament budget surfaces, export links, and dashboard alerts
+- Plan 08-04 completed: SPA budget surfaces and export controls
+- Plan 08-05 next: manual verification
 
 ## Decisions
 
@@ -60,5 +62,5 @@ All finance backend phases delivered:
 
 ## Last Session
 
-**Stopped at:** Plan 08-02 completed
-**Timestamp:** 2026-04-23T19:05:00Z
+**Stopped at:** Plan 08-04 completed
+**Timestamp:** 2026-04-23T21:20:00Z

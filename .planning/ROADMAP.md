@@ -72,8 +72,8 @@ Plans:
 
 ## v4.0 — Advanced Analytics ⏳
 
-### Phase 8: Budget Planning & Forecasting
-**Goal:** Add budget planning, spending forecasts, and exportable PDF reports.
+### Phase 8: Budget Planning & Exports
+**Goal:** Add optional category budgets, in-app budget alerts, and exportable PDF/CSV/Excel reports for existing finance report data.
 
 ### Phase 9: Bank Feed Integrations
 **Goal:** Integrate with bank APIs (Open Banking / PSD2) for automatic transaction import.
