@@ -1,7 +1,7 @@
 # Fluxa — Roadmap
 
 **Project:** Fluxa Personal Finance Tracker  
-**Last Updated:** 2026-04-21
+**Last Updated:** 2026-04-23
 
 ---
 
@@ -43,37 +43,40 @@ Plans:
 - [x] 06-PLAN-6-api-docs.md — Configure Scribe for api/v1/* only, add controller docblocks, generate OpenAPI 3.0 at /docs
 - [x] 06-PLAN-7-tests.md — Feature tests for auth, REST CRUD + scoping + pagination + filters, GraphQL queries + mutations
 
-**Success Criteria:**
-1. JWT authentication working for all API endpoints
-2. REST endpoints cover accounts, transactions, subscriptions, loans, credit cards
-3. GraphQL schema mirrors REST surface with query/mutation support
-4. Rate limiting enforced per user/IP (100 read / 20 write)
-5. API documentation auto-generated (Scribe OpenAPI 3.0 at /docs)
-6. All endpoints protected by existing RBAC policies
-7. Test coverage for auth, CRUD, scoping, and error responses
-
 ---
 
-## v3.0 — Frontend ⏳
+## v3.0 — Frontend ✅ (Delivered)
 
-### Phase 7: Mobile-Friendly Frontend SPA ⏳
-**Goal:** Build a mobile-friendly Vue 3 SPA (Composition API + script setup) served within the existing Laravel project, consuming the v2.0 REST + GraphQL API. Covers all 5 finance domains with full CRUD, Apollo Client v4 with auto-refresh, Pinia auth store, and responsive dark-theme UI.
-
-**Plans:** 5 plans
-
-Plans:
-- [ ] 07-01-infrastructure-auth-PLAN.md — npm install, Vite + Vue plugin, Blade entry, web.php catch-all, Apollo Client v4, Pinia auth store, router (20 routes + auth guard), Login view, all shared UI components + composables
-- [ ] 07-02-dashboard-accounts-PLAN.md — Dashboard (KPI cards + cashflow chart + category totals), Accounts list/detail/form (CRUD)
-- [ ] 07-03-transactions-PLAN.md — Schema additions (transactionTypes + transactionCategories queries), Transactions list with filters + create/edit form
-- [ ] 07-04-loans-creditcards-PLAN.md — Loans list/detail/form with amber progress bars, Credit Cards list/detail/form with purple credit bars + cycle accordion
-- [ ] 07-05-subscriptions-polish-PLAN.md — Subscriptions list/form with renewal highlighting, human verification checkpoint
+### Phase 7: Mobile-Friendly Frontend SPA ✅
+**Goal:** Build a mobile-friendly Vue 3 SPA (Composition API + script setup) served within the existing Laravel project, consuming the REST + GraphQL APIs with shared auth, responsive UI, and full finance CRUD coverage.
 
 ---
 
 ## v4.0 — Advanced Analytics ⏳
 
-### Phase 8: Budget Planning & Exports
+### Phase 8: Budget Planning & Exports ⏳
 **Goal:** Add optional category budgets, in-app budget alerts, and exportable PDF/CSV/Excel reports for existing finance report data.
 
 ### Phase 9: Bank Feed Integrations
 **Goal:** Integrate with bank APIs (Open Banking / PSD2) for automatic transaction import.
+
+---
+
+## v5.0 — Localization & Unified Settings ⏳
+
+### Phase 10: Localization Foundation & Shared Settings ⏳
+**Goal:** Establish the English/Italian localization infrastructure, safe fallback behavior, and one shared per-user language preference editable from both frontend and backend.
+
+### Phase 11: Frontend Localization Rollout ⏳
+**Goal:** Translate the SPA's navigation, settings, finance workflows, validation copy, reports, and dashboards so the current frontend is usable in English and Italian.
+
+### Phase 12: Backend Localization Rollout & Verification ⏳
+**Goal:** Translate the Filament backend UI, expose useful backend language controls, and verify that language preference behavior works consistently across frontend and backend sessions.
+
+**Success Criteria:**
+1. English and Italian both work across the SPA
+2. English and Italian both work across the Filament backend
+3. Users can change language from frontend and backend settings
+4. One shared saved preference drives both surfaces
+5. Existing users fall back safely to English
+6. Regression coverage protects localization behavior across settings, auth, and finance flows
