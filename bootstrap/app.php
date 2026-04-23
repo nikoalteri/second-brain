@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'module' => \App\Http\Middleware\CheckModuleEnabled::class,
+            'set-user-locale' => \App\Http\Middleware\SetLocaleFromUserPreference::class,
         ]);
 
         //
