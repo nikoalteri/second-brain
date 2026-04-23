@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { Cog6ToothIcon } from '@heroicons/vue/24/outline';
+import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import { useToast } from '@/composables/useToast.js';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
@@ -9,36 +10,27 @@ import { useAuthStore } from '@/stores/auth.js';
 const auth = useAuthStore();
 const { addToast } = useToast();
 const { settings } = useUserPreferences();
+const { t } = useI18n();
 const saving = ref(false);
 const saveMessage = ref('');
 const settingsForm = ref({ ...settings.value });
 
 const previewRows = computed(() => [
     {
-        label: 'Theme',
-        description: settingsForm.value.theme === 'light'
-            ? 'The SPA stays in light mode.'
-            : settingsForm.value.theme === 'dark'
-                ? 'The SPA stays in dark mode.'
-                : 'The SPA follows your system light/dark preference.',
+        label: t('settings.fields.theme'),
+        description: t(`settings.previewRows.theme.${settingsForm.value.theme}`),
     },
     {
-        label: 'Language',
-        description: settingsForm.value.language === 'it'
-            ? 'Months and currency use Italian formatting.'
-            : 'Months and currency use English formatting.',
+        label: t('settings.fields.language'),
+        description: t(`settings.previewRows.language.${settingsForm.value.language}`),
     },
     {
-        label: 'Notifications',
-        description: settingsForm.value.notifications === 'important_only'
-            ? 'Success toasts are muted; errors still appear.'
-            : 'Success and error toasts are both shown.',
+        label: t('settings.fields.notifications'),
+        description: t(`settings.previewRows.notifications.${settingsForm.value.notifications}`),
     },
     {
-        label: 'Privacy',
-        description: settingsForm.value.privacy === 'private'
-            ? 'Your profile hides email and user ID.'
-            : 'Your profile shows email and user ID.',
+        label: t('settings.fields.privacy'),
+        description: t(`settings.previewRows.privacy.${settingsForm.value.privacy}`),
     },
 ]);
 
@@ -64,16 +56,16 @@ async function saveSettings() {
         const data = await response.json();
 
         if (!response.ok) {
-            addToast('Could not save your settings. Please try again.', 'error');
+            addToast(t('settings.feedback.saveError'), 'error');
             return;
         }
 
         auth.setUser(data.user ?? auth.user);
         settingsForm.value = { ...(data.user?.settings ?? settings.value) };
-        saveMessage.value = 'Settings saved.';
-        addToast('Settings updated.', 'success');
+        saveMessage.value = t('settings.feedback.saved');
+        addToast(t('settings.feedback.updated'), 'success');
     } catch {
-        addToast('Could not save your settings. Please try again.', 'error');
+        addToast(t('settings.feedback.saveError'), 'error');
     } finally {
         saving.value = false;
     }
@@ -83,7 +75,7 @@ async function saveSettings() {
 <template>
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
+            <h1 class="text-xl font-semibold text-gray-900">{{ t('settings.title') }}</h1>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
@@ -91,53 +83,53 @@ async function saveSettings() {
                 <div class="flex items-start gap-3">
                     <Cog6ToothIcon class="mt-0.5 h-5 w-5 text-amber-600" />
                     <div>
-                        <h2 class="text-base font-semibold text-gray-900">Preferences</h2>
+                        <h2 class="text-base font-semibold text-gray-900">{{ t('settings.preferences') }}</h2>
                     </div>
                 </div>
 
                 <div class="mt-6 space-y-5">
                     <label class="block">
-                        <span class="text-sm font-medium text-gray-700">Theme</span>
+                        <span class="text-sm font-medium text-gray-700">{{ t('settings.fields.theme') }}</span>
                         <select
                             v-model="settingsForm.theme"
                             class="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
                         >
-                            <option value="light">Light</option>
-                            <option value="dark">Dark</option>
-                            <option value="system">System</option>
+                            <option value="light">{{ t('settings.options.theme.light') }}</option>
+                            <option value="dark">{{ t('settings.options.theme.dark') }}</option>
+                            <option value="system">{{ t('settings.options.theme.system') }}</option>
                         </select>
                     </label>
 
                     <label class="block">
-                        <span class="text-sm font-medium text-gray-700">Language</span>
+                        <span class="text-sm font-medium text-gray-700">{{ t('settings.fields.language') }}</span>
                         <select
                             v-model="settingsForm.language"
                             class="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
                         >
-                            <option value="en">English</option>
-                            <option value="it">Italiano</option>
+                            <option value="en">{{ t('settings.options.language.en') }}</option>
+                            <option value="it">{{ t('settings.options.language.it') }}</option>
                         </select>
                     </label>
 
                     <label class="block">
-                        <span class="text-sm font-medium text-gray-700">Notifications</span>
+                        <span class="text-sm font-medium text-gray-700">{{ t('settings.fields.notifications') }}</span>
                         <select
                             v-model="settingsForm.notifications"
                             class="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
                         >
-                            <option value="all">All toasts</option>
-                            <option value="important_only">Errors only</option>
+                            <option value="all">{{ t('settings.options.notifications.all') }}</option>
+                            <option value="important_only">{{ t('settings.options.notifications.important_only') }}</option>
                         </select>
                     </label>
 
                     <label class="block">
-                        <span class="text-sm font-medium text-gray-700">Privacy</span>
+                        <span class="text-sm font-medium text-gray-700">{{ t('settings.fields.privacy') }}</span>
                         <select
                             v-model="settingsForm.privacy"
                             class="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
                         >
-                            <option value="visible">Show profile details</option>
-                            <option value="private">Hide email and user ID</option>
+                            <option value="visible">{{ t('settings.options.privacy.visible') }}</option>
+                            <option value="private">{{ t('settings.options.privacy.private') }}</option>
                         </select>
                     </label>
                 </div>
@@ -148,14 +140,14 @@ async function saveSettings() {
                     :disabled="saving"
                     @click="saveSettings"
                 >
-                    {{ saving ? 'Saving...' : 'Save settings' }}
+                    {{ saving ? t('settings.actions.saving') : t('settings.actions.save') }}
                 </button>
                 <p v-if="saveMessage" class="mt-3 text-sm text-emerald-600">{{ saveMessage }}</p>
             </section>
 
             <aside class="space-y-6">
                 <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-base font-semibold text-gray-900">Preview</h2>
+                    <h2 class="text-base font-semibold text-gray-900">{{ t('settings.preview') }}</h2>
 
                     <dl class="mt-4 space-y-4">
                         <div

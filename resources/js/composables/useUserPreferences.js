@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { resolveBrowserLocale } from '@/i18n/index.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const defaults = {
@@ -17,7 +18,7 @@ export function useUserPreferences() {
     }));
 
     const themeMode = computed(() => settings.value.theme);
-    const locale = computed(() => settings.value.language === 'it' ? 'it-IT' : 'en-US');
+    const locale = computed(() => resolveBrowserLocale(settings.value.language));
     const notificationsMode = computed(() => settings.value.notifications);
     const profileIsPrivate = computed(() => settings.value.privacy === 'private');
 
@@ -25,7 +26,7 @@ export function useUserPreferences() {
         return notificationsMode.value === 'all' || type === 'error';
     }
 
-        return {
+    return {
         settings,
         themeMode,
         locale,

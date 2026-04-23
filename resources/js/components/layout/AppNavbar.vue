@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import {
     ArrowRightOnRectangleIcon,
     ArrowsRightLeftIcon,
@@ -24,14 +25,15 @@ const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
 const { profileIsPrivate } = useUserPreferences();
+const { t } = useI18n();
 const mobileMenuOpen = ref(false);
 const userMenuOpen = ref(false);
 const userMenuRef = ref(null);
 const adminUrl = '/admin';
-const adminLinkLabel = computed(() => auth.isAdmin ? 'Open Admin' : null);
+const adminLinkLabel = computed(() => auth.isAdmin ? t('shell.userMenu.openAdmin') : null);
 const isUserMenuRoute = computed(() => ['profile', 'settings'].includes(route.name));
-const userDisplayName = computed(() => auth.user?.name || 'Account');
-const userEmail = computed(() => profileIsPrivate.value ? 'Private account' : (auth.user?.email || 'Signed in'));
+const userDisplayName = computed(() => auth.user?.name || t('shell.userMenu.account'));
+const userEmail = computed(() => profileIsPrivate.value ? t('shell.userMenu.privateAccount') : (auth.user?.email || t('shell.userMenu.signedIn')));
 const userInitials = computed(() => {
     const name = auth.user?.name?.trim();
 
@@ -64,15 +66,15 @@ function toggleUserMenu() {
     userMenuOpen.value = !userMenuOpen.value;
 }
 
-const navLinks = [
-    { name: 'Dashboard', to: '/dashboard', icon: HomeIcon },
-    { name: 'Accounts', to: '/accounts', icon: BanknotesIcon },
-    { name: 'Transactions', to: '/transactions', icon: ArrowsRightLeftIcon },
-    { name: 'Reports', to: '/reports/finance', icon: ChartPieIcon },
-    { name: 'Loans', to: '/loans', icon: DocumentTextIcon },
-    { name: 'Credit Cards', to: '/credit-cards', icon: CreditCardIcon },
-    { name: 'Subscriptions', to: '/subscriptions', icon: CalendarDaysIcon },
-];
+const navLinks = computed(() => [
+    { name: t('shell.nav.dashboard'), to: '/dashboard', icon: HomeIcon },
+    { name: t('shell.nav.accounts'), to: '/accounts', icon: BanknotesIcon },
+    { name: t('shell.nav.transactions'), to: '/transactions', icon: ArrowsRightLeftIcon },
+    { name: t('shell.nav.reports'), to: '/reports/finance', icon: ChartPieIcon },
+    { name: t('shell.nav.loans'), to: '/loans', icon: DocumentTextIcon },
+    { name: t('shell.nav.creditCards'), to: '/credit-cards', icon: CreditCardIcon },
+    { name: t('shell.nav.subscriptions'), to: '/subscriptions', icon: CalendarDaysIcon },
+]);
 
 async function handleLogout() {
     closeMobileMenu();
@@ -143,7 +145,7 @@ onBeforeUnmount(() => {
                             @click="closeUserMenu"
                         >
                             <UserCircleIcon class="h-5 w-5" />
-                            User details
+                            {{ t('shell.userMenu.userDetails') }}
                         </router-link>
 
                         <router-link
@@ -152,7 +154,7 @@ onBeforeUnmount(() => {
                             @click="closeUserMenu"
                         >
                             <Cog6ToothIcon class="h-5 w-5" />
-                            Settings
+                            {{ t('shell.userMenu.settings') }}
                         </router-link>
 
                         <a
@@ -171,14 +173,14 @@ onBeforeUnmount(() => {
                             @click="handleLogout"
                         >
                             <ArrowRightOnRectangleIcon class="h-5 w-5" />
-                            Sign out
+                            {{ t('shell.userMenu.signOut') }}
                         </button>
                     </div>
                 </div>
             </div>
 
             <button
-                aria-label="Toggle menu"
+                :aria-label="t('shell.userMenu.toggleMenu')"
                 class="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-300 md:hidden"
                 @click="mobileMenuOpen = !mobileMenuOpen"
             >
@@ -194,7 +196,7 @@ onBeforeUnmount(() => {
             class="fixed inset-0 z-50 flex flex-col gap-1 bg-white/95 px-4 pt-16 backdrop-blur-sm md:hidden"
         >
             <button
-                aria-label="Close menu"
+                :aria-label="t('shell.userMenu.closeMenu')"
                 class="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
                 @click="mobileMenuOpen = false"
             >
@@ -208,7 +210,7 @@ onBeforeUnmount(() => {
                 @click="closeMobileMenu"
             >
                 <UserCircleIcon class="h-5 w-5 shrink-0" />
-                User details
+                {{ t('shell.userMenu.userDetails') }}
             </router-link>
 
             <router-link
@@ -218,7 +220,7 @@ onBeforeUnmount(() => {
                 @click="closeMobileMenu"
             >
                 <Cog6ToothIcon class="h-5 w-5 shrink-0" />
-                Settings
+                {{ t('shell.userMenu.settings') }}
             </router-link>
 
             <router-link
@@ -248,7 +250,7 @@ onBeforeUnmount(() => {
                 @click="handleLogout"
             >
                 <ArrowRightOnRectangleIcon class="h-5 w-5 shrink-0" />
-                Sign out
+                {{ t('shell.userMenu.signOut') }}
             </button>
         </div>
     </Teleport>

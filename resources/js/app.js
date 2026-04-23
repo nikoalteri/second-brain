@@ -3,6 +3,7 @@ import { createPinia } from 'pinia';
 import { createRouter, createWebHistory } from 'vue-router';
 import { DefaultApolloClient } from '@vue/apollo-composable';
 import { apolloClient } from '@/apollo/client.js';
+import { createAppI18n, resolveAppLocale } from '@/i18n/index.js';
 import { routes } from '@/router/index.js';
 import { useAuthStore } from '@/stores/auth.js';
 import App from './App.vue';
@@ -30,7 +31,9 @@ router.beforeEach((to) => {
 });
 
 const app = createApp(App);
+const i18n = createAppI18n();
 app.use(pinia);
+app.use(i18n);
 app.use(router);
 app.provide(DefaultApolloClient, apolloClient);
 
@@ -47,7 +50,8 @@ function applyTheme() {
 }
 
 watchEffect(() => {
-    const language = auth.user?.settings?.language === 'it' ? 'it' : 'en';
+    const language = resolveAppLocale(auth.user?.settings?.language);
+    i18n.global.locale.value = language;
     document.documentElement.lang = language;
     applyTheme();
 });
