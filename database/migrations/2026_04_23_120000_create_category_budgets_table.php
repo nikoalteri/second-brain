@@ -19,8 +19,11 @@ return new class extends Migration
             $table->decimal('amount', 12, 2);
             $table->timestamps();
 
-            $table->unique(['user_id', 'transaction_category_id', 'period_start']);
-            $table->index(['user_id', 'period_start']);
+            $table->unique(
+                ['user_id', 'transaction_category_id', 'period_start'],
+                'cat_budgets_user_cat_period_uq'
+            );
+            $table->index(['user_id', 'period_start'], 'cat_budgets_user_period_idx');
         });
     }
 
