@@ -144,6 +144,20 @@ class DashboardApiTest extends TestCase
             ['name' => 'Credit Card payment'],
             ['is_income' => false]
         );
+        $card = CreditCard::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+        ]);
+        $cardPayment = CreditCardPayment::create([
+            'credit_card_id' => $card->id,
+            'due_date' => now()->startOfMonth()->addDays(5)->toDateString(),
+            'installment_amount' => 178,
+            'interest_amount' => 0,
+            'principal_amount' => 178,
+            'stamp_duty_amount' => 2,
+            'total_amount' => 180,
+            'status' => 'pending',
+        ]);
         $groceries = TransactionCategory::query()->create([
             'user_id' => $user->id,
             'name' => 'Groceries',
@@ -170,6 +184,7 @@ class DashboardApiTest extends TestCase
             'user_id' => $user->id,
             'account_id' => $account->id,
             'transaction_type_id' => $paymentType->id,
+            'credit_card_payment_id' => $cardPayment->id,
             'amount' => -180,
             'date' => now()->startOfMonth()->addDays(5)->toDateString(),
         ]);
@@ -190,6 +205,8 @@ class DashboardApiTest extends TestCase
             ->assertJsonPath('data.cashflow.net', 1000)
             ->assertJsonPath('data.expense_categories.0.category', 'Groceries')
             ->assertJsonPath('data.expense_categories.0.total', 320)
+            ->assertJsonPath('data.expense_categories.1.category', 'Credit card payments')
+            ->assertJsonPath('data.expense_categories.1.total', 180)
             ->assertJsonCount(12, 'data.net_worth_trend')
             ->assertJsonPath('data.net_worth_trend.10.value', 0)
             ->assertJsonPath('data.net_worth_trend.11.value', 1000);

@@ -172,8 +172,7 @@ class DashboardController extends Controller
     private function getExpenseCategoriesChartData(Request $request, Carbon $referenceDate): array
     {
         return Transaction::withoutGlobalScopes()
-            ->leftJoin('transaction_categories', 'transactions.transaction_category_id', '=', 'transaction_categories.id')
-            ->leftJoin('transaction_types', 'transactions.transaction_type_id', '=', 'transaction_types.id')
+            ->with(['category', 'type'])
             ->when(
                 ! $request->user()->hasRole('superadmin'),
                 fn ($query) => $query->where('transactions.user_id', $request->user()->id)
@@ -181,20 +180,38 @@ class DashboardController extends Controller
             ->where('transactions.is_transfer', false)
             ->whereYear('transactions.date', $referenceDate->year)
             ->whereMonth('transactions.date', $referenceDate->month)
-            ->where('transaction_types.is_income', false)
-            ->whereNull('transactions.loan_payment_id')
-            ->whereNull('transactions.credit_card_payment_id')
-            ->whereRaw('LOWER(COALESCE(transaction_types.name, "")) NOT LIKE ?', ['%payment%'])
             ->whereNull('transactions.deleted_at')
-            ->selectRaw('COALESCE(transaction_categories.name, ?) as category, SUM(ABS(transactions.amount)) as total, COUNT(*) as cnt', ['Uncategorised'])
-            ->groupBy('transactions.transaction_category_id', 'transaction_categories.name')
-            ->orderByDesc('total')
             ->get()
-            ->map(fn ($row) => [
-                'category' => $row->category,
-                'total' => (float) $row->total,
-                'count' => (int) $row->cnt,
+            ->filter(fn (Transaction $transaction) => ! (bool) $transaction->type?->is_income)
+            ->filter(function (Transaction $transaction) {
+                if ($transaction->credit_card_payment_id) {
+                    return true;
+                }
+
+                if ($transaction->loan_payment_id || $this->isPaymentTransaction($transaction)) {
+                    return false;
+                }
+
+                return true;
+            })
+            ->groupBy(function (Transaction $transaction) {
+                if ($transaction->category?->name) {
+                    return $transaction->category->name;
+                }
+
+                if ($transaction->credit_card_payment_id) {
+                    return 'Credit card payments';
+                }
+
+                return 'Uncategorised';
+            })
+            ->map(fn ($transactions, $category) => [
+                'category' => $category,
+                'total' => round((float) $transactions->sum(fn (Transaction $transaction) => abs((float) $transaction->amount)), 2),
+                'count' => $transactions->count(),
             ])
+            ->sortByDesc('total')
+            ->values()
             ->toArray();
     }
 
