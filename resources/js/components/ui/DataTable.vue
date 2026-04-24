@@ -1,13 +1,16 @@
 <script setup>
 import { ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+import { useI18n } from 'vue-i18n';
 import EmptyState from './EmptyState.vue';
 import LoadingSpinner from './LoadingSpinner.vue';
+
+const { t } = useI18n();
 
 defineProps({
     loading: { type: Boolean, default: false },
     error: { type: Object, default: null },
     empty: { type: Boolean, default: false },
-    emptyTitle: { type: String, default: 'No items found' },
+    emptyTitle: { type: String, default: null },
     emptyMessage: { type: String, default: '' },
     emptyIcon: { type: Object, default: null },
     icon: { type: Object, default: null },
@@ -30,19 +33,19 @@ defineEmits(['page-change']);
         >
             <ExclamationTriangleIcon class="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
             <div class="flex-1">
-                <p class="text-sm font-normal text-red-400">Couldn't load data</p>
-                <p class="mt-0.5 text-sm text-red-400/70">Check your connection and try again.</p>
+                <p class="text-sm font-normal text-red-400">{{ t('common.errors.loadDataTitle') }}</p>
+                <p class="mt-0.5 text-sm text-red-400/70">{{ t('common.errors.loadDataBody') }}</p>
             </div>
         </div>
 
         <div v-else-if="loading" class="flex items-center justify-center py-16 text-gray-500">
             <LoadingSpinner size="sm" />
-            <span class="ml-2 text-sm">Loading…</span>
+            <span class="ml-2 text-sm">{{ t('common.loading') }}</span>
         </div>
 
         <EmptyState
             v-else-if="empty"
-            :title="emptyTitle"
+            :title="emptyTitle ?? t('common.emptyTitle')"
             :message="emptyMessage"
             :icon="icon || emptyIcon"
             :action-label="actionLabel"
@@ -72,7 +75,7 @@ defineEmits(['page-change']);
                 class="mt-4 flex items-center justify-between border-t border-gray-200 pt-4"
             >
                 <p class="text-sm text-gray-500">
-                    Showing {{ (currentPage - 1) * perPage + 1 }}–{{ Math.min(currentPage * perPage, total) }} of {{ total }}
+                    {{ t('common.pagination.showing', { from: (currentPage - 1) * perPage + 1, to: Math.min(currentPage * perPage, total), total }) }}
                 </p>
                 <div class="flex gap-2">
                     <button
@@ -80,14 +83,14 @@ defineEmits(['page-change']);
                         :disabled="currentPage <= 1"
                         @click="$emit('page-change', currentPage - 1)"
                     >
-                        Prev
+                        {{ t('common.pagination.prev') }}
                     </button>
                     <button
                         class="h-9 rounded-lg px-3 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-40"
                         :disabled="currentPage >= lastPage"
                         @click="$emit('page-change', currentPage + 1)"
                     >
-                        Next
+                        {{ t('common.pagination.next') }}
                     </button>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { CalendarDaysIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
@@ -9,6 +10,7 @@ import { useCurrency } from '@/composables/useCurrency.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
+const { t } = useI18n();
 const auth = useAuthStore();
 const { formatCurrency } = useCurrency();
 const subscriptions = ref([]);
@@ -38,10 +40,10 @@ function statusBadgeClass(status) {
 
 function sourceLabel(subscription) {
     if (subscription.payment_source_type === 'credit-card') {
-        return subscription.credit_card?.name ?? 'Credit card';
+        return subscription.credit_card?.name ?? t('creditCards.card');
     }
 
-    return subscription.account?.name ?? 'Account';
+    return subscription.account?.name ?? t('accounts.title');
 }
 
 async function fetchSubscriptions() {
@@ -81,13 +83,13 @@ onMounted(() => {
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-gray-900">Subscriptions</h1>
+                <h1 class="text-xl font-semibold text-gray-900">{{ t('subscriptions.title') }}</h1>
             </div>
             <router-link
                 to="/subscriptions/new"
                 class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white hover:bg-amber-600"
             >
-                Add subscription
+                {{ t('subscriptions.add') }}
             </router-link>
         </div>
 
@@ -95,10 +97,10 @@ onMounted(() => {
 
         <EmptyState
             v-else-if="!subscriptions.length"
-            title="No subscriptions tracked"
-            message="Add a subscription to keep tabs on recurring costs."
+            :title="t('subscriptions.emptyTitle')"
+            :message="t('subscriptions.emptyMessage')"
             :icon="CalendarDaysIcon"
-            action-label="Add subscription"
+            :action-label="t('subscriptions.add')"
             action-to="/subscriptions/new"
         />
 
@@ -131,12 +133,12 @@ onMounted(() => {
                 <div class="flex items-center gap-1.5">
                     <CalendarDaysIcon class="h-4 w-4 shrink-0 text-gray-500" />
                     <span class="text-sm" :class="renewalDateClass(subscription.next_renewal_date)">
-                        {{ isRenewingSoon(subscription.next_renewal_date) ? '⚠ ' : '' }}Renews {{ subscription.next_renewal_date ?? 'N/A' }}
+                        {{ isRenewingSoon(subscription.next_renewal_date) ? '⚠ ' : '' }}{{ t('subscriptions.renews', { date: subscription.next_renewal_date ?? 'N/A' }) }}
                     </span>
                 </div>
 
                 <p v-if="subscription.auto_create_transaction" class="mt-2 text-sm text-gray-500">
-                    Auto-posting enabled
+                    {{ t('subscriptions.autoPostingEnabled') }}
                 </p>
 
                 <p v-if="subscription.notes" class="mt-2 truncate text-sm text-gray-500">{{ subscription.notes }}</p>

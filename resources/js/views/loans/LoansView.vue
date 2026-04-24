@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { DocumentTextIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
@@ -9,6 +10,7 @@ import { useCurrency } from '@/composables/useCurrency.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
+const { t } = useI18n();
 const { formatCurrency } = useCurrency();
 const auth = useAuthStore();
 const loading = ref(false);
@@ -67,13 +69,13 @@ onMounted(() => {
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-gray-900">Loans</h1>
+                <h1 class="text-xl font-semibold text-gray-900">{{ t('loans.title') }}</h1>
             </div>
             <router-link
                 to="/loans/new"
                 class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white hover:bg-amber-600"
             >
-                Add loan
+                {{ t('loans.add') }}
             </router-link>
         </div>
 
@@ -81,10 +83,10 @@ onMounted(() => {
 
         <EmptyState
             v-else-if="!loans.length"
-            title="No loans tracked"
-            message="Add a loan to monitor repayment progress."
+            :title="t('loans.emptyTitle')"
+            :message="t('loans.emptyMessage')"
             :icon="DocumentTextIcon"
-            action-label="Add loan"
+            :action-label="t('loans.add')"
             action-to="/loans/new"
         />
 
@@ -100,7 +102,7 @@ onMounted(() => {
                         <div>
                             <h3 class="text-base font-normal text-gray-900">{{ loan.name }}</h3>
                             <p class="mt-0.5 text-sm text-gray-500">
-                                {{ formatCurrency(loan.monthly_payment) }}/mo · ends {{ loan.end_date ?? 'N/A' }}
+                                {{ t('loans.monthlyEnds', { amount: formatCurrency(loan.monthly_payment), date: loan.end_date ?? 'N/A' }) }}
                             </p>
                         </div>
                         <span :class="statusBadgeClass(loan.status)" class="rounded px-2 py-0.5 text-sm capitalize">
@@ -116,12 +118,12 @@ onMounted(() => {
                     </div>
 
                     <div class="mb-3 flex justify-between text-sm text-gray-500">
-                        <span>{{ loan.paid_installments }} paid</span>
-                        <span>{{ loan.total_installments }} total</span>
+                        <span>{{ t('loans.paidInstallments', { count: loan.paid_installments }) }}</span>
+                        <span>{{ t('loans.totalInstallments', { count: loan.total_installments }) }}</span>
                     </div>
 
                     <p class="font-mono text-xl font-semibold text-amber-400">
-                        {{ formatCurrency(loan.remaining_amount) }} remaining
+                        {{ t('loans.remainingAmount', { amount: formatCurrency(loan.remaining_amount) }) }}
                     </p>
                 </div>
             </div>

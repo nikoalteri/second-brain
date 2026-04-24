@@ -14,6 +14,7 @@ import {
     Tooltip,
 } from 'chart.js';
 import { Bar, Doughnut, Line } from 'vue-chartjs';
+import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import KpiCard from '@/components/ui/KpiCard.vue';
@@ -27,6 +28,7 @@ import { useAuthStore } from '@/stores/auth.js';
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Title, Tooltip, Legend);
 
 const { formatCurrency } = useCurrency();
+const { t } = useI18n();
 const { translateCategoryName } = useLocalizedLabels();
 const { addToast } = useToast();
 const { locale } = useUserPreferences();
@@ -511,7 +513,7 @@ onMounted(() => {
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-gray-900">Dashboard</h1>
+                <h1 class="text-xl font-semibold text-gray-900">{{ t('dashboard.title') }}</h1>
             </div>
         </div>
 
@@ -522,33 +524,33 @@ onMounted(() => {
                 <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
-                            <p class="text-sm font-semibold uppercase tracking-wide text-gray-500">{{ monthLabel }} pulse</p>
-                            <h2 class="mt-2 text-2xl font-semibold text-gray-900">Financial overview</h2>
+                            <p class="text-sm font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.pulse', { month: monthLabel }) }}</p>
+                            <h2 class="mt-2 text-2xl font-semibold text-gray-900">{{ t('dashboard.financialOverview') }}</h2>
                         </div>
                         <div class="rounded-2xl bg-gray-50 px-4 py-3 text-right">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Net cashflow</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.netCashflow') }}</p>
                             <p class="mt-1 font-mono text-3xl font-semibold" :class="netCashflowTone()">{{ formatCurrency(netCashflow) }}</p>
                             <p class="mt-1 text-sm text-gray-500">
-                                Savings rate: <span class="font-medium text-gray-700">{{ formatPercent(savingsRate) }}</span>
+                                {{ t('dashboard.savingsRate') }}: <span class="font-medium text-gray-700">{{ formatPercent(savingsRate) }}</span>
                             </p>
                         </div>
                     </div>
 
                     <div class="mt-6 grid gap-4 sm:grid-cols-3">
                         <div class="rounded-xl border border-gray-200 bg-slate-50 p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total balance</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.totalBalance') }}</p>
                             <p class="mt-2 font-mono text-2xl font-semibold text-blue-500">{{ formatCurrency(totalBalance) }}</p>
-                            <p class="mt-1 text-sm text-gray-500">{{ accountCount }} tracked account{{ accountCount === 1 ? '' : 's' }}</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ t('dashboard.trackedAccounts', accountCount, { count: accountCount }) }}</p>
                         </div>
                         <div class="rounded-xl border border-gray-200 bg-slate-50 p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Income this month</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.incomeThisMonth') }}</p>
                             <p class="mt-2 font-mono text-2xl font-semibold text-emerald-500">{{ formatCurrency(totalIncome) }}</p>
-                            <p class="mt-1 text-sm text-gray-500">Current month inflows</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ t('dashboard.currentMonthInflows') }}</p>
                         </div>
                         <div class="rounded-xl border border-gray-200 bg-slate-50 p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Expenses this month</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.expensesThisMonth') }}</p>
                             <p class="mt-2 font-mono text-2xl font-semibold text-red-500">{{ formatCurrency(totalOutflow) }}</p>
-                            <p class="mt-1 text-sm text-gray-500">Includes spending and payment outflows this month</p>
+                            <p class="mt-1 text-sm text-gray-500">{{ t('dashboard.expensesThisMonthHelp') }}</p>
                         </div>
                     </div>
                 </section>
@@ -556,11 +558,11 @@ onMounted(() => {
                 <section class="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="text-sm font-semibold uppercase tracking-wide text-amber-700">Attention needed</p>
-                            <h2 class="mt-2 text-xl font-semibold text-gray-900">Next 3 days</h2>
+                            <p class="text-sm font-semibold uppercase tracking-wide text-amber-700">{{ t('dashboard.attentionNeeded') }}</p>
+                            <h2 class="mt-2 text-xl font-semibold text-gray-900">{{ t('dashboard.next3Days') }}</h2>
                         </div>
                         <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-700 shadow-sm">
-                            {{ upcomingCount }} item{{ upcomingCount === 1 ? '' : 's' }}
+                            {{ t('dashboard.itemCount', upcomingCount, { count: upcomingCount }) }}
                         </span>
                     </div>
 
@@ -582,20 +584,20 @@ onMounted(() => {
                     </div>
 
                     <div v-else class="mt-5 rounded-2xl border border-dashed border-amber-300 bg-white/70 p-5 text-sm text-gray-600">
-                        No urgent payments in the next 3 days.
+                        {{ t('dashboard.noUrgentPayments') }}
                     </div>
 
                     <div class="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                         <div class="rounded-xl border border-amber-200 bg-white p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total due soon</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.totalDueSoon') }}</p>
                             <p class="mt-2 font-mono text-xl font-semibold text-gray-900">{{ formatCurrency(upcomingDueTotal) }}</p>
                         </div>
                         <div class="rounded-xl border border-amber-200 bg-white p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Needs automatic posting</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.autoPostingNeeded') }}</p>
                             <p class="mt-2 text-xl font-semibold text-gray-900">{{ upcomingAutoPendingCount }}</p>
                         </div>
                         <div class="rounded-xl border border-amber-200 bg-white p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Reminder only</p>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('dashboard.reminderOnly') }}</p>
                             <p class="mt-2 text-xl font-semibold text-gray-900">{{ upcomingReminderOnlyCount }}</p>
                         </div>
                     </div>
@@ -603,14 +605,14 @@ onMounted(() => {
             </div>
 
             <div class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <KpiCard label="Accounts tracked" :value="String(accountCount)" color="blue" delta="Active balances included in overview" />
-                <KpiCard label="Upcoming items" :value="String(upcomingCount)" color="amber" delta="Loans, cards, and subscriptions due soon" />
-                <KpiCard label="Already posted" :value="String(upcomingPostedCount)" color="emerald" delta="Items already reflected in transactions or card expenses" />
+                <KpiCard :label="t('dashboard.accountsTracked')" :value="String(accountCount)" color="blue" :delta="t('dashboard.activeBalancesIncluded')" />
+                <KpiCard :label="t('dashboard.upcomingItems')" :value="String(upcomingCount)" color="amber" :delta="t('dashboard.dueSoonSummary')" />
+                <KpiCard :label="t('dashboard.alreadyPosted')" :value="String(upcomingPostedCount)" color="emerald" :delta="t('dashboard.postedSummary')" />
                 <KpiCard
-                    label="Top category"
-                    :value="topCategory ? topCategory.category : 'No data'"
+                    :label="t('dashboard.topCategory')"
+                    :value="topCategory ? topCategory.category : t('dashboard.noData')"
                     color="purple"
-                    :delta="topCategory ? `${formatCurrency(topCategory.total)} · ${formatPercent(topCategoryShare)}` : 'No categorized spending yet'"
+                    :delta="topCategory ? `${formatCurrency(topCategory.total)} · ${formatPercent(topCategoryShare)}` : t('dashboard.noCategorizedSpending')"
                 />
             </div>
 
