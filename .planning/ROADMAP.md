@@ -63,13 +63,13 @@ Plans:
 Plans:
 - [x] 14-01-docs-realignment-PLAN.md — Rewrite `PROJECT.md`, `REQUIREMENTS.md`, and `STATE.md` from validated Phase 13 evidence only
 
-### Phase 15: Roadmap Reset & Concern Triage ⏳
+### Phase 15: Roadmap Reset & Concern Triage ✅
 
 **Goal:** Rebuild the near-term roadmap from current reality and separate deferred concerns from committed work.
 
 **Requirements:** [ALIGN-03, ALIGN-06]
 
-**Plans:** 1/1 plans complete ✅
+**Plans:** 1/1 plans complete
 
 Plans:
 - [x] 15-01-roadmap-reset-triage-PLAN.md — Reset `ROADMAP.md` to conservative near-term phases grounded in the validated boundary, keep deferred concerns outside committed phases, and leave the direct Phase 16 planning command

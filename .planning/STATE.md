@@ -4,9 +4,15 @@ milestone: v5.1
 milestone_name: Planning Realignment
 current_plan: —
 status: ready_for_phase_16_planning
-last_updated: "2026-04-29T23:10:00Z"
-stopped_at: "Completed 15-01-roadmap-reset-triage-PLAN.md"
+stopped_at: Completed 15-01-roadmap-reset-triage-PLAN.md
 resume_file: ".planning/ROADMAP.md"
+last_updated: "2026-04-29T23:07:44.933Z"
+last_activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-term scope and explicit deferred concern buckets
+progress:
+  total_phases: 7
+  completed_phases: 5
+  total_plans: 25
+  completed_plans: 19
 ---
 
 # v5.1 Project State
@@ -34,8 +40,8 @@ Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-t
 
 ## Session Resume
 
-**Stopped at:** Completed 15-01-roadmap-reset-triage-PLAN.md  
-**Resume file:** `.planning/ROADMAP.md`
+**Stopped at:** Completed 15-01-roadmap-reset-triage-PLAN.md
+**Resume file:** None
 
 ## Accumulated Context
 
@@ -57,6 +63,9 @@ Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-t
 - Phase 14 updated only the planned top-level docs and left roadmap reshaping for Phase 15.
 - Phase 15 should promote only evidence-grounded near-term phases and keep most concern inventory outside committed scope.
 - The direct handoff after Phase 15 is `/gsd-plan-phase 16`.
+- [Phase 15]: Keep only Phase 16 as committed post-reset roadmap scope until proof changes the confidence boundary.
+- [Phase 15]: Treat structural-only finance domains as proof-first candidates, not enhancement-ready roadmap promises.
+- [Phase 15]: Keep concern inventory visible in explicit deferred buckets and end with /gsd-plan-phase 16.
 
 ## Issues / Blockers
 
@@ -68,3 +77,4 @@ Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-t
 | --- | --- | --- | --- | --- |
 | 13-current-state-audit | 01 | 2m | 3 | 3 |
 | 14-planning-docs-realignment | 01 | pending summary | 3 | 3 |
+| Phase 15-roadmap-reset-concern-triage P01 | 2m | 3 tasks | 3 files |

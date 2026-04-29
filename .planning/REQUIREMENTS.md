@@ -19,8 +19,8 @@
 
 ### Phase 15 Follow-ups
 
-- [ ] **ALIGN-03**: Maintainer can read `ROADMAP.md` with only active phases grounded in current codebase reality
-- [ ] **ALIGN-06**: Maintainer can see planning-relevant concerns captured and deferred explicitly instead of mixed into active scope
+- [x] **ALIGN-03**: Maintainer can read `ROADMAP.md` with only active phases grounded in current codebase reality
+- [x] **ALIGN-06**: Maintainer can see planning-relevant concerns captured and deferred explicitly instead of mixed into active scope
 
 ## Requirement Notes
 
@@ -42,10 +42,10 @@
 |-------------|-------|--------|
 | ALIGN-01 | Phase 14 | Complete |
 | ALIGN-02 | Phase 14 | Complete |
-| ALIGN-03 | Phase 15 | Pending |
+| ALIGN-03 | Phase 15 | Complete |
 | ALIGN-04 | Phase 14 | Complete |
 | ALIGN-05 | Phase 13 | Complete |
-| ALIGN-06 | Phase 15 | Pending |
+| ALIGN-06 | Phase 15 | Complete |
 
 **Coverage:**
 - Alignment requirements tracked: 6 total
@@ -54,4 +54,4 @@
 
 ---
 *Requirements defined: 2026-04-30*  
-*Last updated: 2026-04-29 after Phase 14 documentation realignment*
+*Last updated: 2026-04-29 after Phase 15 roadmap reset and concern triage*
