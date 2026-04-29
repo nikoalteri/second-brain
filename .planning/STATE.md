@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: Planning Realignment
 current_plan: —
-status: ready_for_phase_15
-last_updated: "2026-04-29T22:51:33Z"
-stopped_at: "Completed 14-01-docs-realignment-PLAN.md"
+status: ready_for_phase_16_planning
+last_updated: "2026-04-29T23:10:00Z"
+stopped_at: "Completed 15-01-roadmap-reset-triage-PLAN.md"
 resume_file: ".planning/ROADMAP.md"
 ---
 
@@ -13,7 +13,7 @@ resume_file: ".planning/ROADMAP.md"
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 14 complete; ready for Phase 15  
+**Status:** Phase 15 roadmap reset complete; ready to plan Phase 16  
 **Updated:** 2026-04-29
 
 ---
@@ -23,18 +23,18 @@ resume_file: ".planning/ROADMAP.md"
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Phase 15 — Roadmap Reset & Concern Triage
+**Current focus:** Phase 16 planning — proof-first validation of structural finance surfaces
 
 ## Current Position
 
-Phase: 15 — Roadmap Reset & Concern Triage  
+Phase: 16 — Proof-First Validation of Structural Finance Surfaces  
 Plan: —  
 Status: Ready to plan  
-Last activity: 2026-04-29 — Phase 14 top-level docs realigned from Phase 13 evidence
+Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-term scope and explicit deferred concern buckets
 
 ## Session Resume
 
-**Stopped at:** Completed 14-01-docs-realignment-PLAN.md  
+**Stopped at:** Completed 15-01-roadmap-reset-triage-PLAN.md  
 **Resume file:** `.planning/ROADMAP.md`
 
 ## Accumulated Context
@@ -45,7 +45,9 @@ Last activity: 2026-04-29 — Phase 14 top-level docs realigned from Phase 13 ev
 - The strongest validated current capabilities remain auth/settings, account CRUD/scoping, dashboard/report exports, admin finance-report rendering, and admin access control.
 - Transactions, loans, credit cards, subscriptions, monthly budget mutations, and GraphQL remain structural-only, lower confidence context until later proof upgrades them.
 - Prior localization planning remains concise superseded history; current repo evidence is English-only.
-- Phase 15 should now reset `.planning/ROADMAP.md` from this stricter baseline and separate deferred concerns from committed work.
+- Phase 15 reset `.planning/ROADMAP.md` to a conservative near-term roadmap grounded in the validated versus structural-only boundary.
+- Deferred concerns now live in explicit non-committed buckets rather than active roadmap phases.
+- Phase 16 is the direct next planning step and should follow a proof-first path for structural-only finance areas.
 
 ## Decisions
 
@@ -53,10 +55,12 @@ Last activity: 2026-04-29 — Phase 14 top-level docs realigned from Phase 13 ev
 - GraphQL and unproven finance surfaces stay structural-only until stronger proof exists.
 - Localization planning remains preserved as superseded history rather than active roadmap scope.
 - Phase 14 updated only the planned top-level docs and left roadmap reshaping for Phase 15.
+- Phase 15 should promote only evidence-grounded near-term phases and keep most concern inventory outside committed scope.
+- The direct handoff after Phase 15 is `/gsd-plan-phase 16`.
 
 ## Issues / Blockers
 
-- None blocking. Phase 15 can begin from `.planning/ROADMAP.md`.
+- None blocking. Next step is `/gsd-plan-phase 16`.
 
 ## Performance Metrics
 

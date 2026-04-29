@@ -139,3 +139,9 @@ These ideas are outside committed phases and must not be mistaken for active roa
 - Broader analytics or reporting enhancements beyond the currently validated export/report boundary
 - External webhook/integration features
 - Backup/recovery UX and broader audit-trail initiatives
+
+---
+
+## Direct Next Command
+
+`/gsd-plan-phase 16`
