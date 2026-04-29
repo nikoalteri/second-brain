@@ -26,7 +26,7 @@ class LoansTable
                     ->sortable(),
                 TextColumn::make('monthly_payment')
                     ->label('Monthly Payment')
-                    ->money('EUR', locale: 'it'),
+                    ->money('EUR', locale: 'en'),
                 TextColumn::make('total_with_interest')
                     ->label('Total with Interest (Remaining)')
                     ->formatStateUsing(fn($record) => number_format(
@@ -49,7 +49,7 @@ class LoansTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('remaining_amount')
                     ->label('Remaining Amount')
-                    ->money('EUR', locale: 'it')
+                    ->money('EUR', locale: 'en')
                     ->sortable(),
                 TextColumn::make('withdrawal_day')
                     ->label('Withdrawal Day'),

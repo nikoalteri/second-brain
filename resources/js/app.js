@@ -3,7 +3,7 @@ import { createPinia } from 'pinia';
 import { createRouter, createWebHistory } from 'vue-router';
 import { DefaultApolloClient } from '@vue/apollo-composable';
 import { apolloClient } from '@/apollo/client.js';
-import { createAppI18n, resolveAppLocale } from '@/i18n/index.js';
+import { createAppI18n, defaultLocale } from '@/i18n/index.js';
 import { routes } from '@/router/index.js';
 import { useAuthStore } from '@/stores/auth.js';
 import App from './App.vue';
@@ -50,9 +50,8 @@ function applyTheme() {
 }
 
 watchEffect(() => {
-    const language = resolveAppLocale(auth.user?.settings?.language);
-    i18n.global.locale.value = language;
-    document.documentElement.lang = language;
+    i18n.global.locale.value = defaultLocale;
+    document.documentElement.lang = defaultLocale;
     applyTheme();
 });
 

@@ -17,7 +17,6 @@ class UpdateUserSettingsRequest extends FormRequest
     {
         return [
             UserSetting::KEY_THEME => ['required', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_THEME)))],
-            UserSetting::KEY_LANGUAGE => ['required', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_LANGUAGE)))],
             UserSetting::KEY_NOTIFICATIONS => ['required', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_NOTIFICATIONS)))],
             UserSetting::KEY_PRIVACY => ['required', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_PRIVACY)))],
         ];

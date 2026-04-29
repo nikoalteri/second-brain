@@ -1,7 +1,4 @@
 export default {
-    localization: {
-        fallbackProbe: 'English fallback probe',
-    },
     shell: {
         nav: {
             dashboard: 'Dashboard',
@@ -39,7 +36,6 @@ export default {
         },
         fields: {
             theme: 'Theme',
-            language: 'Language',
             notifications: 'Notifications',
             privacy: 'Privacy',
         },
@@ -48,10 +44,6 @@ export default {
                 light: 'Light',
                 dark: 'Dark',
                 system: 'System',
-            },
-            language: {
-                en: 'English',
-                it: 'Italiano',
             },
             notifications: {
                 all: 'All toasts',
@@ -67,10 +59,6 @@ export default {
                 light: 'The app stays in light mode.',
                 dark: 'The app stays in dark mode.',
                 system: 'The app follows your system light/dark preference.',
-            },
-            language: {
-                en: 'Dates and currency use English formatting.',
-                it: 'Dates and currency use Italian formatting.',
             },
             notifications: {
                 all: 'Success and error toasts are both shown.',

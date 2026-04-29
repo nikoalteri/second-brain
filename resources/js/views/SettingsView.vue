@@ -21,10 +21,6 @@ const previewRows = computed(() => [
         description: t(`settings.previewRows.theme.${settingsForm.value.theme}`),
     },
     {
-        label: t('settings.fields.language'),
-        description: t(`settings.previewRows.language.${settingsForm.value.language}`),
-    },
-    {
         label: t('settings.fields.notifications'),
         description: t(`settings.previewRows.notifications.${settingsForm.value.notifications}`),
     },
@@ -97,17 +93,6 @@ async function saveSettings() {
                             <option value="light">{{ t('settings.options.theme.light') }}</option>
                             <option value="dark">{{ t('settings.options.theme.dark') }}</option>
                             <option value="system">{{ t('settings.options.theme.system') }}</option>
-                        </select>
-                    </label>
-
-                    <label class="block">
-                        <span class="text-sm font-medium text-gray-700">{{ t('settings.fields.language') }}</span>
-                        <select
-                            v-model="settingsForm.language"
-                            class="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
-                        >
-                            <option value="en">{{ t('settings.options.language.en') }}</option>
-                            <option value="it">{{ t('settings.options.language.it') }}</option>
                         </select>
                     </label>
 

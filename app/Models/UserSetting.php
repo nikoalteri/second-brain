@@ -13,13 +13,11 @@ class UserSetting extends Model
     use HasFactory, SoftDeletes, HasUserScoping;
 
     public const KEY_THEME = 'theme';
-    public const KEY_LANGUAGE = 'language';
     public const KEY_NOTIFICATIONS = 'notifications';
     public const KEY_PRIVACY = 'privacy';
 
     public const DEFAULTS = [
         self::KEY_THEME => 'system',
-        self::KEY_LANGUAGE => 'en',
         self::KEY_NOTIFICATIONS => 'all',
         self::KEY_PRIVACY => 'visible',
     ];
@@ -29,10 +27,6 @@ class UserSetting extends Model
             'light' => 'Light',
             'dark' => 'Dark',
             'system' => 'System',
-        ],
-        self::KEY_LANGUAGE => [
-            'en' => 'English',
-            'it' => 'Italiano',
         ],
         self::KEY_NOTIFICATIONS => [
             'all' => 'All toasts',
@@ -46,7 +40,6 @@ class UserSetting extends Model
 
     public const KEY_LABELS = [
         self::KEY_THEME => 'Theme',
-        self::KEY_LANGUAGE => 'Language',
         self::KEY_NOTIFICATIONS => 'Notifications',
         self::KEY_PRIVACY => 'Privacy',
     ];

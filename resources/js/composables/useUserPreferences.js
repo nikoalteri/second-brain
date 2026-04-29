@@ -4,7 +4,6 @@ import { useAuthStore } from '@/stores/auth.js';
 
 const defaults = {
     theme: 'system',
-    language: 'en',
     notifications: 'all',
     privacy: 'visible',
 };
@@ -18,7 +17,7 @@ export function useUserPreferences() {
     }));
 
     const themeMode = computed(() => settings.value.theme);
-    const locale = computed(() => resolveBrowserLocale(settings.value.language));
+    const locale = computed(() => resolveBrowserLocale());
     const notificationsMode = computed(() => settings.value.notifications);
     const profileIsPrivate = computed(() => settings.value.privacy === 'private');
 
