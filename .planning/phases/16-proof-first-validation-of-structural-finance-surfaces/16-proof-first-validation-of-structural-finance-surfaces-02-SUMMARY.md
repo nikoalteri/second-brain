@@ -57,7 +57,7 @@ Each task was committed atomically:
 1. **Task 1: Tighten one discoverable issue-to-mark-paid lifecycle proof** - `92693cc` (feat)
 2. **Task 2: Update the confidence boundary from actual proof results only** - `56377a7` (docs)
 
-**Plan metadata:** pending
+**Plan metadata:** `9b8f1ba` (docs)
 
 ## Files Created/Modified
 - `tests/Feature/CreditCardLifecycleIntegrationTest.php` - proves issue and mark-paid through routes with balance and posting side effects.

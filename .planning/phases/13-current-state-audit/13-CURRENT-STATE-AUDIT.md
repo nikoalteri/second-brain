@@ -11,10 +11,10 @@ This audit uses `13-VALIDATED-CAPABILITIES.md` as the source of truth for what F
 
 ## Verification snapshot
 
-- **Command:** `php artisan test tests/Feature/Api/AuthApiTest.php tests/Feature/Api/AccountApiTest.php tests/Feature/Api/DashboardApiTest.php tests/Feature/Api/FinanceReportExportApiTest.php tests/Feature/Filament/FinanceReportPageTest.php tests/Feature/Auth/FilamentPanelAccessTest.php`
-- **Result:** 38 passing tests, 182 assertions, 0 failures
-- **Re-confirmed by test proof:** auth/settings flows, account CRUD/scoping, dashboard charts and upcoming payments, finance exports, admin finance report rendering, and admin panel access control
-- **Code-only after proof run:** GraphQL schema coverage, transaction CRUD behavior, loan CRUD behavior, credit-card lifecycle routes, subscription CRUD behavior, and monthly budget API mutations
+- **Commands:** baseline Phase 13 proof `php artisan test tests/Feature/Api/AuthApiTest.php tests/Feature/Api/AccountApiTest.php tests/Feature/Api/DashboardApiTest.php tests/Feature/Api/FinanceReportExportApiTest.php tests/Feature/Filament/FinanceReportPageTest.php tests/Feature/Auth/FilamentPanelAccessTest.php`, plus Phase 16 credit-card proof `php artisan test tests/Feature/Api/CreditCardApiTest.php tests/Feature/CreditCardLifecycleIntegrationTest.php tests/Feature/CreditCardExpenseIntegrationTest.php`
+- **Result:** both targeted proof runs passed
+- **Re-confirmed by test proof:** auth/settings flows, account CRUD/scoping, targeted credit-card REST scoping plus one issue-to-mark-paid workflow, dashboard charts and upcoming payments, finance exports, admin finance report rendering, and admin panel access control
+- **Code-only after proof run:** GraphQL schema coverage, transaction CRUD behavior, loan CRUD behavior, subscription CRUD behavior, monthly budget API mutations, and untouched credit-card depth outside the proven REST slice
 
 ## Validated capabilities by area
 

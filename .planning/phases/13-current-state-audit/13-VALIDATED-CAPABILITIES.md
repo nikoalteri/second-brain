@@ -52,8 +52,8 @@ This ledger is the Phase 13 evidence base for what Fluxa ships today. It separat
 
 ## Current confidence boundary
 
-- **Verification snapshot (2026-04-29 UTC):** `php artisan test tests/Feature/Api/AuthApiTest.php tests/Feature/Api/AccountApiTest.php tests/Feature/Api/DashboardApiTest.php tests/Feature/Api/FinanceReportExportApiTest.php tests/Feature/Filament/FinanceReportPageTest.php tests/Feature/Auth/FilamentPanelAccessTest.php`
-- **Result:** 38 tests passed, 182 assertions, 0 failures
+- **Verification snapshot (2026-04-29/30 UTC):** baseline Phase 13 command `php artisan test tests/Feature/Api/AuthApiTest.php tests/Feature/Api/AccountApiTest.php tests/Feature/Api/DashboardApiTest.php tests/Feature/Api/FinanceReportExportApiTest.php tests/Feature/Filament/FinanceReportPageTest.php tests/Feature/Auth/FilamentPanelAccessTest.php`, plus Phase 16 credit-card proof `php artisan test tests/Feature/Api/CreditCardApiTest.php tests/Feature/CreditCardLifecycleIntegrationTest.php tests/Feature/CreditCardExpenseIntegrationTest.php`
+- **Result:** both targeted proof runs passed; the added credit-card run re-confirmed the promoted REST scoping and issue-to-mark-paid slice
 - **Re-confirmed by tests:** auth token flows and frontend settings, account CRUD/scoping/superadmin access, targeted credit-card REST scoping and issue-to-mark-paid behavior, dashboard charts/upcoming payments, finance report exports, admin finance report rendering, and admin panel access rules
 - **Still code-only after re-run:** transaction REST behavior, loan CRUD behavior, subscription CRUD behavior, monthly budget API mutations, GraphQL claims, and untouched credit-card depth outside the proven REST slice
 
