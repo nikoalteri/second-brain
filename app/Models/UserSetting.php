@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Support\Localization\SupportedLocales;
 use InvalidArgumentException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +30,10 @@ class UserSetting extends Model
             'dark' => 'Dark',
             'system' => 'System',
         ],
-        self::KEY_LANGUAGE => [],
+        self::KEY_LANGUAGE => [
+            'en' => 'English',
+            'it' => 'Italiano',
+        ],
         self::KEY_NOTIFICATIONS => [
             'all' => 'All toasts',
             'important_only' => 'Errors only',
@@ -72,10 +74,6 @@ class UserSetting extends Model
 
     public static function optionsFor(string $key): array
     {
-        if ($key === self::KEY_LANGUAGE) {
-            return SupportedLocales::labels();
-        }
-
         return self::VALUE_OPTIONS[$key] ?? [];
     }
 
@@ -86,10 +84,6 @@ class UserSetting extends Model
 
     public static function normalizeValue(string $key, ?string $value): string
     {
-        if ($key === self::KEY_LANGUAGE) {
-            return SupportedLocales::appLocale($value);
-        }
-
         $options = self::optionsFor($key);
 
         if ($options === []) {

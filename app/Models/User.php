@@ -3,10 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Support\Localization\SupportedLocales;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
-use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -14,7 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser, HasLocalePreference
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, HasRoles;
@@ -148,12 +146,5 @@ class User extends Authenticatable implements FilamentUser, HasLocalePreference
             'is_admin' => in_array('superadmin', $roles, true),
             'settings' => $this->resolvedSettings(),
         ];
-    }
-
-    public function preferredLocale(): string
-    {
-        return SupportedLocales::appLocale(
-            $this->resolvedSettings()[UserSetting::KEY_LANGUAGE] ?? null,
-        );
     }
 }

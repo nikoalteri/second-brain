@@ -8,7 +8,6 @@ use App\Models\Account;
 use App\Models\UserSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
@@ -131,37 +130,6 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('user.is_admin', true)
             ->assertJsonPath('user.roles.0', 'superadmin')
             ->assertJsonPath('user.settings.theme', 'system')
-            ->assertJsonPath('user.settings.language', 'en');
-    }
-
-    public function test_authenticated_user_profile_defaults_language_to_english_when_missing(): void
-    {
-        $user = User::factory()->create();
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson('/api/v1/auth/me');
-
-        $response->assertOk()
-            ->assertJsonPath('user.settings.language', 'en');
-    }
-
-    public function test_authenticated_user_profile_normalizes_legacy_invalid_language_to_english(): void
-    {
-        $user = User::factory()->create();
-
-        DB::table('user_settings')->insert([
-            'user_id' => $user->id,
-            'setting_key' => UserSetting::KEY_LANGUAGE,
-            'setting_value' => 'fr',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        Sanctum::actingAs($user);
-
-        $response = $this->getJson('/api/v1/auth/me');
-
-        $response->assertOk()
             ->assertJsonPath('user.settings.language', 'en');
     }
 
