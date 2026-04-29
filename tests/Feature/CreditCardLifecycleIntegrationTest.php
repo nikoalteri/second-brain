@@ -15,6 +15,7 @@ use App\Services\CreditCardCycleService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CreditCardLifecycleIntegrationTest extends TestCase
