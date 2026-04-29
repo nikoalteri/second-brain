@@ -15,6 +15,7 @@ use App\Services\CreditCardCycleService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -52,9 +53,13 @@ class CreditCardLifecycleIntegrationTest extends TestCase
             ->where('period_month', '2026-03')
             ->firstOrFail();
 
-        $issued = app(CreditCardCycleService::class)->issueCycle($cycle);
+        Sanctum::actingAs($account->user);
 
-        $this->assertTrue($issued);
+        $issueResponse = $this->postJson("/api/v1/credit-cards/{$card->id}/cycles/{$cycle->id}/issue");
+
+        $issueResponse->assertOk()
+            ->assertJsonPath('data.status', 'issued')
+            ->assertJsonPath('data.total_due', 300);
 
         $cycle->refresh();
         $card->refresh();
@@ -63,20 +68,24 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $this->assertSame(300.0, (float) $cycle->total_due);
         $this->assertSame(300.0, (float) $card->current_balance);
 
-        $payment = $cycle->payments()->first();
-        $payment->update([
-            'status' => CreditCardPaymentStatus::PAID,
-            'actual_date' => Carbon::parse('2026-04-15'),
-        ]);
+        $payment = $cycle->payments()->firstOrFail();
+
+        $markPaidResponse = $this->postJson("/api/v1/credit-cards/{$card->id}/payments/{$payment->id}/mark-paid");
+
+        $markPaidResponse->assertOk()
+            ->assertJsonPath('data.status', CreditCardPaymentStatus::PAID->value)
+            ->assertJsonPath('data.transaction_posted', true);
 
         $cycle->refresh();
         $card->refresh();
         $account->refresh();
+        $payment->refresh();
 
         $this->assertSame(CreditCardCycleStatus::PAID, $cycle->status);
         $this->assertSame(300.0, (float) $cycle->paid_amount);
         $this->assertSame(0.0, (float) $card->current_balance);
         $this->assertSame(700.0, (float) $account->balance);
+        $this->assertSame(CreditCardPaymentStatus::PAID, $payment->status);
 
         $posting = Transaction::query()->where('credit_card_payment_id', $payment->id)->first();
         $this->assertNotNull($posting);
