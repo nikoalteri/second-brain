@@ -13,7 +13,16 @@ class UpdateCreditCardRequest extends FormRequest
     {
         return [
             'name'                        => ['sometimes', 'required', 'string', 'max:255'],
-            'account_id'                  => ['sometimes', 'required', 'integer', 'exists:accounts,id'],
+            'account_id'                  => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('accounts', 'id')->where(function ($query) {
+                    if (! auth()->user()?->hasRole('superadmin')) {
+                        $query->where('user_id', auth()->id());
+                    }
+                }),
+            ],
             'type'                        => ['sometimes', 'required', Rule::in(['charge', 'revolving'])],
             'credit_limit'                => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'fixed_payment'               => ['sometimes', 'nullable', 'numeric', 'min:0'],

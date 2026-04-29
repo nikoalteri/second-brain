@@ -83,6 +83,27 @@ class CreditCardApiTest extends TestCase
         $response->assertStatus(404);
     }
 
+    public function test_user_cannot_show_or_update_another_users_credit_card(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $ownerAccount = Account::factory()->create(['user_id' => $owner->id]);
+        $creditCard = CreditCard::factory()->create([
+            'user_id' => $owner->id,
+            'account_id' => $ownerAccount->id,
+            'name' => 'Owner card',
+        ]);
+
+        Sanctum::actingAs($otherUser);
+
+        $this->getJson("/api/v1/credit-cards/{$creditCard->id}")
+            ->assertStatus(404);
+
+        $this->putJson("/api/v1/credit-cards/{$creditCard->id}", [
+            'name' => 'Hijacked name',
+        ])->assertStatus(404);
+    }
+
     public function test_user_can_update_credit_card_account_and_start_date(): void
     {
         $user = User::factory()->create();
@@ -109,6 +130,57 @@ class CreditCardApiTest extends TestCase
 
         $this->assertSame($newAccount->id, $creditCard->account_id);
         $this->assertSame('2026-02-01', $creditCard->start_date?->toDateString());
+    }
+
+    public function test_user_cannot_create_credit_card_with_foreign_account(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $foreignAccount = Account::factory()->create(['user_id' => $otherUser->id]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->postJson('/api/v1/credit-cards', [
+            'name' => 'Foreign account card',
+            'account_id' => $foreignAccount->id,
+            'type' => 'charge',
+            'credit_limit' => 5000,
+            'statement_day' => 6,
+            'due_day' => 19,
+            'status' => 'active',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['account_id']);
+
+        $this->assertDatabaseMissing('credit_cards', [
+            'name' => 'Foreign account card',
+        ]);
+    }
+
+    public function test_user_cannot_reassign_credit_card_to_foreign_account(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $ownerAccount = Account::factory()->create(['user_id' => $owner->id]);
+        $foreignAccount = Account::factory()->create(['user_id' => $otherUser->id]);
+        $creditCard = CreditCard::factory()->create([
+            'user_id' => $owner->id,
+            'account_id' => $ownerAccount->id,
+        ]);
+
+        Sanctum::actingAs($owner);
+
+        $response = $this->putJson("/api/v1/credit-cards/{$creditCard->id}", [
+            'account_id' => $foreignAccount->id,
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['account_id']);
+
+        $creditCard->refresh();
+
+        $this->assertSame($ownerAccount->id, $creditCard->account_id);
     }
 
     public function test_charge_card_create_clears_interest_fields(): void
@@ -337,5 +409,84 @@ class CreditCardApiTest extends TestCase
         $this->assertDatabaseHas('transactions', [
             'credit_card_payment_id' => $payment->id,
         ]);
+    }
+
+    public function test_user_cannot_mark_paid_against_another_users_credit_card_resource(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $ownerAccount = Account::factory()->create(['user_id' => $owner->id]);
+        $creditCard = CreditCard::factory()->charge()->create([
+            'user_id' => $owner->id,
+            'account_id' => $ownerAccount->id,
+        ]);
+        $cycle = CreditCardCycle::factory()->issued()->create([
+            'credit_card_id' => $creditCard->id,
+            'total_due' => 202,
+        ]);
+        $payment = CreditCardPayment::create([
+            'credit_card_id' => $creditCard->id,
+            'credit_card_cycle_id' => $cycle->id,
+            'due_date' => '2026-05-19',
+            'installment_amount' => 200,
+            'interest_amount' => 0,
+            'principal_amount' => 200,
+            'stamp_duty_amount' => 2,
+            'total_amount' => 202,
+            'status' => 'pending',
+        ]);
+
+        Sanctum::actingAs($otherUser);
+
+        $this->postJson("/api/v1/credit-cards/{$creditCard->id}/payments/{$payment->id}/mark-paid")
+            ->assertStatus(404);
+    }
+
+    public function test_nested_credit_card_resources_must_belong_to_the_addressed_card(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $firstCard = CreditCard::factory()->charge()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+        ]);
+        $secondCard = CreditCard::factory()->charge()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+        ]);
+
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $secondCard->id,
+        ]);
+        $issuedCycle = CreditCardCycle::factory()->issued()->create([
+            'credit_card_id' => $secondCard->id,
+            'total_due' => 202,
+        ]);
+        $payment = CreditCardPayment::create([
+            'credit_card_id' => $secondCard->id,
+            'credit_card_cycle_id' => $issuedCycle->id,
+            'due_date' => '2026-05-19',
+            'installment_amount' => 200,
+            'interest_amount' => 0,
+            'principal_amount' => 200,
+            'stamp_duty_amount' => 2,
+            'total_amount' => 202,
+            'status' => 'pending',
+        ]);
+        $expense = CreditCardExpense::factory()->create([
+            'credit_card_id' => $secondCard->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/credit-cards/{$firstCard->id}/cycles/{$cycle->id}/issue")
+            ->assertStatus(404);
+
+        $this->postJson("/api/v1/credit-cards/{$firstCard->id}/payments/{$payment->id}/mark-paid")
+            ->assertStatus(404);
+
+        $this->putJson("/api/v1/credit-cards/{$firstCard->id}/expenses/{$expense->id}", [
+            'description' => 'Wrong parent update',
+        ])->assertStatus(404);
     }
 }

@@ -13,7 +13,15 @@ class StoreCreditCardRequest extends FormRequest
     {
         return [
             'name'                        => ['required', 'string', 'max:255'],
-            'account_id'                  => ['required', 'integer', 'exists:accounts,id'],
+            'account_id'                  => [
+                'required',
+                'integer',
+                Rule::exists('accounts', 'id')->where(function ($query) {
+                    if (! auth()->user()?->hasRole('superadmin')) {
+                        $query->where('user_id', auth()->id());
+                    }
+                }),
+            ],
             'type'                        => ['required', Rule::in(['charge', 'revolving'])],
             'credit_limit'                => ['nullable', 'numeric', 'min:0'],
             'fixed_payment'               => ['nullable', 'numeric', 'min:0'],
