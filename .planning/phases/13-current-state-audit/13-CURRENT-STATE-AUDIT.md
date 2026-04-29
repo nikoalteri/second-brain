@@ -20,14 +20,15 @@ This audit uses `13-VALIDATED-CAPABILITIES.md` as the source of truth for what F
 
 - **Auth and settings:** login, token refresh/logout, profile fetch, protected-route rejection, and frontend settings persistence are validated by current REST routes and `tests/Feature/Api/AuthApiTest.php`.
 - **Accounts:** list/show/create/update/delete, filtering, sorting, user scoping, and superadmin access are validated by `tests/Feature/Api/AccountApiTest.php`.
+- **Credit cards:** owner-scoped REST access, foreign-account binding rejection, nested cycle/payment/expense parent checks, open-cycle issue, and one issue-to-mark-paid posting workflow are validated by `tests/Feature/Api/CreditCardApiTest.php` and `tests/Feature/CreditCardLifecycleIntegrationTest.php`.
 - **Dashboard and reports:** upcoming payments, cashflow/category/net-worth chart responses, and CSV/XLSX/PDF finance exports are validated by `tests/Feature/Api/DashboardApiTest.php` and `tests/Feature/Api/FinanceReportExportApiTest.php`.
 - **Admin panel:** finance report rendering, budget context/status display, export labels, and admin-panel access rules are validated by `tests/Feature/Filament/FinanceReportPageTest.php` and `tests/Feature/Auth/FilamentPanelAccessTest.php`.
-- **Structural-only areas:** GraphQL, monthly budget API mutations, and most non-account CRUD domains remain present in code but are intentionally not promoted beyond the evidence level recorded in `13-VALIDATED-CAPABILITIES.md`.
+- **Structural-only areas:** GraphQL, monthly budget API mutations, and most non-account CRUD domains remain present in code but are intentionally not promoted beyond the evidence level recorded in `13-VALIDATED-CAPABILITIES.md`; broader credit-card depth outside the proven REST slice also remains structural-only.
 
 ## Confidence boundaries
 
-- Phase 13 can confidently describe REST auth/settings, account workflows, dashboard/report exports, and admin access/report rendering as shipped behavior because those areas were re-confirmed by current tests.
-- Phase 13 should describe transactions, loans, credit cards, subscriptions, monthly budget mutations, and GraphQL as **present in current code structure** unless later phases add stronger proof.
+- Phase 13 can confidently describe REST auth/settings, account workflows, the targeted credit-card REST scoping and issue-to-mark-paid slice, dashboard/report exports, and admin access/report rendering as shipped behavior because those areas were re-confirmed by current tests.
+- Phase 13 should describe transactions, loans, subscriptions, monthly budget mutations, GraphQL, and broader credit-card depth as **present in current code structure** unless later phases add stronger proof.
 - No targeted proof failures were found, so no claim that was already marked `validated` required downgrade after the re-run.
 
 ## Superseded historical scope
@@ -42,7 +43,7 @@ That means Phase 13 should preserve localization work only as **superseded histo
 
 ## Planning-relevant concerns
 
-- **Proof coverage gap:** GraphQL and several finance CRUD surfaces are still code-only in this audit, so later planning should avoid assuming they have the same confidence level as the tested REST/admin/reporting paths.
+- **Proof coverage gap:** GraphQL and several finance CRUD surfaces are still code-only in this audit, and Phase 16 only upgrades a narrow credit-card REST slice, so later planning should avoid assuming untouched domains have the same confidence level as the tested paths.
 - **Scoping/security sensitivity:** `.planning/codebase/CONCERNS.md` notes reliance on auth-context scoping and superadmin bypass checks; future implementation phases should preserve those guarantees and add proof rather than treat them as settled everywhere.
 - **Performance/fragility concerns remain deferred:** dashboard query volume, credit-card lifecycle fragility, and observer-chain risks are relevant for sequencing later cleanup phases, but Phase 13 does not schedule fixes.
 
