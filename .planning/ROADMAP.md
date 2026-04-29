@@ -84,6 +84,11 @@ Plans:
 
 **Requirements:** [ALIGN-01, ALIGN-02, ALIGN-04]
 
+**Plans:** 1 plan
+
+Plans:
+- [ ] 14-01-docs-realignment-PLAN.md — Rewrite `PROJECT.md`, `REQUIREMENTS.md`, and `STATE.md` from validated Phase 13 evidence only
+
 **Success Criteria:**
 1. `PROJECT.md` describes the current product and active milestone accurately
 2. `REQUIREMENTS.md` contains only active scope grounded in the current codebase
@@ -93,6 +98,11 @@ Plans:
 **Goal:** Rebuild the near-term roadmap from current reality and separate deferred concerns from committed work.
 
 **Requirements:** [ALIGN-03, ALIGN-06]
+
+**Plans:** 1 plan
+
+Plans:
+- [ ] 15-01-roadmap-reset-triage-PLAN.md — Reset `ROADMAP.md` to conservative near-term phases, bucket deferred concerns outside committed scope, and leave the direct Phase 16 planning command
 
 **Success Criteria:**
 1. `ROADMAP.md` maps every active requirement to a real phase
