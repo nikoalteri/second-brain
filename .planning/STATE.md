@@ -1,25 +1,23 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.1
-milestone_name: Planning Realignment
-current_plan: —
-status: ready_for_phase_16_planning
-stopped_at: Completed 15-01-roadmap-reset-triage-PLAN.md
-resume_file: ".planning/ROADMAP.md"
-last_updated: "2026-04-29T23:07:44.933Z"
-last_activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-term scope and explicit deferred concern buckets
+milestone: v1.0
+milestone_name: — Finance Backend ✅
+status: executing
+stopped_at: Completed 16-01-credit-card-security-proof-PLAN.md
+last_updated: "2026-04-29T23:33:50.450Z"
+last_activity: 2026-04-29
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 5
-  total_plans: 25
-  completed_plans: 19
+  total_plans: 27
+  completed_plans: 20
 ---
 
 # v5.1 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 15 roadmap reset complete; ready to plan Phase 16  
+**Status:** Ready to execute
 **Updated:** 2026-04-29
 
 ---
@@ -29,19 +27,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Phase 16 planning — proof-first validation of structural finance surfaces
+**Current focus:** Phase 16 — proof-first-validation-of-structural-finance-surfaces
 
 ## Current Position
 
-Phase: 16 — Proof-First Validation of Structural Finance Surfaces  
-Plan: —  
-Status: Ready to plan  
-Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-term scope and explicit deferred concern buckets
+Phase: 16 (proof-first-validation-of-structural-finance-surfaces) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-29
 
 ## Session Resume
 
-**Stopped at:** Completed 15-01-roadmap-reset-triage-PLAN.md
-**Resume file:** None
+**Stopped at:** Completed 16-01-credit-card-security-proof-PLAN.md
+**Resume file:** .planning/phases/16-proof-first-validation-of-structural-finance-surfaces/16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
 
 ## Accumulated Context
 
@@ -54,6 +52,7 @@ Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-t
 - Phase 15 reset `.planning/ROADMAP.md` to a conservative near-term roadmap grounded in the validated versus structural-only boundary.
 - Deferred concerns now live in explicit non-committed buckets rather than active roadmap phases.
 - Phase 16 is the direct next planning step and should follow a proof-first path for structural-only finance areas.
+- Phase 16 discussion locked a narrow first slice, backend-first proof surface, explicit structural-only downgrade handling, and priority on credit-card plus access/scoping proof.
 
 ## Decisions
 
@@ -66,10 +65,14 @@ Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-t
 - [Phase 15]: Keep only Phase 16 as committed post-reset roadmap scope until proof changes the confidence boundary.
 - [Phase 15]: Treat structural-only finance domains as proof-first candidates, not enhancement-ready roadmap promises.
 - [Phase 15]: Keep concern inventory visible in explicit deferred buckets and end with /gsd-plan-phase 16.
+- [Phase 16]: Prioritize a smaller high-risk proof slice rather than a full structural-domain sweep.
+- [Phase 16]: Prefer REST/API plus permission/scoping proof, with GraphQL and SPA proof secondary unless directly needed.
+- [Phase 16]: Keep weak or broken domains structural-only instead of forcing promotion.
+- [Phase 16]: Treat foreign account binding as a real security boundary and reject it in request validation. — Phase 16 is backend-first proof work, so credit-card promotion could not rely on account existence checks that ignored ownership.
 
 ## Issues / Blockers
 
-- None blocking. Next step is `/gsd-plan-phase 16`.
+- None blocking. Next step is `/gsd-plan-phase 16` from `.planning/phases/16-proof-first-validation-of-structural-finance-surfaces/16-CONTEXT.md`.
 
 ## Performance Metrics
 
@@ -78,3 +81,4 @@ Last activity: 2026-04-29 — Phase 15 reset `ROADMAP.md` to conservative near-t
 | 13-current-state-audit | 01 | 2m | 3 | 3 |
 | 14-planning-docs-realignment | 01 | pending summary | 3 | 3 |
 | Phase 15-roadmap-reset-concern-triage P01 | 2m | 3 tasks | 3 files |
+| Phase 16 P01 | 5 min | 2 tasks | 5 files |

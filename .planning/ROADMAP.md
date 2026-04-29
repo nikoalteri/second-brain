@@ -87,6 +87,8 @@ Plans:
 
 **Goal:** Verify or downgrade the structural-only finance areas before any enhancement roadmap is allowed to depend on them.
 
+**Requirements:** [P16-CC-01, P16-CC-02, P16-CC-03, P16-CC-04, P16-CC-05]
+
 **Why this is next:**
 - It is the smallest committed follow-up that respects the validated versus structural-only boundary
 - It keeps transactions, loans, credit cards, subscriptions, monthly budgets, and GraphQL in a proof-first path instead of an enhancement path
@@ -101,6 +103,12 @@ Plans:
 - Targeted proof strategy for structural-only finance areas
 - Updated confidence notes for whichever domains gain current evidence
 - Clear distinction between newly validated work and still-deferred concerns
+
+**Plans:** 1/2 plans executed
+
+Plans:
+- [ ] 16-01-credit-card-security-proof-PLAN.md — Make the credit-card proof pack trustworthy and prove the highest-risk REST access/scoping boundary first
+- [ ] 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md — Add one credible issue-to-mark-paid proof and update the confidence boundary from actual proof results
 
 No additional committed phases are listed beyond Phase 16 until that proof-first work reshapes the confidence boundary.
 
