@@ -92,14 +92,14 @@ class FinanceReportPageTest extends TestCase
             ->assertSee('PDF');
     }
 
-    public function test_admin_dashboard_renders_budget_alert_widget(): void
+    public function test_admin_dashboard_renders_without_widgets(): void
     {
         $user = $this->createAdminUser();
 
         $response = $this->actingAs($user)->get('/admin');
 
         $response->assertOk()
-            ->assertSee('Budget Alerts');
+            ->assertDontSee('Budget Alerts');
     }
 
     private function createAdminUser(): User
