@@ -2,22 +2,22 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — Finance Backend ✅
-status: executing
-stopped_at: Completed 16-01-credit-card-security-proof-PLAN.md
-last_updated: "2026-04-29T23:33:50.450Z"
+status: verifying
+stopped_at: Completed 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
+last_updated: "2026-04-29T23:36:11.843Z"
 last_activity: 2026-04-29
 progress:
   total_phases: 8
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 27
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # v5.1 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Ready to execute
+**Status:** Phase complete — ready for verification
 **Updated:** 2026-04-29
 
 ---
@@ -33,13 +33,13 @@ See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 Phase: 16 (proof-first-validation-of-structural-finance-surfaces) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-29
 
 ## Session Resume
 
-**Stopped at:** Completed 16-01-credit-card-security-proof-PLAN.md
-**Resume file:** .planning/phases/16-proof-first-validation-of-structural-finance-surfaces/16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
+**Stopped at:** Completed 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
+**Resume file:** None
 
 ## Accumulated Context
 
@@ -69,6 +69,7 @@ Last activity: 2026-04-29
 - [Phase 16]: Prefer REST/API plus permission/scoping proof, with GraphQL and SPA proof secondary unless directly needed.
 - [Phase 16]: Keep weak or broken domains structural-only instead of forcing promotion.
 - [Phase 16]: Treat foreign account binding as a real security boundary and reject it in request validation. — Phase 16 is backend-first proof work, so credit-card promotion could not rely on account existence checks that ignored ownership.
+- [Phase 16]: Promote only the exact credit-card REST slice proven by current tests; keep broader credit-card depth structural-only. — Phase 16 proved owner-scoped REST access and one issue-to-mark-paid workflow, but it did not justify upgrading broader credit-card, SPA, or GraphQL surfaces.
 
 ## Issues / Blockers
 
@@ -82,3 +83,4 @@ Last activity: 2026-04-29
 | 14-planning-docs-realignment | 01 | pending summary | 3 | 3 |
 | Phase 15-roadmap-reset-concern-triage P01 | 2m | 3 tasks | 3 files |
 | Phase 16 P01 | 5 min | 2 tasks | 5 files |
+| Phase 16 P02 | 6 min | 2 tasks | 3 files |

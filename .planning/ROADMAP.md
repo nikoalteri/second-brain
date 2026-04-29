@@ -104,7 +104,7 @@ Plans:
 - Updated confidence notes for whichever domains gain current evidence
 - Clear distinction between newly validated work and still-deferred concerns
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 16-01-credit-card-security-proof-PLAN.md — Make the credit-card proof pack trustworthy and prove the highest-risk REST access/scoping boundary first
