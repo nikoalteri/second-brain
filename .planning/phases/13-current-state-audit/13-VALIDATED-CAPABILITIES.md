@@ -51,5 +51,10 @@ This ledger is the Phase 13 evidence base for what Fluxa ships today. It separat
 
 ## Current confidence boundary
 
+- **Verification snapshot (2026-04-29 UTC):** `php artisan test tests/Feature/Api/AuthApiTest.php tests/Feature/Api/AccountApiTest.php tests/Feature/Api/DashboardApiTest.php tests/Feature/Api/FinanceReportExportApiTest.php tests/Feature/Filament/FinanceReportPageTest.php tests/Feature/Auth/FilamentPanelAccessTest.php`
+- **Result:** 38 tests passed, 182 assertions, 0 failures
+- **Re-confirmed by tests:** auth token flows and frontend settings, account CRUD/scoping/superadmin access, dashboard charts/upcoming payments, finance report exports, admin finance report rendering, and admin panel access rules
+- **Still code-only after re-run:** transaction REST behavior, loan CRUD behavior, credit-card CRUD/cycle behavior, subscription CRUD behavior, monthly budget API mutations, and all GraphQL claims
+
 - This ledger intentionally marks GraphQL and several non-account finance CRUD surfaces as `structural-only` because the current Phase 13 proof set does not re-confirm them with targeted automated tests.
 - Localization is intentionally excluded from active capability scope; Phase 13 treats prior localization planning as superseded history rather than a shipped current-state capability.
