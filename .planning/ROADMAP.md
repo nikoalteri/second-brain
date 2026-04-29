@@ -103,3 +103,39 @@ Plans:
 - Clear distinction between newly validated work and still-deferred concerns
 
 No additional committed phases are listed beyond Phase 16 until that proof-first work reshapes the confidence boundary.
+
+---
+
+## Deferred Concerns — Visible but Not Committed Phases
+
+These buckets stay outside committed phases on purpose. They remain visible for planning context, but they are **not committed roadmap work** until later proof or prioritization promotes them explicitly.
+
+### Deferred Proof-First Candidates
+
+These areas are present in current code structure but remain lower-confidence and **not committed as enhancement work**:
+
+- Transactions REST behavior and SPA transaction flows
+- Loans CRUD and schedule behavior
+- Credit card CRUD, cycle, payment, expense, and balance workflows
+- Subscription CRUD and auto-posting behavior
+- Monthly budget mutation endpoints
+- GraphQL schema queries and mutations for finance domains
+
+### Deferred Hardening, Security, and Performance Concerns
+
+These concerns stay visible but outside committed phases unless a future plan chooses to pull one in deliberately:
+
+- Auth-context scoping and superadmin bypass proof gaps
+- API permission and cross-user access test expansion
+- Dashboard query-volume and indexing concerns
+- Credit-card lifecycle race conditions and observer-chain fragility
+- Service-locator cleanup, deprecated finance-calculation paths, and related maintenance risks
+
+### Deferred Longer-Term Product Ideas
+
+These ideas are outside committed phases and must not be mistaken for active roadmap promises:
+
+- Bank-feed or Open Banking expansion
+- Broader analytics or reporting enhancements beyond the currently validated export/report boundary
+- External webhook/integration features
+- Backup/recovery UX and broader audit-trail initiatives
