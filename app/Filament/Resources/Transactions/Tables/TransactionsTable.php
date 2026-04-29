@@ -66,7 +66,7 @@ class TransactionsTable
 
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn($state) => Number::currency($state, 'EUR'))
+                    ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'it'))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
                     ->sortable(),
 

@@ -26,13 +26,15 @@ class LoansTable
                     ->sortable(),
                 TextColumn::make('monthly_payment')
                     ->label('Monthly Payment')
-                    ->money('EUR'),
+                    ->money('EUR', locale: 'it'),
                 TextColumn::make('total_with_interest')
                     ->label('Total with Interest (Remaining)')
-                    ->formatStateUsing(fn($record) => \Illuminate\Support\Number::currency(
+                    ->formatStateUsing(fn($record) => number_format(
                         (float) $record->monthly_payment * max(0, $record->total_installments - $record->paid_installments),
-                        'EUR',
-                    ))
+                        2,
+                        ',',
+                        '.'
+                    ) . ' €')
                     ->sortable(query: function ($query, $direction) {
                         return $query->selectRaw('*, (monthly_payment * (total_installments - paid_installments)) as total_with_interest_calc')
                             ->orderBy('total_with_interest_calc', $direction);
@@ -47,7 +49,7 @@ class LoansTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('remaining_amount')
                     ->label('Remaining Amount')
-                    ->money('EUR')
+                    ->money('EUR', locale: 'it')
                     ->sortable(),
                 TextColumn::make('withdrawal_day')
                     ->label('Withdrawal Day'),

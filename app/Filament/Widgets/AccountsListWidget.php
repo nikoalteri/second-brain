@@ -38,7 +38,7 @@ class AccountsListWidget extends TableWidget
                     }),
                 TextColumn::make('signed_balance')
                     ->label('Balance')
-                    ->money('EUR')
+                    ->money('EUR', locale: 'it')
                     ->alignEnd()
                     ->sortable()
                     ->color(fn(float|int|string $state): string => ((float) $state) >= 0 ? 'success' : 'danger'),

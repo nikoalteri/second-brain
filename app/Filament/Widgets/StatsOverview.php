@@ -45,6 +45,6 @@ class StatsOverview extends BaseWidget
 
     private function formatCurrency(float $amount): string
     {
-        return Number::currency($amount, 'EUR');
+        return Number::currency($amount, 'EUR', locale: 'it');
     }
 }
