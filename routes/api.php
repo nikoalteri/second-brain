@@ -21,7 +21,7 @@ Route::prefix('v1')->group(function () {
     // ─── Authentication (no auth guard required) ───────────────────────────
     Route::post('/auth/login', [AuthController::class, 'login']);
 
-    Route::middleware(['auth:sanctum', 'set-user-locale'])->group(function () {
+    Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/refresh', [AuthController::class, 'refresh']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -29,7 +29,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // ─── Read endpoints — 100 req/min ──────────────────────────────────────
-    Route::middleware(['auth:sanctum', 'set-user-locale', 'throttle:api-read'])->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:api-read'])->group(function () {
         Route::get('accounts', [AccountController::class, 'index']);
         Route::get('accounts/{account}', [AccountController::class, 'show']);
         Route::get('dashboard/charts', [DashboardController::class, 'charts']);
@@ -55,7 +55,7 @@ Route::prefix('v1')->group(function () {
     });
 
     // ─── Write endpoints — 20 req/min ─────────────────────────────────────
-    Route::middleware(['auth:sanctum', 'set-user-locale', 'throttle:api-write'])->group(function () {
+    Route::middleware(['auth:sanctum', 'throttle:api-write'])->group(function () {
         Route::post('accounts', [AccountController::class, 'store']);
         Route::put('accounts/{account}', [AccountController::class, 'update']);
         Route::patch('accounts/{account}', [AccountController::class, 'update']);
