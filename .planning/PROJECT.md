@@ -2,83 +2,76 @@
 
 ## What This Is
 
-Fluxa is a Laravel-based personal finance tracker with both a Filament admin surface and a Vue SPA. It helps users manage accounts, transactions, subscriptions, loans, credit cards, dashboards, budgets, and exports while keeping business rules and user preferences consistent across the product.
+Fluxa is a Laravel application with a Vue SPA, REST API, and Filament admin panel for personal finance workflows. The current top-level description is intentionally conservative: Phase 13 validated auth and settings flows, account CRUD and scoping, dashboard/report data, finance exports, admin report rendering, and admin access control.
 
 ## Core Value
 
 Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.
 
-## Current Milestone: v5.0 — Localization & Unified Settings
+## Current Milestone: v5.1 — Planning Realignment
 
-**Goal:** Make English and Italian work across the whole product in both the SPA and Filament backend, with one shared per-user language preference editable from frontend and backend settings.
+**Goal:** Realign the active planning artifacts with Phase 13 evidence so maintainers can trust project scope before roadmap reset work begins.
 
-**Target features:**
-- Full English/Italian localization across the current SPA
-- Full English/Italian localization across the Filament backend UI used by end users and admins
-- Shared per-user language preference stored once and editable from both frontend and backend
-- English fallback behavior for existing users who have not chosen a language
+**Current outcomes:**
+- Rewrite top-level planning docs from validated repo evidence instead of stale milestone assumptions
+- Keep structural-only product areas visible as lower-confidence context rather than validated scope
+- Preserve prior localization work only as superseded history
+- Leave a clean handoff into Phase 15 roadmap reset and concern triage
 
-## Requirements
+## Current Scope
 
 ### Validated
 
-- ✓ Core finance domains are implemented: accounts, transactions, subscriptions, loans, and credit cards
-- ✓ Reporting, dashboards, budgets, and exports are available in both backend and SPA surfaces
-- ✓ SPA authentication and per-user settings already exist and are used by the frontend
-- ✓ User-owned data remains scoped consistently across admin and API surfaces
+- `validated`: SPA users can authenticate through `/api/v1/auth/*`, refresh and revoke tokens, fetch profile data, and update frontend settings
+- `validated`: Accounts support authenticated REST CRUD with filtering, sorting, ownership scoping, and intended superadmin cross-user access
+- `validated`: Dashboard and finance report APIs return upcoming-payment and chart data, and finance exports download as CSV, XLSX, and PDF
+- `validated`: The admin surface enforces tested access rules and renders the finance report page with budget context and export labels
 
-### Active
+### Structural-only context
 
-- [ ] Users can use the SPA in either English or Italian
-- [ ] Users can use the Filament backend in either English or Italian
-- [ ] Users can change their language preference from both frontend and backend settings
-- [ ] The same saved language preference is applied consistently across frontend and backend sessions
-- [ ] Existing users default safely to English until they explicitly choose another language
+- `structural-only`: Current code structure also shows routes, views, and schemas for transactions, loans, credit cards, subscriptions, monthly budget mutations, broader SPA finance pages, admin finance navigation, and GraphQL finance operations
+- `lower-confidence`: Those areas remain context for maintainers, not validated shipped scope, until later proof upgrades them beyond the Phase 13 evidence boundary
 
-### Out of Scope
+## Active Planning Requirements
 
-- Additional languages beyond English and Italian — not needed for this milestone
-- Runtime translation management or in-app translation editors — unnecessary complexity for the current product size
-- Bank-feed integrations — already deferred from the previous roadmap and not part of this milestone
+- [x] `PROJECT.md` describes the current product and milestone with evidence-backed wording
+- [x] `REQUIREMENTS.md` keeps active scope limited to documentation trust outcomes
+- [ ] `ROADMAP.md` still needs Phase 15 reset work from the new baseline
+- [x] `STATE.md` hands off to the next planning step clearly
+
+## Out of Scope
+
+- Reintroducing prior localization planning into active scope
+- Promoting structural-only areas into validated product promises without stronger proof
+- Cleanup, refactor, or feature commitments disguised as documentation work
 
 ## Context
 
-- The product is built on Laravel 12, Filament 4, Tailwind CSS, and a Vue 3 SPA inside the same repository.
-- User settings already exist and affect SPA behavior, but backend settings do not yet provide a useful language control that applies product-wide.
-- Recent work delivered budgets, exports, and frontend settings, but the planning metadata is stale and must be realigned before new execution phases start.
-- The user explicitly wants Italian available in both frontend and backend, with the backend settings surface also exposing language selection.
+- Phase 13 is the source of truth for top-level planning confidence, especially `.planning/phases/13-current-state-audit/13-VALIDATED-CAPABILITIES.md`
+- The strict confidence split is intentional: validated claims are evidence-backed, while structural-only areas remain lower-confidence context
+- The next planning move is Phase 15, which resets the roadmap and triages deferred concerns from this baseline
 
-## Constraints
+## Superseded History
 
-- **Tech stack**: Reuse Laravel/Filament/Vue localization primitives already compatible with the codebase — avoid introducing parallel settings or translation systems.
-- **Compatibility**: Existing user settings records must remain compatible with current production data — language must continue to resolve safely for old users.
-- **UX**: The same saved language preference must drive both SPA and backend behavior — users should not have to configure language twice.
-- **Default behavior**: English remains the default language until a user selects Italian — safer rollout for existing data and copy.
+Earlier localization planning remains preserved only as superseded history. Current repository evidence is English-only, so localization is not part of active top-level scope.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Use one shared per-user language preference across frontend and backend | Prevent duplicated settings and inconsistent language behavior between surfaces | — Pending |
-| Support only English and Italian in this milestone | Matches the current product need without expanding translation scope unnecessarily | — Pending |
-| Keep English as the default fallback | Minimizes rollout risk for existing users and missing-copy edge cases | — Pending |
+| Use Phase 13 validated capabilities as the only top-level validated scope | Restores trust by grounding claims in current proof instead of inherited assumptions | Adopted |
+| Keep transactions, loans, credit cards, subscriptions, budgets, and GraphQL in structural-only context unless re-proven | Prevents current planning docs from overstating confidence | Adopted |
+| Preserve localization only as superseded history | Maintains project continuity without reviving inactive scope | Adopted |
 
 ## Evolution
 
-This document evolves at phase transitions and milestone boundaries.
+This document should change only when milestone framing or validated scope materially changes.
 
-**After each phase transition** (via `/gsd-transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
-
-**After each milestone** (via `/gsd-complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
+**At future phase boundaries:**
+1. Promote claims to `validated` only when current code and current proof support them
+2. Keep `structural-only` and `lower-confidence` notes concise and separate from active commitments
+3. Move superseded work into brief history notes instead of active scope
+4. Update the milestone handoff when the roadmap baseline changes
 
 ---
-*Last updated: 2026-04-23 after starting milestone v5.0*
+*Last updated: 2026-04-29 after Phase 14 documentation realignment*
