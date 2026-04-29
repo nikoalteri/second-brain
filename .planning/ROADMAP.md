@@ -1,7 +1,7 @@
 # Fluxa — Roadmap
 
 **Project:** Fluxa Personal Finance Tracker  
-**Last Updated:** 2026-04-23
+**Last Updated:** 2026-04-30
 
 ---
 
@@ -62,32 +62,39 @@ Plans:
 
 ---
 
-## v5.0 — Localization & Unified Settings ⏳
+## v5.1 — Planning Realignment ⏳
 
-### Phase 10: Localization Foundation & Shared Settings ⏳
-**Goal:** Establish the English/Italian localization infrastructure, safe fallback behavior, and one shared per-user language preference editable from both frontend and backend.
+### Phase 13: Current-State Audit ⏳
+**Goal:** Convert the refreshed codebase map into a trusted statement of what the shipped product actually does today.
 
-**Requirements:** [I18N-01, I18N-02, I18N-03, I18N-04, I18N-12, I18N-13]
+**Requirements:** [ALIGN-05]
 
-**Plans:** 5 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 10-01-shared-locale-contract-PLAN.md — Freeze the en/it locale contract, English fallback, and shared settings write path
-- [ ] 10-02-backend-locale-middleware-PLAN.md — Apply the saved locale to authenticated API and Filament requests
-- [ ] 10-03-spa-i18n-foundation-PLAN.md — Bootstrap vue-i18n and sync SPA boot/settings to the shared language
-- [ ] 10-04-backend-profile-locale-settings-PLAN.md — Add a backend profile language selector that writes the same persisted setting
-- [ ] 10-05-manual-verification-PLAN.md — Verify backend/SPA language synchronization and fallback behavior manually
-
-### Phase 11: Frontend Localization Rollout ⏳
-**Goal:** Translate the SPA's navigation, settings, finance workflows, validation copy, reports, and dashboards so the current frontend is usable in English and Italian.
-
-### Phase 12: Backend Localization Rollout & Verification ⏳
-**Goal:** Translate the Filament backend UI, expose useful backend language controls, and verify that language preference behavior works consistently across frontend and backend sessions.
+- [x] 13-01-capability-audit-PLAN.md — Build the evidence-backed current-state audit and superseded-scope note
 
 **Success Criteria:**
-1. English and Italian both work across the SPA
-2. English and Italian both work across the Filament backend
-3. Users can change language from frontend and backend settings
-4. One shared saved preference drives both surfaces
-5. Existing users fall back safely to English
-6. Regression coverage protects localization behavior across settings, auth, and finance flows
+1. Validated capabilities are inferred from the current codebase rather than stale milestone assumptions
+2. Active product description matches the repository's real backend, SPA, and admin surfaces
+3. Stale scope from reverted localization work is explicitly identified as inactive
+
+### Phase 14: Planning Docs Realignment ⏳
+**Goal:** Rewrite the active project artifacts so maintainers can trust `PROJECT.md`, `REQUIREMENTS.md`, and `STATE.md` again.
+
+**Requirements:** [ALIGN-01, ALIGN-02, ALIGN-04]
+
+**Success Criteria:**
+1. `PROJECT.md` describes the current product and active milestone accurately
+2. `REQUIREMENTS.md` contains only active scope grounded in the current codebase
+3. `STATE.md` clearly communicates current focus, context, and next step
+
+### Phase 15: Roadmap Reset & Concern Triage ⏳
+**Goal:** Rebuild the near-term roadmap from current reality and separate deferred concerns from committed work.
+
+**Requirements:** [ALIGN-03, ALIGN-06]
+
+**Success Criteria:**
+1. `ROADMAP.md` maps every active requirement to a real phase
+2. Deferred concerns are captured explicitly without being mistaken for committed scope
+3. The project ends this milestone with a clear next implementation/planning command
