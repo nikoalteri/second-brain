@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useMutation, useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
@@ -14,7 +13,6 @@ import { useAuthStore } from '@/stores/auth.js';
 
 const route = useRoute();
 const router = useRouter();
-const { t } = useI18n();
 const { addToast } = useToast();
 const auth = useAuthStore();
 const isEdit = computed(() => !!route.params.id);
@@ -276,7 +274,7 @@ async function handleDelete() {
 <template>
     <AppLayout>
         <div class="mb-6">
-            <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? t('loansForm.edit') : t('loansForm.add') }}</h1>
+            <h1 class="text-xl font-semibold text-gray-900">{{ isEdit ? 'Edit Loan' : 'Record Loan' }}</h1>
         </div>
 
         <LoadingSpinner v-if="loadingLoan" class="py-16" />
@@ -284,7 +282,7 @@ async function handleDelete() {
         <form v-else class="max-w-4xl" @submit.prevent="handleSubmit">
             <div class="space-y-6">
                 <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">{{ t('loansForm.mainData') }}</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Main data</h2>
                     <div class="mt-4 grid gap-4 md:grid-cols-2">
                         <FormInput label="Name *" v-model="form.name" required />
                         <FormSelect
@@ -355,7 +353,7 @@ async function handleDelete() {
                 </section>
 
                 <section class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">{{ t('loansForm.schedule') }}</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Schedule</h2>
                     <div class="mt-4 grid gap-4 md:grid-cols-2">
                         <FormInput label="Start Date *" v-model="form.start_date" type="date" />
                         <FormInput label="End Date" v-model="form.end_date" type="date" />
@@ -389,7 +387,7 @@ async function handleDelete() {
                     class="text-sm font-medium text-red-500 hover:text-red-600 focus:outline-none"
                     @click="showDeleteModal = true"
                 >
-                    {{ t('loansForm.delete') }}
+                    Delete loan
                 </button>
 
                 <div class="ml-auto flex gap-3">
@@ -397,14 +395,14 @@ async function handleDelete() {
                         to="/loans"
                         class="flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
                     >
-                        {{ t('common.actions.cancel') }}
+                        Cancel
                     </router-link>
                     <button
                         type="submit"
                         :disabled="saving"
                         class="flex h-10 items-center gap-2 rounded-lg bg-amber-500 px-4 text-sm font-medium text-white transition-colors hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                        {{ saving ? t('settings.actions.saving') : (isEdit ? t('loansForm.update') : t('loansForm.save')) }}
+                        {{ saving ? 'Saving…' : (isEdit ? 'Update Loan' : 'Record Loan') }}
                     </button>
                 </div>
             </div>
@@ -412,9 +410,9 @@ async function handleDelete() {
 
         <ConfirmModal
             :open="showDeleteModal"
-            :title="`${t('loansForm.delete')}?`"
+            title="Delete loan?"
             message="This loan will be permanently removed."
-            :confirm-label="t('loansForm.delete')"
+            confirm-label="Delete Loan"
             :loading="deleting"
             @confirm="handleDelete"
             @cancel="showDeleteModal = false"

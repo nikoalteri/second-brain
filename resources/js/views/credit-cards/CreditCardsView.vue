@@ -2,7 +2,6 @@
 import { computed, onMounted, ref } from 'vue';
 import { CreditCardIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
-import { useI18n } from 'vue-i18n';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
@@ -10,7 +9,6 @@ import { useCurrency } from '@/composables/useCurrency.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
-const { t } = useI18n();
 const { formatCurrency } = useCurrency();
 const auth = useAuthStore();
 const loading = ref(false);
@@ -72,13 +70,13 @@ onMounted(() => {
     <AppLayout>
         <div class="mb-6 flex items-center justify-between">
             <div>
-                <h1 class="text-xl font-semibold text-gray-900">{{ t('creditCards.title') }}</h1>
+                <h1 class="text-xl font-semibold text-gray-900">Credit Cards</h1>
             </div>
             <router-link
                 to="/credit-cards/new"
                 class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-white transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white hover:bg-amber-600"
             >
-                {{ t('creditCards.add') }}
+                Add card
             </router-link>
         </div>
 
@@ -86,10 +84,10 @@ onMounted(() => {
 
         <EmptyState
             v-else-if="!cards.length"
-            :title="t('creditCards.emptyTitle')"
-            :message="t('creditCards.emptyMessage')"
+            title="No cards added"
+            message="Add a credit card to track your spending cycles."
             :icon="CreditCardIcon"
-            :action-label="t('creditCards.add')"
+            action-label="Add card"
             action-to="/credit-cards/new"
         />
 
@@ -119,12 +117,12 @@ onMounted(() => {
                     </div>
 
                     <div class="mb-3 flex justify-between text-sm text-gray-500">
-                        <span>{{ t('creditCards.availableAmount', { amount: formatCurrency(card.available_credit ?? 0) }) }}</span>
-                        <span>{{ t('creditCards.limitAmount', { amount: formatCurrency(card.credit_limit ?? 0) }) }}</span>
+                        <span>{{ formatCurrency(card.available_credit ?? 0) }} available</span>
+                        <span>{{ formatCurrency(card.credit_limit ?? 0) }} limit</span>
                     </div>
 
-                    <p class="font-mono text-xl font-semibold text-purple-400">{{ t('creditCards.balanceAmount', { amount: formatCurrency(card.current_balance) }) }}</p>
-                    <p class="mt-1 text-sm text-gray-500">{{ t('creditCards.statementDue', { statement: card.statement_day, due: card.due_day }) }}</p>
+                    <p class="font-mono text-xl font-semibold text-purple-400">{{ formatCurrency(card.current_balance) }} balance</p>
+                    <p class="mt-1 text-sm text-gray-500">Statement day {{ card.statement_day }} · Due day {{ card.due_day }}</p>
                 </div>
             </div>
 
