@@ -1,110 +1,105 @@
 # Fluxa — Roadmap
 
 **Project:** Fluxa Personal Finance Tracker  
-**Last Updated:** 2026-04-30
+**Last Updated:** 2026-04-29
 
 ---
 
-## v1.0 — Finance Backend ✅ (Complete)
+## Roadmap Confidence Boundary
 
-### Phase 0: Setup & Architecture ✅
-**Goal:** Bootstrap Laravel project with Filament admin, RBAC, and core infrastructure.
+This roadmap follows the stricter Phase 13 evidence split:
 
-### Phase 1: Accounts & Transactions ✅
-**Goal:** Implement bank accounts, transaction CRUD, categories, and balance tracking.
+- **validated:** auth/settings flows, account CRUD and scoping, dashboard/report APIs and exports, admin finance-report rendering, and admin access control
+- **structural-only:** transactions, loans, credit cards, subscriptions, monthly budgets, GraphQL, and broader finance navigation remain visible in code but lower-confidence until current proof upgrades them
+- **planning rule:** committed phases may extend validated surfaces or add proof for structural-only areas, but they must not treat structural-only finance domains as enhancement-ready shipped scope
 
-### Phase 2: Subscriptions ✅
-**Goal:** Track recurring subscriptions with billing cycles, costs, and renewal reminders.
-
-### Phase 3: Loans ✅
-**Goal:** Manage loans with amortization schedules, payment posting, and balance tracking.
-
-### Phase 4: Credit Cards ✅
-**Goal:** Track credit cards with revolving credit cycles, expenses, payments, and interest calculation.
-
-### Phase 5: Finance Dashboard & Reports ✅
-**Goal:** Unified finance dashboard with KPIs, charts, and exportable reports across all modules.
+Reference: `.planning/phases/13-current-state-audit/13-VALIDATED-CAPABILITIES.md`
 
 ---
 
-## v2.0 — API Layer ✅ (Complete)
+## Delivered History
 
-### Phase 6: REST + GraphQL API ✅
-**Goal:** Expose all finance data (accounts, transactions, subscriptions, loans, credit cards) via a secure REST + GraphQL API with JWT authentication, rate limiting, and auto-generated documentation.
+### v1.0 — Finance Backend ✅
 
-**Plans:** 7/7 plans complete ✅
+- **Phases 0-5:** Laravel finance backend, reporting, exports, and admin foundations shipped
 
-Plans:
-- [x] 06-PLAN-1-foundation.md — Config fixes (sanctum guard, lighthouse guard, sanctum expiry), install spatie/laravel-query-builder + scribe, register named rate limiters
-- [x] 06-PLAN-2-auth-error-handling.md — AuthController (login/refresh/logout), routes/api.php v1 structure with throttle groups, exception handler JSON responses
-- [x] 06-PLAN-3-accounts-transactions.md — AccountController + TransactionController with QueryBuilder filters/sorts/cursor-pagination, JSON resources, form requests
-- [x] 06-PLAN-4-loans-creditcards-subscriptions.md — LoanController + CreditCardController + SubscriptionController with QueryBuilder, JSON resources, form requests
-- [x] 06-PLAN-5-graphql.md — Full GraphQL schema (all finance types, queries with @with/@paginate, mutations with @create/@update/@delete), MonthlyCashflow + TotalByCategory custom resolvers
-- [x] 06-PLAN-6-api-docs.md — Configure Scribe for api/v1/* only, add controller docblocks, generate OpenAPI 3.0 at /docs
-- [x] 06-PLAN-7-tests.md — Feature tests for auth, REST CRUD + scoping + pagination + filters, GraphQL queries + mutations
+### v2.0 — API Layer ✅
+
+- **Phase 6:** REST + GraphQL API surface shipped in code, with Phase 13 validating only the auth, accounts, dashboard, and export boundary above
+
+### v3.0 — Frontend ✅
+
+- **Phase 7:** Vue SPA shipped in code, with Phase 13 validating the currently proven auth/settings, account, dashboard, and reporting behavior only
 
 ---
 
-## v3.0 — Frontend ✅ (Delivered)
+## Removed from Active Committed Scope
 
-### Phase 7: Mobile-Friendly Frontend SPA ✅
-**Goal:** Build a mobile-friendly Vue 3 SPA (Composition API + script setup) served within the existing Laravel project, consuming the REST + GraphQL APIs with shared auth, responsive UI, and full finance CRUD coverage.
-
----
-
-## v4.0 — Advanced Analytics ⏳
-
-### Phase 8: Budget Planning & Exports ⏳
-**Goal:** Add optional category budgets, in-app budget alerts, and exportable PDF/CSV/Excel reports for existing finance report data.
-
-### Phase 9: Bank Feed Integrations
-**Goal:** Integrate with bank APIs (Open Banking / PSD2) for automatic transaction import.
+Earlier speculative roadmap items are intentionally no longer committed phases. This reset removes revived scope such as broad analytics expansion, budget enhancement planning, and bank-feed integrations until future evidence and prioritization justify new planning.
 
 ---
 
 ## v5.1 — Planning Realignment ⏳
 
-### Phase 13: Current-State Audit ⏳
+### Phase 13: Current-State Audit ✅
+
 **Goal:** Convert the refreshed codebase map into a trusted statement of what the shipped product actually does today.
 
 **Requirements:** [ALIGN-05]
 
-**Plans:** 1/1 plans complete
+**Plans:** 1/1 plans complete ✅
 
 Plans:
 - [x] 13-01-capability-audit-PLAN.md — Build the evidence-backed current-state audit and superseded-scope note
 
-**Success Criteria:**
-1. Validated capabilities are inferred from the current codebase rather than stale milestone assumptions
-2. Active product description matches the repository's real backend, SPA, and admin surfaces
-3. Stale scope from reverted localization work is explicitly identified as inactive
+### Phase 14: Planning Docs Realignment ✅
 
-### Phase 14: Planning Docs Realignment ⏳
 **Goal:** Rewrite the active project artifacts so maintainers can trust `PROJECT.md`, `REQUIREMENTS.md`, and `STATE.md` again.
 
 **Requirements:** [ALIGN-01, ALIGN-02, ALIGN-04]
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete ✅
 
 Plans:
-- [ ] 14-01-docs-realignment-PLAN.md — Rewrite `PROJECT.md`, `REQUIREMENTS.md`, and `STATE.md` from validated Phase 13 evidence only
-
-**Success Criteria:**
-1. `PROJECT.md` describes the current product and active milestone accurately
-2. `REQUIREMENTS.md` contains only active scope grounded in the current codebase
-3. `STATE.md` clearly communicates current focus, context, and next step
+- [x] 14-01-docs-realignment-PLAN.md — Rewrite `PROJECT.md`, `REQUIREMENTS.md`, and `STATE.md` from validated Phase 13 evidence only
 
 ### Phase 15: Roadmap Reset & Concern Triage ⏳
+
 **Goal:** Rebuild the near-term roadmap from current reality and separate deferred concerns from committed work.
 
 **Requirements:** [ALIGN-03, ALIGN-06]
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete ✅
 
 Plans:
-- [ ] 15-01-roadmap-reset-triage-PLAN.md — Reset `ROADMAP.md` to conservative near-term phases, bucket deferred concerns outside committed scope, and leave the direct Phase 16 planning command
+- [x] 15-01-roadmap-reset-triage-PLAN.md — Reset `ROADMAP.md` to conservative near-term phases grounded in the validated boundary, keep deferred concerns outside committed phases, and leave the direct Phase 16 planning command
 
 **Success Criteria:**
-1. `ROADMAP.md` maps every active requirement to a real phase
-2. Deferred concerns are captured explicitly without being mistaken for committed scope
-3. The project ends this milestone with a clear next implementation/planning command
+1. `ROADMAP.md` maps ALIGN-03 and ALIGN-06 to a conservative, evidence-grounded roadmap reset
+2. Deferred concerns stay visible without being mistaken for committed scope
+3. The reset leaves a direct next planning command for the first post-reset phase
+
+---
+
+## Committed Near-Term Roadmap
+
+### Phase 16: Proof-First Validation of Structural Finance Surfaces
+
+**Goal:** Verify or downgrade the structural-only finance areas before any enhancement roadmap is allowed to depend on them.
+
+**Why this is next:**
+- It is the smallest committed follow-up that respects the validated versus structural-only boundary
+- It keeps transactions, loans, credit cards, subscriptions, monthly budgets, and GraphQL in a proof-first path instead of an enhancement path
+- It gives later planning a trustworthy basis for deciding what, if anything, deserves promotion into future committed work
+
+**Scope guardrails:**
+- Add or refresh proof for structural-only finance surfaces, or document why a surface stays structural-only
+- Preserve the validated auth, account, dashboard/report, and admin boundary as the current shipped baseline
+- Do **not** reintroduce bank-feed expansion, external integration scope, or feature-enhancement commitments for unproven finance domains
+
+**Expected outputs from planning Phase 16:**
+- Targeted proof strategy for structural-only finance areas
+- Updated confidence notes for whichever domains gain current evidence
+- Clear distinction between newly validated work and still-deferred concerns
+
+No additional committed phases are listed beyond Phase 16 until that proof-first work reshapes the confidence boundary.
