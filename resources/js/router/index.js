@@ -3,7 +3,25 @@ export const routes = [
         path: '/login',
         name: 'login',
         component: () => import('@/views/auth/LoginView.vue'),
-        meta: { requiresAuth: false },
+        meta: { requiresAuth: false, guestOnly: true },
+    },
+    {
+        path: '/register',
+        name: 'register',
+        component: () => import('@/views/auth/RegisterView.vue'),
+        meta: { requiresAuth: false, guestOnly: true },
+    },
+    {
+        path: '/forgot-password',
+        name: 'forgot-password',
+        component: () => import('@/views/auth/ForgotPasswordView.vue'),
+        meta: { requiresAuth: false, guestOnly: true },
+    },
+    {
+        path: '/reset-password',
+        name: 'reset-password',
+        component: () => import('@/views/auth/ResetPasswordView.vue'),
+        meta: { requiresAuth: false, guestOnly: true },
     },
     {
         path: '/dashboard',

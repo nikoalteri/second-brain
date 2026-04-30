@@ -1,25 +1,28 @@
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import AuthLayout from '@/components/layout/AuthLayout.vue';
 import { useAuthStore } from '@/stores/auth.js';
 
+const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
 const email = ref('');
 const password = ref('');
 
+auth.clearFeedback();
+
 async function handleSubmit() {
     const ok = await auth.login(email.value, password.value);
 
     if (ok) {
-        router.push('/dashboard');
+        router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard');
     }
 }
 </script>
 
 <template>
-    <AuthLayout>
+    <AuthLayout width-class="max-w-lg">
         <h1 class="mb-6 text-xl font-semibold text-gray-900">Sign in to Fluxa</h1>
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
             <div class="flex flex-col gap-1">
@@ -66,5 +69,17 @@ async function handleSubmit() {
                 {{ auth.loading ? 'Signing in…' : 'Sign in' }}
             </button>
         </form>
+
+        <div class="mt-6 space-y-2 text-center text-sm">
+            <router-link to="/forgot-password" class="font-medium text-amber-700 hover:text-amber-800">
+                Forgot your password?
+            </router-link>
+            <p class="text-gray-500">
+                New here?
+                <router-link to="/register" class="font-medium text-amber-700 hover:text-amber-800">
+                    Create an account
+                </router-link>
+            </p>
+        </div>
     </AuthLayout>
 </template>

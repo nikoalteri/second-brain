@@ -23,7 +23,7 @@ router.beforeEach((to) => {
         return { path: '/login', query: { redirect: to.fullPath } };
     }
 
-    if (to.path === '/login' && auth.isAuthenticated) {
+    if (to.meta.guestOnly && auth.isAuthenticated) {
         return { path: '/dashboard' };
     }
 

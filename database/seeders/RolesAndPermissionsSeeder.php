@@ -56,9 +56,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 ->toArray()
         );
 
-        // Ruolo viewer — solo .view su finance
-        $viewer = Role::firstOrCreate(['name' => 'viewer']);
-        $viewer->syncPermissions(
+        // Ruolo user — default frontend role, same limited permission profile as prior viewer
+        $user = Role::firstOrCreate(['name' => 'user']);
+        $user->syncPermissions(
             Permission::where('name', 'like', 'finance.%.view')
                 ->orWhere('name', 'module.finance')
                 ->pluck('name')
@@ -66,7 +66,6 @@ class RolesAndPermissionsSeeder extends Seeder
         );
 
         // Rimuovi ruoli non-finance eventualmente rimasti
-        Role::whereNotIn('name', ['superadmin', 'admin', 'finance_manager', 'viewer'])->delete();
+        Role::whereNotIn('name', ['superadmin', 'admin', 'finance_manager', 'user'])->delete();
     }
 }
-

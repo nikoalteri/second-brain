@@ -13,18 +13,18 @@ class FilamentPanelAccessTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_viewer_cannot_access_the_admin_panel(): void
+    public function test_user_role_cannot_access_the_admin_panel(): void
     {
         Permission::create(['name' => 'module.finance']);
-        $viewerRole = Role::create(['name' => 'viewer']);
-        $viewerRole->givePermissionTo('module.finance');
+        $userRole = Role::findOrCreate('user');
+        $userRole->givePermissionTo('module.finance');
 
-        $viewer = User::factory()->create([
+        $user = User::factory()->create([
             'is_active' => true,
         ]);
-        $viewer->assignRole('viewer');
+        $user->assignRole('user');
 
-        $this->assertFalse($viewer->canAccessPanel($this->createMock(Panel::class)));
+        $this->assertFalse($user->canAccessPanel($this->createMock(Panel::class)));
     }
 
     public function test_admin_can_access_the_admin_panel_with_permission(): void

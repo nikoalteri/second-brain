@@ -3,7 +3,9 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\PhoneNumber;
 use Filament\Models\Contracts\FilamentUser;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -24,7 +26,12 @@ class User extends Authenticatable implements FilamentUser
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
+        'phone',
+        'date_of_birth',
+        'tax_code',
         'password',
         'is_active',
     ];
@@ -48,9 +55,60 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'date_of_birth'     => 'date',
             'password'          => 'hashed',
             'is_active'         => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $user): void {
+            if ($user->isDirty(['first_name', 'last_name'])) {
+                $user->name = $user->full_name;
+            }
+        });
+    }
+
+    protected function fullName(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $firstName = trim((string) ($this->attributes['first_name'] ?? ''));
+                $lastName = trim((string) ($this->attributes['last_name'] ?? ''));
+                $fullName = trim($firstName.' '.$lastName);
+
+                return $fullName !== '' ? $fullName : (string) ($this->attributes['name'] ?? '');
+            },
+        );
+    }
+
+    protected function firstName(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => filled($value) ? trim($value) : null,
+        );
+    }
+
+    protected function lastName(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => filled($value) ? trim($value) : null,
+        );
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => filled($value) ? trim($value) : null,
+        );
+    }
+
+    protected function taxCode(): Attribute
+    {
+        return Attribute::make(
+            set: fn (?string $value): ?string => filled($value) ? strtoupper(str_replace(' ', '', trim($value))) : null,
+        );
     }
 
     public function accounts(): HasMany
@@ -137,12 +195,20 @@ class User extends Authenticatable implements FilamentUser
     public function toFrontendPayload(): array
     {
         $roles = $this->getRoleNames()->values()->all();
+        $phone = PhoneNumber::split($this->phone);
 
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'roles' => $roles,
+            'id'         => $this->id,
+            'name'       => $this->full_name,
+            'first_name' => $this->first_name,
+            'last_name'  => $this->last_name,
+            'email'      => $this->email,
+            'phone'      => $this->phone,
+            'phone_country_code' => $phone['country_code'],
+            'phone_number' => $phone['local_number'],
+            'date_of_birth' => $this->date_of_birth?->toDateString(),
+            'tax_code'   => $this->tax_code,
+            'roles'      => $roles,
             'is_admin' => in_array('superadmin', $roles, true),
             'settings' => $this->resolvedSettings(),
         ];

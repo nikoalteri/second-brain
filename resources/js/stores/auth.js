@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
     const user = ref(storedUser ? JSON.parse(storedUser) : null);
     const loading = ref(false);
     const error = ref(null);
+    const validationErrors = ref({});
 
     const isAuthenticated = computed(() => !!accessToken.value);
     const isAdmin = computed(() => !!user.value?.is_admin);
@@ -46,6 +47,16 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem('fluxa_access_token');
         localStorage.removeItem('fluxa_refresh_token');
         void clearApolloCache();
+    }
+
+    function clearFeedback() {
+        error.value = null;
+        validationErrors.value = {};
+    }
+
+    function setRequestError(data, fallbackMessage) {
+        error.value = data.message || fallbackMessage;
+        validationErrors.value = data.errors ?? {};
     }
 
     function updateUserSettings(settings) {
@@ -91,7 +102,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     async function login(email, password) {
         loading.value = true;
-        error.value = null;
+        clearFeedback();
 
         try {
             const response = await fetch('/api/v1/auth/login', {
@@ -106,11 +117,134 @@ export const useAuthStore = defineStore('auth', () => {
             const data = await response.json();
 
             if (!response.ok) {
-                error.value = data.message || 'Invalid credentials.';
+                setRequestError(data, 'Invalid credentials.');
                 return false;
             }
 
             setTokens(data.access_token, data.refresh_token, data.user ?? null);
+            return true;
+        } catch {
+            error.value = 'Network error. Please try again.';
+            return false;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function register(payload) {
+        loading.value = true;
+        clearFeedback();
+
+        try {
+            const response = await fetch('/api/v1/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setRequestError(data, 'Unable to create your account.');
+                return false;
+            }
+
+            setTokens(data.access_token, data.refresh_token, data.user ?? null);
+            return true;
+        } catch {
+            error.value = 'Network error. Please try again.';
+            return false;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function requestPasswordReset(email) {
+        loading.value = true;
+        clearFeedback();
+
+        try {
+            const response = await fetch('/api/v1/auth/forgot-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setRequestError(data, 'Unable to send password reset link.');
+                return { ok: false, message: null };
+            }
+
+            return { ok: true, message: data.message };
+        } catch {
+            error.value = 'Network error. Please try again.';
+            return { ok: false, message: null };
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function resetPassword(payload) {
+        loading.value = true;
+        clearFeedback();
+
+        try {
+            const response = await fetch('/api/v1/auth/reset-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setRequestError(data, 'Unable to reset password.');
+                return { ok: false, message: null };
+            }
+
+            return { ok: true, message: data.message };
+        } catch {
+            error.value = 'Network error. Please try again.';
+            return { ok: false, message: null };
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function updateProfile(payload) {
+        loading.value = true;
+        clearFeedback();
+
+        try {
+            const response = await fetch('/api/v1/auth/profile', {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${accessToken.value}`,
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setRequestError(data, 'Unable to update your profile.');
+                return false;
+            }
+
+            setUser(data.user ?? null);
             return true;
         } catch {
             error.value = 'Network error. Please try again.';
@@ -140,13 +274,19 @@ export const useAuthStore = defineStore('auth', () => {
         user,
         loading,
         error,
+        validationErrors,
         isAuthenticated,
         isAdmin,
         login,
+        register,
+        requestPasswordReset,
+        resetPassword,
+        updateProfile,
         logout,
         setTokens,
         setUser,
         clearTokens,
+        clearFeedback,
         fetchCurrentUser,
         updateUserSettings,
     };
