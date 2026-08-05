@@ -150,16 +150,21 @@ These ideas are outside committed phases and must not be mistaken for active roa
 
 ### Phase 17: Custom read-only finance chatbot engine
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** An authenticated user can open a floating "Ask Fluxa" widget on any page and get answers about their own account balances, upcoming payments, and monthly spending — served by a self-built, stateless intent router over already-validated data paths, with no new mutations and no vendor chatbot dependency.
+**Requirements**: D-01 through D-08 (from 17-CONTEXT.md — this phase predates formal requirement-ID mapping)
 **Depends on:** Phase 16
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 17 to break down)
+- [ ] 17-01-PLAN.md — Extract the dashboard's upcoming-payments aggregation into a shared UpcomingPaymentsService
+- [ ] 17-02-PLAN.md — ChatIntent contract, UnsupportedIntentException, and the stateless IntentRouter allow-list
+- [ ] 17-03-PLAN.md — The three intent handlers (account balances, upcoming payments, monthly spending)
+- [ ] 17-04-PLAN.md — POST /api/v1/chatbot/ask endpoint, validation, DI wiring, and the ChatbotApiTest suite
+- [ ] 17-05-PLAN.md — Session-only Pinia chat store plus message bubble, quick-reply and free-text components
+- [ ] 17-06-PLAN.md — ChatWidget composition, global mount in AppLayout, and human UI verification
 
 ---
 
 ## Direct Next Command
 
-`/gsd-plan-phase 17`
+`/gsd-execute-phase 17`
