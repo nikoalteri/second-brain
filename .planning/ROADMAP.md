@@ -163,8 +163,18 @@ Plans:
 - [x] 17-05-PLAN.md — Session-only Pinia chat store plus message bubble, quick-reply and free-text components
 - [x] 17-06-PLAN.md — ChatWidget composition, global mount in AppLayout, and human UI verification
 
+### Phase 18: Hardening & Security Proof — close the auth-scoping, superadmin-bypass, and credit-card lifecycle race-condition gaps flagged during Phase 16/17 with real tests, before new feature work builds on top of them
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 17
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 18 to break down)
+
 ---
 
 ## Direct Next Command
 
-Milestone v5.1 has no further committed phases. Pick the next milestone focus from "Deferred Concerns" below, then run `/gsd-discuss-phase` (or `/gsd-new-milestone`) to scope it.
+`/gsd-discuss-phase 18`

@@ -58,6 +58,7 @@ Last activity: 2026-08-06 -- Phase 17 marked complete, README refreshed, orphane
 ### Roadmap Evolution
 
 - Phase 17 added: Custom read-only finance chatbot engine — a self-built (no BotMan dependency) intent-router/state-machine conversational engine, inspired by the Leo project's conversation-flow pattern, for read-only queries over existing finance data (account balances, upcoming payments, spending summaries, credit-card usage).
+- Phase 18 added: Hardening & Security Proof — closes auth-scoping, superadmin-bypass, and credit-card lifecycle race-condition gaps flagged in the Deferred Hardening/Security/Performance Concerns bucket, with real tests, before further feature work.
 
 ## Decisions
 
