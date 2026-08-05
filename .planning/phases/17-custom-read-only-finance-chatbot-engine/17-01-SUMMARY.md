@@ -116,3 +116,10 @@ None - no external service configuration required.
 ---
 *Phase: 17-custom-read-only-finance-chatbot-engine*
 *Completed: 2026-08-05*
+
+## Self-Check: PASSED
+
+- FOUND: app/Services/UpcomingPaymentsService.php
+- FOUND: tests/Unit/Services/UpcomingPaymentsServiceTest.php
+- FOUND: .planning/phases/17-custom-read-only-finance-chatbot-engine/17-01-SUMMARY.md
+- FOUND commits: a0b10f9, c015d37, 604f925, 36bdf5c, c399b9c, 58bf4c4
