@@ -1,5 +1,6 @@
 <script setup>
 import AppNavbar from './AppNavbar.vue';
+import ChatWidget from '@/components/chatbot/ChatWidget.vue';
 import { useToast } from '@/composables/useToast.js';
 
 const { toasts, removeToast } = useToast();
@@ -15,7 +16,7 @@ const { toasts, removeToast } = useToast();
             </div>
         </main>
 
-        <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+        <div class="fixed bottom-24 right-4 z-50 flex flex-col gap-2">
             <transition-group name="toast">
                 <div
                     v-for="toast in toasts"
@@ -30,6 +31,8 @@ const { toasts, removeToast } = useToast();
                 </div>
             </transition-group>
         </div>
+
+        <ChatWidget />
     </div>
 </template>
 
