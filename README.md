@@ -10,12 +10,15 @@
 
 **Fluxa** is a Laravel-based personal finance tracker designed to help users monitor and manage all aspects of their financial life in one unified system.
 
-### Current Status: Finance SPA Parity, Automation, and Dashboard Graph Parity Implemented
+### Current Status: Evidence-First Milestone (v5.1) — Chatbot Engine Shipped
 
-- **Backend + SPA parity:** accounts, transactions, loans, credit cards, subscriptions
-- **Automation:** loan posting, credit-card cycle issuing, subscription renewal posting
-- **Dashboard:** upcoming reminders plus cashflow, spending, and net-worth graphs in the SPA
-- **Tests:** targeted finance, API, and lifecycle suites passing
+The project follows a **proof-first confidence boundary**: a capability only counts as validated once current code *and* current tests prove it. See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for the authoritative, up-to-date boundary and roadmap — the sections below give a high-level snapshot.
+
+- **Validated:** auth/settings, account CRUD & scoping, dashboard/report APIs & exports, admin finance-report rendering, admin access control, plus the proven credit-card REST access/scoping and issue-to-mark-paid lifecycle slice
+- **Structural-only (present in code, lower confidence until proven):** transactions, loans, broader credit-card depth, subscriptions, monthly budgets, GraphQL
+- **Newest capability:** a self-built, read-only finance chatbot ("Ask Fluxa") — a stateless intent router answering account-balance, upcoming-payment, and monthly-spending questions from already-validated data, with a floating widget on every authenticated page
+- **Auth:** self-service registration, login, password reset, and profile management via Laravel Sanctum
+- **Tests:** 150+ backend Feature/Unit tests passing (`php artisan test`)
 
 ---
 
@@ -58,6 +61,18 @@
 - Net-worth trend uses month-by-month account balance reconstruction so newly created test/demo data stays at zero before the first active month
 - Upcoming payments merge loans, credit cards, and subscriptions with posting-state context
 
+### Authentication
+- Self-service registration, login, and profile management (name, phone, date of birth)
+- Password reset flow
+- Token-based auth via Laravel Sanctum, with role-based default assignment
+
+### Finance Chatbot ("Ask Fluxa")
+- Floating widget available on every authenticated SPA page
+- Guided, button-driven flow (no open-ended NLU) with free text only where a button can't cover the value (e.g. a specific month)
+- Answers three read-only questions from already-validated data: account balances, upcoming payments, and monthly spending
+- Stateless per question and session-only history — nothing is persisted server-side
+- Structural-only domains (credit cards, loans, subscriptions, budgets) are explicitly out of scope until those domains themselves gain stronger proof
+
 ### Settings & Admin
 - User preference management
 - Notification center
@@ -81,23 +96,22 @@ Testing:        PHPUnit + Pest
 ### API and Frontend
 ```
 API:            REST for SPA-critical finance flows + GraphQL where still retained
-Auth:           JWT with token refresh
+Auth:           Laravel Sanctum (token-based)
 Docs:           Scribe API documentation
-Frontend:       Vue SPA
+Frontend:       Vue 3 SPA (Pinia, Vue Router, Apollo/GraphQL client, Chart.js, Tailwind)
 ```
 
 ### Database Architecture
-- **Tables:** 15 finance tables
 - **User Scoping:** HasUserScoping trait on all user-owned models
 - **Soft Deletes:** Enabled on all entities
-- **Relationships:** 16 models with proper foreign keys and cascading deletes
+- **Relationships:** foreign keys with cascading deletes throughout
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- PHP 8.5+
+- PHP 8.2+
 - Composer
 - Node.js 18+
 - MySQL 8.0+
@@ -141,17 +155,18 @@ Frontend:       Vue SPA
 
 6. **Access admin panel:**
     - URL: http://localhost:8000/admin
-    - Email: `admin@fluxa.local`
+    - Email: `admin@secondbrain.local`
     - Password: `password`
+    - Seeded by `database/seeders/SuperAdminSeeder.php` — change this password before any non-local deployment.
 
 ### Database Statistics
 
 | Category | Count |
 |----------|-------|
-| Models | 16 |
-| Resources | 14 |
-| Database Tables | 15 |
-| Test Cases | 80+ |
+| Models | 18 |
+| Filament Resources | 15 |
+| Migrations | 50+ |
+| Test Cases | 150+ |
 
 ---
 
@@ -159,21 +174,26 @@ Frontend:       Vue SPA
 
 ```
 app/
-├── Models/              (16 finance models)
-├── Filament/Resources/  (14 CRUD interfaces)
-├── Services/            (finance business logic)
+├── Models/              (finance + auth models)
+├── Filament/Resources/  (admin CRUD interfaces)
+├── Services/            (finance business logic, incl. Services/Chatbot/)
 ├── Enums/               (finance type definitions)
 ├── Observers/           (event handling)
 ├── Policies/            (authorization)
 └── Traits/              (HasUserScoping, etc)
 
 database/
-├── migrations/          (15 finance tables)
+├── migrations/
 ├── seeders/             (roles, permissions, transaction types)
 └── factories/
 
+resources/js/
+├── stores/              (Pinia stores, incl. chatbot.js)
+├── components/          (incl. components/chatbot/)
+└── views/
+
 tests/
-├── Feature/             (authorization & integration tests)
+├── Feature/             (authorization & API integration tests)
 └── Unit/                (service & model unit tests)
 ```
 
@@ -190,6 +210,7 @@ php artisan test
 ```bash
 php artisan test tests/Feature/AccountAuthorizationTest.php
 php artisan test tests/Feature/TransactionAuthorizationTest.php
+php artisan test tests/Feature/Api/ChatbotApiTest.php
 php artisan test tests/Unit/CreditCardBalanceServiceTest.php
 php artisan test tests/Unit/LoanScheduleServiceTest.php
 ```
@@ -200,25 +221,25 @@ php artisan test tests/Unit/LoanScheduleServiceTest.php
 
 | Document | Purpose |
 |----------|---------|
+| [.planning/ROADMAP.md](.planning/ROADMAP.md) | **Authoritative** current roadmap, validated vs. structural-only confidence boundary, and deferred concerns |
+| [.planning/PROJECT.md](.planning/PROJECT.md) | Current project framing and core value |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design and patterns |
-| [PROJECT_ROADMAP_EN.md](docs/PROJECT_ROADMAP_EN.md) | Project phases and timeline |
 | [API.md](docs/API.md) | GraphQL API documentation |
+| [SECURITY_CHECKLIST.md](docs/SECURITY_CHECKLIST.md) | Security review checklist |
 | [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Contribution guidelines |
-| [PHASE7_CLOSEOUT.md](docs/PHASE7_CLOSEOUT.md) | Final verification, scheduler, docs, and release closeout steps |
+
+`docs/PROJECT_ROADMAP_EN.md` and `docs/PHASE7_CLOSEOUT.md` describe superseded, pre-v5.1 planning history — kept for context, but `.planning/ROADMAP.md` is the source of truth for what's actually validated today.
 
 ## ⏭️ Immediate Next Steps
 
-1. Treat Phase 7 as closed and choose whether to start a new milestone.
-2. Keep the production/deployment environment running Laravel scheduler continuously.
-3. Use [PROJECT_ROADMAP_EN.md](docs/PROJECT_ROADMAP_EN.md) to decide whether the next milestone should focus on advanced analytics, budgeting, or forecasting.
-4. Regenerate and publish API docs again whenever endpoint shapes change.
+See the "Committed Near-Term Roadmap" and "Direct Next Command" sections of [.planning/ROADMAP.md](.planning/ROADMAP.md) for the current, up-to-date next step — this section is intentionally not duplicated here to avoid drifting out of sync.
 
 ---
 
 ## 🔐 Security Features
 
 - **User Data Isolation:** Global scopes ensure users only see their own data
-- **Authentication:** Laravel Sanctum / JWT
+- **Authentication:** Laravel Sanctum (token-based, self-service registration/login/password-reset)
 - **Authorization:** Role-based access control (RBAC) via Spatie Permission
 - **Soft Deletes:** No permanent data loss
 - **Database Constraints:** Cascading deletes, unique indexes
@@ -228,26 +249,7 @@ php artisan test tests/Unit/LoanScheduleServiceTest.php
 
 ## 🛣️ Roadmap
 
-### Phase 1 — Finance Backend ✅
-- Core infrastructure and authentication
-- Accounts & Transactions (dual-entry bookkeeping)
-- Loans with amortization schedules
-- Credit cards with cycle management
-- Subscriptions with renewal tracking
-- Filament admin panel
-
-### Phase 2 — Finance stabilization
-- Complete final SPA verification and cleanup
-- Reduce remaining GraphQL dependency for legacy screens
-- Regenerate API docs and refresh contributor documentation
-- Harden scheduler/deployment guidance
-
-### Phase 3+ — Enhancements
-- Mobile-friendly frontend (Vue.js or React Native)
-- Advanced analytics and reporting
-- CSV/PDF export
-- Budget planning & alerts
-- Integrations (bank feeds, etc.)
+Full delivered history, the current validated/structural-only confidence boundary, committed near-term work, and deferred concerns all live in [.planning/ROADMAP.md](.planning/ROADMAP.md) — that document is updated as part of every planning cycle and is the only roadmap kept current. In short: the finance backend, API layer, and SPA shipped in earlier milestones (v1.0–v3.0), the v5.1 milestone re-validated the shipped surface against real tests, proved the highest-risk credit-card boundary, and shipped a read-only finance chatbot — see the roadmap doc for what's next.
 
 ---
 
@@ -269,5 +271,5 @@ This project is open source and available under the [MIT license](LICENSE).
 
 ---
 
-**Last Updated:** 2026-04-23  
-**Version:** 1.0.0
+**Last Updated:** 2026-08-06  
+**Milestone:** v5.1 — Planning Realignment
