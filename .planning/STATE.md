@@ -2,24 +2,24 @@
 gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
-status: executing
+status: completed
 stopped_at: Completed 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
-last_updated: "2026-08-05T22:42:34.694Z"
-last_activity: 2026-08-05 -- Phase 17 execution started
+last_updated: "2026-08-05T23:55:01.920Z"
+last_activity: 2026-08-05 -- Phase 17 marked complete
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 11
-  completed_plans: 5
-  percent: 45
+  completed_plans: 11
+  percent: 100
 ---
 
 # v5.1 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Executing Phase 17
-**Updated:** 2026-04-29
+**Status:** Phase 17 complete — milestone v5.1 has no further committed phases
+**Updated:** 2026-08-06
 
 ---
 
@@ -32,10 +32,10 @@ See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 ## Current Position
 
-Phase: 17 (custom-read-only-finance-chatbot-engine) — EXECUTING
-Plan: 1 of 6
-Status: Executing Phase 17
-Last activity: 2026-08-05 -- Phase 17 execution started
+Phase: 17 — COMPLETE
+Plan: 6 of 6
+Status: Phase 17 complete — awaiting next milestone/phase decision
+Last activity: 2026-08-06 -- Phase 17 marked complete, README refreshed, orphaned pre-Fluxa artifacts removed
 
 ## Session Resume
 
@@ -78,7 +78,7 @@ Last activity: 2026-08-05 -- Phase 17 execution started
 
 ## Issues / Blockers
 
-- None blocking. Next step is `/gsd-plan-phase 16` from `.planning/phases/16-proof-first-validation-of-structural-finance-surfaces/16-CONTEXT.md`.
+- None blocking. Phase 17 (chatbot) is complete and human-verified. Milestone v5.1 has no further committed phases — next step is to pick a focus from `.planning/ROADMAP.md`'s Deferred Concerns and scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
 
 ## Performance Metrics
 

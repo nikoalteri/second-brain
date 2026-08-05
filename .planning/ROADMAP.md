@@ -167,4 +167,4 @@ Plans:
 
 ## Direct Next Command
 
-`/gsd-execute-phase 17`
+Milestone v5.1 has no further committed phases. Pick the next milestone focus from "Deferred Concerns" below, then run `/gsd-discuss-phase` (or `/gsd-new-milestone`) to scope it.
