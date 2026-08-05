@@ -148,8 +148,18 @@ These ideas are outside committed phases and must not be mistaken for active roa
 - External webhook/integration features
 - Backup/recovery UX and broader audit-trail initiatives
 
+### Phase 17: Custom read-only finance chatbot engine
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 16
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 17 to break down)
+
 ---
 
 ## Direct Next Command
 
-`/gsd-plan-phase 16`
+`/gsd-plan-phase 17`

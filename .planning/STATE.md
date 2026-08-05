@@ -1,16 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: — Finance Backend ✅
+milestone: v5.1
+milestone_name: — Planning Realignment ⏳
 status: verifying
 stopped_at: Completed 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
-last_updated: "2026-04-29T23:36:11.843Z"
+last_updated: "2026-07-21T21:12:10.974Z"
 last_activity: 2026-04-29
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 6
   total_plans: 27
   completed_plans: 21
+  percent: 78
 ---
 
 # v5.1 Project State
@@ -53,6 +54,10 @@ Last activity: 2026-04-29
 - Deferred concerns now live in explicit non-committed buckets rather than active roadmap phases.
 - Phase 16 is the direct next planning step and should follow a proof-first path for structural-only finance areas.
 - Phase 16 discussion locked a narrow first slice, backend-first proof surface, explicit structural-only downgrade handling, and priority on credit-card plus access/scoping proof.
+
+### Roadmap Evolution
+
+- Phase 17 added: Custom read-only finance chatbot engine — a self-built (no BotMan dependency) intent-router/state-machine conversational engine, inspired by the Leo project's conversation-flow pattern, for read-only queries over existing finance data (account balances, upcoming payments, spending summaries, credit-card usage).
 
 ## Decisions
 
