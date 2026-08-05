@@ -153,11 +153,11 @@ These ideas are outside committed phases and must not be mistaken for active roa
 **Goal:** An authenticated user can open a floating "Ask Fluxa" widget on any page and get answers about their own account balances, upcoming payments, and monthly spending — served by a self-built, stateless intent router over already-validated data paths, with no new mutations and no vendor chatbot dependency.
 **Requirements**: D-01 through D-08 (from 17-CONTEXT.md — this phase predates formal requirement-ID mapping)
 **Depends on:** Phase 16
-**Plans:** 6 plans
+**Plans:** 2/6 plans executed
 
 Plans:
-- [ ] 17-01-PLAN.md — Extract the dashboard's upcoming-payments aggregation into a shared UpcomingPaymentsService
-- [ ] 17-02-PLAN.md — ChatIntent contract, UnsupportedIntentException, and the stateless IntentRouter allow-list
+- [x] 17-01-PLAN.md — Extract the dashboard's upcoming-payments aggregation into a shared UpcomingPaymentsService
+- [x] 17-02-PLAN.md — ChatIntent contract, UnsupportedIntentException, and the stateless IntentRouter allow-list
 - [ ] 17-03-PLAN.md — The three intent handlers (account balances, upcoming payments, monthly spending)
 - [ ] 17-04-PLAN.md — POST /api/v1/chatbot/ask endpoint, validation, DI wiring, and the ChatbotApiTest suite
 - [ ] 17-05-PLAN.md — Session-only Pinia chat store plus message bubble, quick-reply and free-text components

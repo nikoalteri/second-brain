@@ -2,23 +2,23 @@
 gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
-status: verifying
+status: executing
 stopped_at: Completed 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
-last_updated: "2026-07-21T21:12:10.974Z"
-last_activity: 2026-04-29
+last_updated: "2026-08-05T22:42:34.694Z"
+last_activity: 2026-08-05 -- Phase 17 execution started
 progress:
-  total_phases: 9
-  completed_phases: 6
-  total_plans: 27
-  completed_plans: 21
-  percent: 78
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 5
+  percent: 45
 ---
 
 # v5.1 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase complete — ready for verification
+**Status:** Executing Phase 17
 **Updated:** 2026-04-29
 
 ---
@@ -28,14 +28,14 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Phase 16 — proof-first-validation-of-structural-finance-surfaces
+**Current focus:** Phase 17 — custom-read-only-finance-chatbot-engine
 
 ## Current Position
 
-Phase: 16 (proof-first-validation-of-structural-finance-surfaces) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-04-29
+Phase: 17 (custom-read-only-finance-chatbot-engine) — EXECUTING
+Plan: 1 of 6
+Status: Executing Phase 17
+Last activity: 2026-08-05 -- Phase 17 execution started
 
 ## Session Resume
 
