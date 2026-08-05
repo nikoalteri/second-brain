@@ -21,6 +21,10 @@ use App\Observers\CreditCardPaymentObserver;
 use App\Observers\LoanPaymentObserver;
 use App\Observers\SubscriptionObserver;
 use App\Observers\TransactionObserver;
+use App\Services\Chatbot\IntentRouter;
+use App\Services\Chatbot\Intents\AccountBalancesIntent;
+use App\Services\Chatbot\Intents\MonthlySpendingIntent;
+use App\Services\Chatbot\Intents\UpcomingPaymentsIntent;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,7 +33,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(IntentRouter::class, fn ($app) => new IntentRouter([
+            $app->make(AccountBalancesIntent::class),
+            $app->make(UpcomingPaymentsIntent::class),
+            $app->make(MonthlySpendingIntent::class),
+        ]));
     }
 
     /**
