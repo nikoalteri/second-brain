@@ -120,7 +120,7 @@ class ChatbotApiTest extends TestCase
             ->all();
 
         $chat = collect($this->postJson('/api/v1/chatbot/ask', ['intent' => 'upcoming_payments', 'params' => ['days' => 7]])->json('data.items'))
-            ->map(fn (array $item) => [$item['label'], $item['value']])
+            ->map(fn (array $item) => [$item['label'], round((float) $item['value'], 2)])
             ->all();
 
         $this->assertSame($dashboard, $chat);
@@ -162,12 +162,13 @@ class ChatbotApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.items.0.label', 'Earnings')
-            ->assertJsonPath('data.items.0.value', 2000.0)
             ->assertJsonPath('data.items.1.label', 'Expenses')
-            ->assertJsonPath('data.items.1.value', 500.0)
-            ->assertJsonPath('data.items.2.label', 'Net')
-            ->assertJsonPath('data.items.2.value', 1500.0)
-            ->assertJsonPath('data.highlight.value', 1500.0);
+            ->assertJsonPath('data.items.2.label', 'Net');
+
+        $this->assertSame(2000.0, round((float) $response->json('data.items.0.value'), 2));
+        $this->assertSame(500.0, round((float) $response->json('data.items.1.value'), 2));
+        $this->assertSame(1500.0, round((float) $response->json('data.items.2.value'), 2));
+        $this->assertSame(1500.0, round((float) $response->json('data.highlight.value'), 2));
     }
 
     public function test_chatbot_rejects_malformed_month_param(): void

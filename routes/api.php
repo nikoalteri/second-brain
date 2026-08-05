@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AccountController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BudgetController;
+use App\Http\Controllers\Api\V1\ChatbotController;
 use App\Http\Controllers\Api\V1\CreditCardController;
 use App\Http\Controllers\Api\V1\CreditCardCycleController;
 use App\Http\Controllers\Api\V1\CreditCardExpenseController;
@@ -56,6 +57,8 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/finance', [FinanceReportController::class, 'summary']);
         Route::get('reports/finance/export', [FinanceReportController::class, 'export']);
         Route::get('reports/finance/details', [FinanceReportController::class, 'details']);
+
+        Route::post('chatbot/ask', [ChatbotController::class, 'ask']);
     });
 
     // ─── Write endpoints — 20 req/min ─────────────────────────────────────
