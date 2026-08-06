@@ -168,7 +168,7 @@ Plans:
 **Goal:** The auth-scoping tenant boundary, the non-HTTP scoping contract, and the credit-card cycle/payment money math are each proven by automated tests, with every confirmed high-severity bug fixed and every lower-severity finding documented.
 **Requirements**: D-01, D-02, D-03, D-04, D-05 (CONTEXT.md decisions — this phase predates formal requirement-ID mapping)
 **Depends on:** Phase 17
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 - [x] 18-01-PLAN.md — Fix the ungated transactionCategories GraphQL cross-user leak, replace the test that locked it in, and assert totalByCategory isolation
@@ -176,10 +176,10 @@ Plans:
 - [x] 18-03-PLAN.md — Non-HTTP scoping proof for the three shipped scheduled commands
 - [x] 18-04-PLAN.md — Sequenced credit-card payment race reproduction and idempotent card-balance recompute
 - [x] 18-05-PLAN.md — Fail-closed credit-card expense validation and observer static-state reentrancy proof
-- [ ] 18-06-PLAN.md — Phase 18 deferred-items register and CONCERNS.md re-grounding
+- [x] 18-06-PLAN.md — Phase 18 deferred-items register and CONCERNS.md re-grounding (completed 2026-08-06)
 
 ---
 
 ## Direct Next Command
 
-`/gsd-execute-phase 18`
+Milestone v5.1 has no further committed phases. Pick the next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns, then scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
