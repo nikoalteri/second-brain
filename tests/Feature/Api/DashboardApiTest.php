@@ -17,6 +17,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class DashboardApiTest extends TestCase
@@ -271,5 +272,123 @@ class DashboardApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.expense_categories.0.category', 'Shared groceries')
             ->assertJsonPath('data.expense_categories.0.total', 125);
+    }
+
+    public function test_dashboard_charts_does_not_include_other_users_expenses(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-23'));
+
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $accountA = Account::factory()->create(['user_id' => $userA->id]);
+        $accountB = Account::factory()->create(['user_id' => $userB->id]);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false]
+        );
+
+        $categoryA = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userA->id, 'name' => 'DashboardCatA', 'is_active' => true,
+        ]);
+        $categoryB = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userB->id, 'name' => 'DashboardCatB', 'is_active' => true,
+        ]);
+
+        Transaction::factory()->create([
+            'user_id' => $userA->id,
+            'account_id' => $accountA->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $categoryA->id,
+            'is_transfer' => false,
+            'amount' => -111.11,
+            'date' => now()->startOfMonth()->addDays(4)->toDateString(),
+        ]);
+
+        Transaction::factory()->create([
+            'user_id' => $userB->id,
+            'account_id' => $accountB->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $categoryB->id,
+            'is_transfer' => false,
+            'amount' => -999.99,
+            'date' => now()->startOfMonth()->addDays(4)->toDateString(),
+        ]);
+
+        Sanctum::actingAs($userA);
+
+        $response = $this->getJson(sprintf(
+            '/api/v1/dashboard/charts?year=%d&month=%d',
+            now()->year,
+            now()->month,
+        ));
+
+        $response->assertOk();
+
+        $body = json_encode($response->json());
+        $this->assertStringContainsString('111.11', $body);
+        $this->assertStringNotContainsString('999.99', $body);
+    }
+
+    public function test_superadmin_dashboard_charts_includes_all_users_expenses(): void
+    {
+        $this->travelTo(Carbon::parse('2026-04-23'));
+
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $accountA = Account::factory()->create(['user_id' => $userA->id]);
+        $accountB = Account::factory()->create(['user_id' => $userB->id]);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false]
+        );
+
+        $categoryA = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userA->id, 'name' => 'DashboardCatA', 'is_active' => true,
+        ]);
+        $categoryB = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userB->id, 'name' => 'DashboardCatB', 'is_active' => true,
+        ]);
+
+        Transaction::factory()->create([
+            'user_id' => $userA->id,
+            'account_id' => $accountA->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $categoryA->id,
+            'is_transfer' => false,
+            'amount' => -111.11,
+            'date' => now()->startOfMonth()->addDays(4)->toDateString(),
+        ]);
+
+        Transaction::factory()->create([
+            'user_id' => $userB->id,
+            'account_id' => $accountB->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $categoryB->id,
+            'is_transfer' => false,
+            'amount' => -999.99,
+            'date' => now()->startOfMonth()->addDays(4)->toDateString(),
+        ]);
+
+        Role::create(['name' => 'superadmin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('superadmin');
+
+        Sanctum::actingAs($admin);
+
+        $response = $this->getJson(sprintf(
+            '/api/v1/dashboard/charts?year=%d&month=%d',
+            now()->year,
+            now()->month,
+        ));
+
+        $response->assertOk();
+
+        $body = json_encode($response->json());
+        $this->assertStringContainsString('111.11', $body);
+        $this->assertStringContainsString('999.99', $body);
     }
 }
