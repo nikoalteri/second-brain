@@ -174,6 +174,7 @@ class SubscriptionService
         $throughDate ??= now()->endOfDay();
 
         $subscriptions = Subscription::query()
+            ->withoutUserScope()
             ->with(['frequencyOption', 'account', 'creditCard'])
             ->active()
             ->where('auto_create_transaction', true)

@@ -102,6 +102,16 @@ Found: [
 
 None - no external service configuration required.
 
+## Orchestrator Follow-Up (post-merge, 2026-08-06)
+
+Per CONTEXT.md's D-02 policy ("silently skipping a user's billing cycles = drifted balances = high severity → fix in this same phase"), the ambient-authentication finding above was fixed immediately after Wave 1 merged, rather than deferred to a later plan:
+
+- Added `->withoutUserScope()` to `CreditCard::query()` in `routes/console.php` (`credit-cards:generate-cycles`)
+- Added `->withoutUserScope()` to `Loan::query()` in `routes/console.php` (`loans:sync-installments`) — same unverified-but-present exposure, fixed for consistency
+- Added `->withoutUserScope()` to `Subscription::query()` in `app/Services/SubscriptionService.php::syncDueRenewals()` (`subscriptions:sync-renewals`) — same exposure, fixed for consistency
+- Verified none of these three call sites are reachable from an authenticated HTTP path (only invoked from `routes/console.php`), so the explicit scope bypass cannot be used to escalate privilege via any other entry point
+- `test_generate_cycles_command_is_unaffected_by_ambient_authentication` now passes; full suite green at 181/181
+
 ## Next Phase Readiness
 
 - The console-scoping contract (D-04) is now fully proven for all three shipped commands.

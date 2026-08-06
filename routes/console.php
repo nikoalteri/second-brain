@@ -23,6 +23,7 @@ Artisan::command('credit-cards:generate-cycles {--month=} {--issue-ready}', func
         : now();
 
     $cards = CreditCard::query()
+        ->withoutUserScope()
         ->where('status', CreditCardStatus::ACTIVE)
         ->get();
 
@@ -59,6 +60,7 @@ Artisan::command('loans:sync-installments {--date=}', function () {
 
     $scheduleService = app(LoanScheduleService::class);
     $loans = Loan::query()
+        ->withoutUserScope()
         ->where('status', 'active')
         ->whereNotNull('start_date')
         ->get();
