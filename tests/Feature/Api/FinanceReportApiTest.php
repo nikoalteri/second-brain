@@ -124,4 +124,62 @@ class FinanceReportApiTest extends TestCase
         $this->assertEquals(-650.0, $response->json('transactions.0.amount'));
         $this->assertEquals(-650.0, $response->json('total'));
     }
+
+    public function test_finance_report_details_does_not_return_other_users_transactions(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $categoryOwner = User::factory()->create();
+
+        $accountA = Account::factory()->create(['user_id' => $userA->id, 'name' => 'Main account']);
+        $accountB = Account::factory()->create(['user_id' => $userB->id, 'name' => 'Other account']);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expenses'],
+            ['is_income' => false],
+        );
+
+        $housing = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $categoryOwner->id,
+            'name' => 'Housing',
+            'is_active' => true,
+        ]);
+
+        $rent = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $categoryOwner->id,
+            'parent_id' => $housing->id,
+            'name' => 'Rent',
+            'is_active' => true,
+        ]);
+
+        $transactionA = Transaction::factory()->create([
+            'user_id' => $userA->id,
+            'account_id' => $accountA->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $rent->id,
+            'amount' => -650.00,
+            'date' => '2026-03-15',
+            'description' => 'March rent A',
+        ]);
+
+        $transactionB = Transaction::factory()->create([
+            'user_id' => $userB->id,
+            'account_id' => $accountB->id,
+            'transaction_type_id' => $expenseType->id,
+            'transaction_category_id' => $rent->id,
+            'amount' => -700.00,
+            'date' => '2026-03-15',
+            'description' => 'March rent B',
+        ]);
+
+        Sanctum::actingAs($userA);
+
+        $response = $this->getJson('/api/v1/reports/finance/details?year=2026&month=3&category_key=Housing%7CRent');
+
+        $response->assertOk();
+
+        $ids = collect($response->json('transactions'))->pluck('id')->all();
+        $this->assertContains($transactionA->id, $ids);
+        $this->assertNotContains($transactionB->id, $ids);
+    }
 }
