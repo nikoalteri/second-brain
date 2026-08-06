@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
-status: completed
-stopped_at: Phase 18 context gathered
-last_updated: "2026-08-06T00:03:26.739Z"
-last_activity: 2026-08-06 -- Phase 17 marked complete, README refreshed, orphaned pre-Fluxa artifacts removed
+status: planning
+stopped_at: Phase 19 context gathered
+last_updated: "2026-08-06T23:38:01.760Z"
+last_activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-period generalization, stamp-duty flag, synthetic test data)
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 11
-  completed_plans: 11
+  total_phases: 7
+  completed_phases: 6
+  total_plans: 17
+  completed_plans: 17
   percent: 100
 ---
 
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 18 context gathered — ready for research/planning
+**Status:** Phase 18 complete. Phase 19 context gathered — ready for research/planning
 **Updated:** 2026-08-06
 
 ---
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Phase 18 — hardening-security-proof-close-the-auth-scoping-superadmin-b
+**Current focus:** Phase 19 — revolving-credit-card-interest-engine-correctness-align-cycl
 
 ## Current Position
 
-Phase: 18 — CONTEXT GATHERED
+Phase: 19 — CONTEXT GATHERED
 Plan: 0 of ? (not yet planned)
-Status: Ready for `/gsd-plan-phase 18`
-Last activity: 2026-08-06 -- Phase 18 discussion complete (proof breadth, proof-then-fix policy, non-HTTP scoping, withoutGlobalScopes() strategy)
+Status: Ready for `/gsd-plan-phase 19`
+Last activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-period generalization, stamp-duty flag, synthetic test data)
 
 ## Session Resume
 
-**Stopped at:** Phase 18 context gathered
-**Resume file:** .planning/phases/18-hardening-security-proof-close-the-auth-scoping-superadmin-b/18-CONTEXT.md
+**Stopped at:** Phase 19 context gathered
+**Resume file:** .planning/phases/19-revolving-credit-card-interest-engine-correctness-align-cycl/19-CONTEXT.md
 
 ## Accumulated Context
 
@@ -80,7 +80,7 @@ Last activity: 2026-08-06 -- Phase 18 discussion complete (proof breadth, proof-
 
 ## Issues / Blockers
 
-- None blocking. Phase 17 (chatbot) is complete and human-verified. Phase 18 (hardening & security proof) has captured context — next step is `/gsd-plan-phase 18`.
+- None blocking. Phase 17 (chatbot) and Phase 18 (hardening & security proof) are complete. Phase 19 (revolving credit card interest engine correctness) has captured context — next step is `/gsd-plan-phase 19`.
 
 ## Performance Metrics
 
