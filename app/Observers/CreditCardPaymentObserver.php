@@ -11,6 +11,15 @@ class CreditCardPaymentObserver
     /**
      * Keep previous statuses between updating/updated events.
      *
+     * Intra-request only: no Octane/Swoole is in use, so this never persists across HTTP
+     * requests. Residual-state and reentrancy behavior is asserted by
+     * tests/Unit/Observers/ObserverStaticStateTest.php (Phase 18, D-02: measured as
+     * lower severity — a failed mid-update write can leave a residual entry, but the
+     * subsequent legitimate update still produces the correct cycle status and card
+     * balance because CreditCardCycleService::syncCycleAndCardFromPayment() recomputes
+     * the balance authoritatively rather than applying the stale previousStatus as a
+     * delta; measured residue: {"<id>":"pending"}).
+     *
      * @var array<int, string|null>
      */
     private static array $previousStatuses = [];
