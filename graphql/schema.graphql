@@ -259,7 +259,7 @@ type Query {
     "List all transaction types (global lookup table — not user-scoped)."
     transactionTypes: [TransactionType!]! @all @guard
 
-    "List shared transaction categories available across users."
+    "List transaction categories owned by the authenticated user. Superadmins see all users' categories."
     transactionCategories: [TransactionCategory!]!
         @guard
         @field(resolver: "App\\GraphQL\\Queries\\TransactionCategories")
