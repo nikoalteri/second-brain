@@ -115,3 +115,14 @@ None - no external service configuration required.
 ---
 *Phase: 18-hardening-security-proof-close-the-auth-scoping-superadmin-b*
 *Completed: 2026-08-06*
+
+## Self-Check: PASSED
+
+- FOUND: app/GraphQL/Queries/TransactionCategories.php
+- FOUND: graphql/schema.graphql
+- FOUND: tests/Feature/Api/GraphQLApiTest.php
+- FOUND: .planning/phases/18-hardening-security-proof-close-the-auth-scoping-superadmin-b/18-01-SUMMARY.md
+- FOUND commit: 8ecbed9 (Task 1)
+- FOUND commit: b526597 (Task 2)
+- FOUND commit: 865d7d4 (Task 3)
+- FOUND commit: 16e6a21 (SUMMARY + deferred-items)
