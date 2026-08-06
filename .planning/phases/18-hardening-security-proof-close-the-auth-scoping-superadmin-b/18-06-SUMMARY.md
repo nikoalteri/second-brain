@@ -126,3 +126,12 @@ None.
 ---
 *Phase: 18-hardening-security-proof-close-the-auth-scoping-superadmin-b*
 *Completed: 2026-08-06*
+
+## Self-Check: PASSED
+
+- FOUND: .planning/phases/18-hardening-security-proof-close-the-auth-scoping-superadmin-b/deferred-items.md
+- FOUND: .planning/codebase/CONCERNS.md
+- FOUND: .planning/phases/18-hardening-security-proof-close-the-auth-scoping-superadmin-b/18-06-SUMMARY.md
+- FOUND commit: d67ff0e (Task 1)
+- FOUND commit: 9624909 (Task 2)
+- FOUND commit: 591544c (SUMMARY)
