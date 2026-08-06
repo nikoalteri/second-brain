@@ -105,12 +105,24 @@ class CreditCardLifecycleIntegrationTest extends TestCase
             'statement_day' => 28,
             'due_day' => 15,
             'skip_weekends' => true,
-            'current_balance' => 1000,
+            'current_balance' => 0,
             'fixed_payment' => 250,
             'interest_rate' => 12,
             'interest_calculation_method' => 'direct_monthly',
             'status' => CreditCardStatus::ACTIVE,
             'stamp_duty_amount' => 2,
+        ]);
+
+        // Pre-existing revolving debt carried over from before this card started tracking
+        // expenses. Represented as an expense row (not a directly-seeded current_balance) so
+        // it is consistent with CreditCardCycleService::syncCardBalance()'s source-of-truth
+        // invariant (current_balance = sum(expenses) - sum(paid principal)), which is also
+        // what the credit-cards:generate-cycles nightly job already assumes for every card.
+        CreditCardExpense::create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2026-03-01'),
+            'amount' => 1000,
+            'description' => 'Opening balance carried over from previous system',
         ]);
 
         CreditCardExpense::create([
