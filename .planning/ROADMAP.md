@@ -178,8 +178,18 @@ Plans:
 - [x] 18-05-PLAN.md — Fail-closed credit-card expense validation and observer static-state reentrancy proof
 - [x] 18-06-PLAN.md — Phase 18 deferred-items register and CONCERNS.md re-grounding (completed 2026-08-06)
 
+### Phase 19: Revolving Credit Card Interest Engine Correctness — align cycle periods, daily-balance interest, and fixed-payment/stamp-duty split with real Amex statement math (validated against docs/reference/credit-card-revolving-validation.md)
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 18
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 19 to break down)
+
 ---
 
 ## Direct Next Command
 
-Milestone v5.1 has no further committed phases. Pick the next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns, then scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
+`/gsd-discuss-phase 19`
