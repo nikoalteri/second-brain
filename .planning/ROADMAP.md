@@ -165,16 +165,21 @@ Plans:
 
 ### Phase 18: Hardening & Security Proof — close the auth-scoping, superadmin-bypass, and credit-card lifecycle race-condition gaps flagged during Phase 16/17 with real tests, before new feature work builds on top of them
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** The auth-scoping tenant boundary, the non-HTTP scoping contract, and the credit-card cycle/payment money math are each proven by automated tests, with every confirmed high-severity bug fixed and every lower-severity finding documented.
+**Requirements**: D-01, D-02, D-03, D-04, D-05 (CONTEXT.md decisions — this phase predates formal requirement-ID mapping)
 **Depends on:** Phase 17
-**Plans:** 0 plans
+**Plans:** 6 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 18 to break down)
+- [ ] 18-01-PLAN.md — Fix the ungated transactionCategories GraphQL cross-user leak, replace the test that locked it in, and assert totalByCategory isolation
+- [ ] 18-02-PLAN.md — Generic cross-user scoping sweep across all 11 HasUserScoping models, plus targeted Dashboard, finance-report and Filament assertions
+- [ ] 18-03-PLAN.md — Non-HTTP scoping proof for the three shipped scheduled commands
+- [ ] 18-04-PLAN.md — Sequenced credit-card payment race reproduction and idempotent card-balance recompute
+- [ ] 18-05-PLAN.md — Fail-closed credit-card expense validation and observer static-state reentrancy proof
+- [ ] 18-06-PLAN.md — Phase 18 deferred-items register and CONCERNS.md re-grounding
 
 ---
 
 ## Direct Next Command
 
-`/gsd-plan-phase 18`
+`/gsd-execute-phase 18`
