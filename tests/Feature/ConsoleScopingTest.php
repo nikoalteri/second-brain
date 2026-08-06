@@ -6,8 +6,13 @@ namespace Tests\Feature;
 
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
+use App\Enums\SubscriptionStatus;
 use App\Models\Account;
 use App\Models\CreditCard;
+use App\Models\Loan;
+use App\Models\Subscription;
+use App\Models\SubscriptionFrequency;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use PHPUnit\Framework\Attributes\Test;
@@ -118,5 +123,86 @@ class ConsoleScopingTest extends TestCase
             'credit_card_id' => $cardB->id,
             'period_month' => '2026-03',
         ]);
+    }
+
+    #[Test]
+    public function test_sync_installments_command_processes_all_users_active_loans(): void
+    {
+        $loanA = Loan::factory()->create([
+            'start_date' => Carbon::now()->subMonths(2),
+            'total_installments' => 3,
+            'withdrawal_day' => 15,
+            'monthly_payment' => 100,
+            'skip_weekends' => false,
+            'status' => 'active',
+        ]);
+
+        $loanB = Loan::factory()->create([
+            'start_date' => Carbon::now()->subMonths(2),
+            'total_installments' => 3,
+            'withdrawal_day' => 15,
+            'monthly_payment' => 100,
+            'skip_weekends' => false,
+            'status' => 'active',
+        ]);
+
+        $this->artisan('loans:sync-installments --date=' . now()->toDateString())
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('loan_payments', [
+            'loan_id' => $loanA->id,
+        ]);
+        $this->assertDatabaseHas('loan_payments', [
+            'loan_id' => $loanB->id,
+        ]);
+    }
+
+    #[Test]
+    public function test_sync_renewals_command_processes_all_users_due_subscriptions(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-04-23'));
+
+        $accountA = Account::factory()->create();
+        $accountB = Account::factory()->create();
+
+        $monthlyFrequency = SubscriptionFrequency::query()->where('slug', 'monthly')->firstOrFail();
+
+        $subscriptionA = Subscription::factory()->create([
+            'user_id' => $accountA->user_id,
+            'account_id' => $accountA->id,
+            'subscription_frequency_id' => $monthlyFrequency->id,
+            'annual_cost' => 19.99,
+            'monthly_cost' => 19.99,
+            'day_of_month' => 23,
+            'next_renewal_date' => '2026-04-23',
+            'auto_create_transaction' => true,
+            'status' => SubscriptionStatus::ACTIVE,
+        ]);
+
+        $subscriptionB = Subscription::factory()->create([
+            'user_id' => $accountB->user_id,
+            'account_id' => $accountB->id,
+            'subscription_frequency_id' => $monthlyFrequency->id,
+            'annual_cost' => 14.99,
+            'monthly_cost' => 14.99,
+            'day_of_month' => 23,
+            'next_renewal_date' => '2026-04-23',
+            'auto_create_transaction' => true,
+            'status' => SubscriptionStatus::ACTIVE,
+        ]);
+
+        $this->artisan('subscriptions:sync-renewals --date=2026-04-23')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('transactions', [
+            'subscription_id' => $subscriptionA->id,
+            'subscription_renewal_date' => '2026-04-23 00:00:00',
+        ]);
+        $this->assertDatabaseHas('transactions', [
+            'subscription_id' => $subscriptionB->id,
+            'subscription_renewal_date' => '2026-04-23 00:00:00',
+        ]);
+
+        Carbon::setTestNow();
     }
 }
