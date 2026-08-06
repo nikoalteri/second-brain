@@ -10,6 +10,12 @@ class CreditCardExpenseObserver
     /**
      * Track original pointers between updating/updated events.
      *
+     * Intra-request only: no Octane/Swoole is in use, so this never persists across HTTP
+     * requests. Residual-state and reentrancy behavior is asserted by
+     * tests/Unit/Observers/ObserverStaticStateTest.php (Phase 18, D-02: measured as
+     * lower severity — sequential updates on distinct records leave no cross-contamination
+     * and the array is always empty after each successful update).
+     *
      * @var array<int, array{card_id:int|null,cycle_id:int|null,amount:float|null}>
      */
     private static array $originalPointers = [];

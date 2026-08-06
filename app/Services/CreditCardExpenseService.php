@@ -32,7 +32,9 @@ class CreditCardExpenseService
             $currentCard = CreditCard::query()->lockForUpdate()->find((int) $expense->credit_card_id);
 
             if (! $currentCard) {
-                return;
+                throw ValidationException::withMessages([
+                    'credit_card_id' => 'The selected credit card does not exist.',
+                ]);
             }
 
             $targetCycle = $this->findMatchingCycle($currentCard, $expense->spent_at ?? now());

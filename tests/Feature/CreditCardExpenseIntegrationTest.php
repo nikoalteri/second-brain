@@ -181,4 +181,121 @@ class CreditCardExpenseIntegrationTest extends TestCase
         $unlimitedCard->refresh();
         $this->assertSame(290.0, (float) $unlimitedCard->current_balance);
     }
+
+    #[Test]
+    public function moving_expense_to_nonexistent_card_is_rejected(): void
+    {
+        $account = Account::factory()->create();
+
+        $card = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            'name' => 'Carta reale',
+            'type' => CreditCardType::CHARGE,
+            'statement_day' => 28,
+            'due_day' => 15,
+            'skip_weekends' => true,
+            'current_balance' => 0,
+            'status' => CreditCardStatus::ACTIVE,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        CreditCardCycle::create([
+            'credit_card_id' => $card->id,
+            'period_month' => '2026-03',
+            'period_start_date' => Carbon::parse('2026-03-01'),
+            'statement_date' => Carbon::parse('2026-03-31'),
+            'due_date' => Carbon::parse('2026-04-15'),
+            'total_spent' => 100,
+            'status' => CreditCardCycleStatus::OPEN,
+        ]);
+
+        $expense = CreditCardExpense::create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2026-03-10'),
+            'amount' => 100,
+            'description' => 'Spesa da spostare',
+        ]);
+
+        $this->expectException(ValidationException::class);
+
+        $expense->update(['credit_card_id' => 999999]);
+    }
+
+    #[Test]
+    public function creating_expense_on_nonexistent_card_is_rejected(): void
+    {
+        $this->expectException(ValidationException::class);
+
+        CreditCardExpense::create([
+            'credit_card_id' => 999999,
+            'spent_at' => Carbon::parse('2026-03-10'),
+            'amount' => 50,
+            'description' => 'Ghost card expense',
+        ]);
+    }
+
+    #[Test]
+    public function moving_expense_between_two_real_cards_still_succeeds(): void
+    {
+        $account = Account::factory()->create();
+
+        $cardA = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            'name' => 'Carta A',
+            'type' => CreditCardType::CHARGE,
+            'statement_day' => 28,
+            'due_day' => 15,
+            'skip_weekends' => true,
+            'current_balance' => 0,
+            'status' => CreditCardStatus::ACTIVE,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        $cardB = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            'name' => 'Carta B',
+            'type' => CreditCardType::CHARGE,
+            'statement_day' => 28,
+            'due_day' => 15,
+            'skip_weekends' => true,
+            'current_balance' => 0,
+            'status' => CreditCardStatus::ACTIVE,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        CreditCardCycle::create([
+            'credit_card_id' => $cardA->id,
+            'period_month' => '2026-03',
+            'period_start_date' => Carbon::parse('2026-03-01'),
+            'statement_date' => Carbon::parse('2026-03-31'),
+            'due_date' => Carbon::parse('2026-04-15'),
+            'total_spent' => 0,
+            'status' => CreditCardCycleStatus::OPEN,
+        ]);
+
+        CreditCardCycle::create([
+            'credit_card_id' => $cardB->id,
+            'period_month' => '2026-03',
+            'period_start_date' => Carbon::parse('2026-03-01'),
+            'statement_date' => Carbon::parse('2026-03-31'),
+            'due_date' => Carbon::parse('2026-04-15'),
+            'total_spent' => 0,
+            'status' => CreditCardCycleStatus::OPEN,
+        ]);
+
+        $expense = CreditCardExpense::create([
+            'credit_card_id' => $cardA->id,
+            'spent_at' => Carbon::parse('2026-03-10'),
+            'amount' => 100,
+            'description' => 'Spesa da spostare',
+        ]);
+
+        $expense->update(['credit_card_id' => $cardB->id]);
+
+        $this->assertSame(0.0, (float) $cardA->fresh()->current_balance);
+        $this->assertSame(100.0, (float) $cardB->fresh()->current_balance);
+    }
 }
