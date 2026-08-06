@@ -212,6 +212,107 @@ class GraphQLApiTest extends TestCase
         $this->assertEquals(80.0, $totals[0]['total']);
     }
 
+    public function test_graphql_total_by_category_excludes_other_users_transactions(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $accountA = Account::factory()->create(['user_id' => $userA->id]);
+        $accountB = Account::factory()->create(['user_id' => $userB->id]);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expense'],
+            ['is_income' => false]
+        );
+
+        Transaction::factory()->create([
+            'user_id' => $userA->id,
+            'account_id' => $accountA->id,
+            'transaction_type_id' => $expenseType->id,
+            'amount' => -123.45,
+            'date' => '2026-03-11',
+            'transaction_category_id' => null,
+            'is_transfer' => false,
+        ]);
+        Transaction::factory()->create([
+            'user_id' => $userB->id,
+            'account_id' => $accountB->id,
+            'transaction_type_id' => $expenseType->id,
+            'amount' => -987.65,
+            'date' => '2026-03-11',
+            'transaction_category_id' => null,
+            'is_transfer' => false,
+        ]);
+
+        $response = $this->graphqlAs($userA, '
+            query TestTotalByCategory($year: Int!, $month: Int!) {
+                totalByCategory(year: $year, month: $month) {
+                    category
+                    total
+                    count
+                }
+            }
+        ', ['year' => 2026, 'month' => 3]);
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null);
+
+        $rows = collect($response->json('data.totalByCategory'));
+        $this->assertSame(123.45, round((float) $rows->sum('total'), 2));
+        $this->assertNotContains(987.65, $rows->pluck('total')->map(fn ($t) => round((float) $t, 2))->all());
+    }
+
+    public function test_superadmin_graphql_total_by_category_includes_all_users_transactions(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+        $accountA = Account::factory()->create(['user_id' => $userA->id]);
+        $accountB = Account::factory()->create(['user_id' => $userB->id]);
+
+        $expenseType = TransactionType::query()->firstOrCreate(
+            ['name' => 'Expense'],
+            ['is_income' => false]
+        );
+
+        Transaction::factory()->create([
+            'user_id' => $userA->id,
+            'account_id' => $accountA->id,
+            'transaction_type_id' => $expenseType->id,
+            'amount' => -123.45,
+            'date' => '2026-03-11',
+            'transaction_category_id' => null,
+            'is_transfer' => false,
+        ]);
+        Transaction::factory()->create([
+            'user_id' => $userB->id,
+            'account_id' => $accountB->id,
+            'transaction_type_id' => $expenseType->id,
+            'amount' => -987.65,
+            'date' => '2026-03-11',
+            'transaction_category_id' => null,
+            'is_transfer' => false,
+        ]);
+
+        Role::create(['name' => 'superadmin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('superadmin');
+
+        $response = $this->graphqlAs($admin, '
+            query TestTotalByCategory($year: Int!, $month: Int!) {
+                totalByCategory(year: $year, month: $month) {
+                    category
+                    total
+                    count
+                }
+            }
+        ', ['year' => 2026, 'month' => 3]);
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null);
+
+        $rows = collect($response->json('data.totalByCategory'));
+        $this->assertSame(1111.10, round((float) $rows->sum('total'), 2));
+    }
+
     public function test_graphql_introspection_returns_all_finance_types(): void
     {
         // Introspection doesn't require authentication
