@@ -192,4 +192,4 @@ Plans:
 
 ## Direct Next Command
 
-`/gsd-discuss-phase 19`
+`/gsd-plan-phase 19`
