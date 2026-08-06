@@ -123,3 +123,15 @@ None.
 ---
 *Phase: 18-hardening-security-proof-close-the-auth-scoping-superadmin-b*
 *Completed: 2026-08-06*
+
+## Self-Check: PASSED
+
+- `app/Services/CreditCardExpenseService.php` — FOUND
+- `tests/Unit/Observers/ObserverStaticStateTest.php` — FOUND
+- `app/Observers/CreditCardExpenseObserver.php` — FOUND
+- `app/Observers/CreditCardPaymentObserver.php` — FOUND
+- `.planning/phases/18-hardening-security-proof-close-the-auth-scoping-superadmin-b/18-05-SUMMARY.md` — FOUND
+- Commit `f66e422` — FOUND
+- Commit `253421e` — FOUND
+- Commit `d6a7ef1` — FOUND
+- Commit `841bdf5` — FOUND
