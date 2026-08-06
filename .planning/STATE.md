@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: completed
-stopped_at: Completed 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
-last_updated: "2026-08-05T23:55:01.920Z"
-last_activity: 2026-08-05 -- Phase 17 marked complete
+stopped_at: Phase 18 context gathered
+last_updated: "2026-08-06T00:03:26.739Z"
+last_activity: 2026-08-06 -- Phase 17 marked complete, README refreshed, orphaned pre-Fluxa artifacts removed
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
   total_plans: 11
   completed_plans: 11
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 17 complete — milestone v5.1 has no further committed phases
+**Status:** Phase 18 context gathered — ready for research/planning
 **Updated:** 2026-08-06
 
 ---
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Phase 17 — custom-read-only-finance-chatbot-engine
+**Current focus:** Phase 18 — hardening-security-proof-close-the-auth-scoping-superadmin-b
 
 ## Current Position
 
-Phase: 17 — COMPLETE
-Plan: 6 of 6
-Status: Phase 17 complete — awaiting next milestone/phase decision
-Last activity: 2026-08-06 -- Phase 17 marked complete, README refreshed, orphaned pre-Fluxa artifacts removed
+Phase: 18 — CONTEXT GATHERED
+Plan: 0 of ? (not yet planned)
+Status: Ready for `/gsd-plan-phase 18`
+Last activity: 2026-08-06 -- Phase 18 discussion complete (proof breadth, proof-then-fix policy, non-HTTP scoping, withoutGlobalScopes() strategy)
 
 ## Session Resume
 
-**Stopped at:** Completed 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md
-**Resume file:** None
+**Stopped at:** Phase 18 context gathered
+**Resume file:** .planning/phases/18-hardening-security-proof-close-the-auth-scoping-superadmin-b/18-CONTEXT.md
 
 ## Accumulated Context
 
@@ -79,7 +79,7 @@ Last activity: 2026-08-06 -- Phase 17 marked complete, README refreshed, orphane
 
 ## Issues / Blockers
 
-- None blocking. Phase 17 (chatbot) is complete and human-verified. Milestone v5.1 has no further committed phases — next step is to pick a focus from `.planning/ROADMAP.md`'s Deferred Concerns and scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
+- None blocking. Phase 17 (chatbot) is complete and human-verified. Phase 18 (hardening & security proof) has captured context — next step is `/gsd-plan-phase 18`.
 
 ## Performance Metrics
 

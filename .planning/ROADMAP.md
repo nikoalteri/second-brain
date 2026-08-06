@@ -177,4 +177,4 @@ Plans:
 
 ## Direct Next Command
 
-`/gsd-discuss-phase 18`
+`/gsd-plan-phase 18`
