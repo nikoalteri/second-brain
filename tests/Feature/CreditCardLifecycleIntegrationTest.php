@@ -93,6 +93,114 @@ class CreditCardLifecycleIntegrationTest extends TestCase
     }
 
     #[Test]
+    public function repeated_mark_paid_requests_do_not_drift_card_balance(): void
+    {
+        $account = Account::factory()->create(['balance' => 1000]);
+
+        $card = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            'name' => 'Carta Saldo',
+            'type' => CreditCardType::CHARGE,
+            'statement_day' => 28,
+            'due_day' => 15,
+            'skip_weekends' => true,
+            'current_balance' => 0,
+            'status' => CreditCardStatus::ACTIVE,
+            'stamp_duty_amount' => 0,
+        ]);
+
+        CreditCardExpense::create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2026-03-10'),
+            'amount' => 300,
+            'description' => 'Expense before statement issue',
+        ]);
+
+        $cycle = CreditCardCycle::query()
+            ->where('credit_card_id', $card->id)
+            ->where('period_month', '2026-03')
+            ->firstOrFail();
+
+        Sanctum::actingAs($account->user);
+
+        $this->postJson("/api/v1/credit-cards/{$card->id}/cycles/{$cycle->id}/issue")->assertOk();
+
+        $cycle->refresh();
+        $payment = $cycle->payments()->firstOrFail();
+
+        $this->postJson("/api/v1/credit-cards/{$card->id}/payments/{$payment->id}/mark-paid")->assertOk();
+        $card->refresh();
+        $balanceAfterFirst = (float) $card->current_balance;
+
+        // The second request is currently a no-op at the Eloquent level (nothing dirty on the
+        // payment row => no updating/updated events fire), so this test guards the HTTP contract
+        // while the CreditCardCycleServiceTest race tests guard the actual racing-observer path.
+        $this->postJson("/api/v1/credit-cards/{$card->id}/payments/{$payment->id}/mark-paid")->assertOk();
+        $card->refresh();
+
+        $this->assertSame($balanceAfterFirst, (float) $card->current_balance);
+        $this->assertSame(0.0, (float) $card->current_balance);
+        $this->assertSame(CreditCardCycleStatus::PAID, $cycle->fresh()->status);
+    }
+
+    #[Test]
+    public function mark_paid_unmark_and_remark_converges_on_single_payment_balance(): void
+    {
+        $account = Account::factory()->create(['balance' => 1000]);
+
+        $card = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            'name' => 'Carta Saldo',
+            'type' => CreditCardType::CHARGE,
+            'statement_day' => 28,
+            'due_day' => 15,
+            'skip_weekends' => true,
+            'current_balance' => 0,
+            'status' => CreditCardStatus::ACTIVE,
+            'stamp_duty_amount' => 0,
+        ]);
+
+        CreditCardExpense::create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2026-03-10'),
+            'amount' => 300,
+            'description' => 'Expense before statement issue',
+        ]);
+
+        $cycle = CreditCardCycle::query()
+            ->where('credit_card_id', $card->id)
+            ->where('period_month', '2026-03')
+            ->firstOrFail();
+
+        Sanctum::actingAs($account->user);
+
+        $this->postJson("/api/v1/credit-cards/{$card->id}/cycles/{$cycle->id}/issue")->assertOk();
+
+        $cycle->refresh();
+        $payment = $cycle->payments()->firstOrFail();
+
+        $this->postJson("/api/v1/credit-cards/{$card->id}/payments/{$payment->id}/mark-paid")->assertOk();
+        $card->refresh();
+        $this->assertSame(0.0, (float) $card->current_balance);
+
+        // No unmark endpoint exists; update the payment directly so the observer fires,
+        // matching the existing test conventions in this file for status changes. Refresh
+        // first: $payment was fetched before the HTTP mark-paid call, so its in-memory
+        // attributes are stale and an update() without refreshing would be a silent no-op.
+        $payment->refresh();
+        $payment->update(['status' => CreditCardPaymentStatus::PENDING, 'actual_date' => null]);
+        $card->refresh();
+        $this->assertSame(300.0, (float) $card->current_balance);
+
+        $this->postJson("/api/v1/credit-cards/{$card->id}/payments/{$payment->id}/mark-paid")->assertOk();
+        $card->refresh();
+        $this->assertSame(0.0, (float) $card->current_balance);
+        $this->assertSame(CreditCardCycleStatus::PAID, $cycle->fresh()->status);
+    }
+
+    #[Test]
     public function revolving_issue_and_payment_reduce_residual_balance_by_principal(): void
     {
         $account = Account::factory()->create(['balance' => 1000]);
@@ -105,12 +213,24 @@ class CreditCardLifecycleIntegrationTest extends TestCase
             'statement_day' => 28,
             'due_day' => 15,
             'skip_weekends' => true,
-            'current_balance' => 1000,
+            'current_balance' => 0,
             'fixed_payment' => 250,
             'interest_rate' => 12,
             'interest_calculation_method' => 'direct_monthly',
             'status' => CreditCardStatus::ACTIVE,
             'stamp_duty_amount' => 2,
+        ]);
+
+        // Pre-existing revolving debt carried over from before this card started tracking
+        // expenses. Represented as an expense row (not a directly-seeded current_balance) so
+        // it is consistent with CreditCardCycleService::syncCardBalance()'s source-of-truth
+        // invariant (current_balance = sum(expenses) - sum(paid principal)), which is also
+        // what the credit-cards:generate-cycles nightly job already assumes for every card.
+        CreditCardExpense::create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2026-03-01'),
+            'amount' => 1000,
+            'description' => 'Opening balance carried over from previous system',
         ]);
 
         CreditCardExpense::create([

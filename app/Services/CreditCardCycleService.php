@@ -274,17 +274,12 @@ class CreditCardCycleService
 
             $card = $payment->creditCard->fresh(['cycles.payments', 'payments']);
 
-            $fromPaid = $previousStatus === CreditCardPaymentStatus::PAID->value;
-            $toPaid = $currentStatus === CreditCardPaymentStatus::PAID->value;
-            $principal = (float) $payment->principal_amount;
-
-            if (! $fromPaid && $toPaid) {
-                // Payment marked as PAID: reduce debt by principal
-                $this->balanceService->applyPrincipalPayment($card, $principal);
-            } elseif ($fromPaid && ! $toPaid) {
-                // Payment unmarked: restore debt
-                $this->balanceService->reversePrincipalPayment($card, $principal);
-            }
+            // Recompute the balance from source (expenses - paid principal) instead of applying a
+            // delta derived from the caller-supplied $previousStatus. The delta form was not
+            // idempotent: two racing payment-status updates both read status='pending' and each
+            // applied a full principal reduction, drifting current_balance. syncCardBalance() is
+            // the same authoritative computation the nightly credit-cards:generate-cycles job uses.
+            $this->syncCardBalance($card);
 
             $card->refresh();
         });

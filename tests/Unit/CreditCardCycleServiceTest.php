@@ -2,13 +2,23 @@
 
 namespace Tests\Unit;
 
+use App\Enums\CreditCardCycleStatus;
+use App\Enums\CreditCardPaymentStatus;
+use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
+use App\Models\Account;
 use App\Models\CreditCard;
+use App\Models\CreditCardCycle;
+use App\Models\CreditCardExpense;
 use App\Services\CreditCardCycleService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CreditCardCycleServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
     #[Test]
     public function revolving_breakdown_with_12_percent_rate(): void
     {
@@ -137,5 +147,117 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertSame(250.0, $result['installment_amount']);
         $this->assertSame(250.0, $result['total_due']);
         $this->assertSame(500.0, $result['next_balance']);
+    }
+
+    /**
+     * Builds a CHARGE card with a 300.00 expense, issues its cycle (total_due = 300.00),
+     * and returns [card, cycle, payment].
+     */
+    private function makeIssuedChargeCycleFixture(): array
+    {
+        $account = Account::factory()->create(['balance' => 1000]);
+
+        $card = CreditCard::create([
+            'user_id' => $account->user_id,
+            'account_id' => $account->id,
+            'name' => 'Race Condition Test Card',
+            'type' => CreditCardType::CHARGE,
+            'statement_day' => 28,
+            'due_day' => 15,
+            'skip_weekends' => true,
+            'current_balance' => 0,
+            'status' => CreditCardStatus::ACTIVE,
+            'stamp_duty_amount' => 0,
+        ]);
+
+        CreditCardExpense::create([
+            'credit_card_id' => $card->id,
+            'spent_at' => now()->toDateString(),
+            'amount' => 300,
+            'description' => 'Expense before statement issue',
+        ]);
+
+        $cycle = CreditCardCycle::query()
+            ->where('credit_card_id', $card->id)
+            ->firstOrFail();
+
+        $issued = app(CreditCardCycleService::class)->issueCycle($cycle);
+        $this->assertTrue($issued);
+
+        $cycle->refresh();
+        $card->refresh();
+
+        $payment = $cycle->payments()->firstOrFail();
+
+        return [$card, $cycle, $payment];
+    }
+
+    #[Test]
+    public function duplicate_payment_sync_with_stale_previous_status_does_not_double_reduce_balance(): void
+    {
+        [$card, , $payment] = $this->makeIssuedChargeCycleFixture();
+
+        $this->assertSame(300.0, (float) $payment->principal_amount);
+
+        // Simulate the first racing request: the observer fires from a real status update.
+        $payment->update(['status' => CreditCardPaymentStatus::PAID, 'actual_date' => now()->toDateString()]);
+
+        // The update above already fires the observer once. Capture the post-observer state:
+        $card->refresh();
+        $balanceAfterFirstSync = (float) $card->current_balance;
+
+        // Simulate the racing second request: same stale previousStatus the first request read.
+        app(CreditCardCycleService::class)->syncCycleAndCardFromPayment($payment->id, 'pending', 'paid');
+
+        $card->refresh();
+        $this->assertSame(
+            $balanceAfterFirstSync,
+            (float) $card->current_balance,
+            'A duplicate sync carrying the same stale previousStatus must not reduce the balance a second time'
+        );
+        $this->assertSame(0.0, (float) $card->current_balance);
+    }
+
+    #[Test]
+    public function duplicate_payment_unmark_sync_does_not_double_restore_balance(): void
+    {
+        [$card, , $payment] = $this->makeIssuedChargeCycleFixture();
+
+        $payment->update(['status' => CreditCardPaymentStatus::PAID, 'actual_date' => now()->toDateString()]);
+        $card->refresh();
+        $this->assertSame(0.0, (float) $card->current_balance);
+
+        // Simulate the first racing "unmark" request.
+        $payment->update(['status' => CreditCardPaymentStatus::PENDING, 'actual_date' => null]);
+        $card->refresh();
+        $balanceAfterFirstUnmarkSync = (float) $card->current_balance;
+
+        // Simulate the racing second request: same stale previousStatus the first request read.
+        app(CreditCardCycleService::class)->syncCycleAndCardFromPayment($payment->id, 'paid', 'pending');
+
+        $card->refresh();
+        $this->assertSame(
+            $balanceAfterFirstUnmarkSync,
+            (float) $card->current_balance,
+            'A duplicate unmark sync carrying the same stale previousStatus must not restore the balance a second time'
+        );
+        $this->assertSame(300.0, (float) $card->current_balance);
+    }
+
+    #[Test]
+    public function interleaved_payment_syncs_produce_deterministic_cycle_status(): void
+    {
+        [, $cycle, $payment] = $this->makeIssuedChargeCycleFixture();
+
+        $payment->update(['status' => CreditCardPaymentStatus::PAID, 'actual_date' => now()->toDateString()]);
+
+        $service = app(CreditCardCycleService::class);
+        $service->syncCycleAndCardFromPayment($payment->id, 'pending', 'paid');
+        $this->assertSame(CreditCardCycleStatus::PAID, $cycle->fresh()->status);
+        $this->assertSame(300.0, (float) $cycle->fresh()->paid_amount);
+
+        $service->syncCycleAndCardFromPayment($payment->id, 'pending', 'paid');
+        $this->assertSame(CreditCardCycleStatus::PAID, $cycle->fresh()->status);
+        $this->assertSame(300.0, (float) $cycle->fresh()->paid_amount);
     }
 }
