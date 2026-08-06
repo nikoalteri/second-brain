@@ -289,7 +289,7 @@ class GraphQLApiTest extends TestCase
         $this->assertEquals('GQL Bank', $firstTx['account']['name']);
     }
 
-    public function test_graphql_transaction_categories_query_returns_shared_categories(): void
+    public function test_graphql_transaction_categories_query_returns_only_own_categories(): void
     {
         $userA = User::factory()->create();
         $userB = User::factory()->create();
@@ -333,7 +333,73 @@ class GraphQLApiTest extends TestCase
 
         $this->assertContains('Living', $categoryNames);
         $this->assertContains('Rent', $categoryNames);
+        $this->assertNotContains('Travel', $categoryNames, 'userA must not see userB categories');
+    }
+
+    public function test_superadmin_graphql_transaction_categories_query_returns_all_categories(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $parentA = \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userA->id,
+            'name' => 'Living',
+            'is_active' => true,
+        ]);
+
+        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userA->id,
+            'parent_id' => $parentA->id,
+            'name' => 'Rent',
+            'is_active' => true,
+        ]);
+
+        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userB->id,
+            'name' => 'Travel',
+            'is_active' => true,
+        ]);
+
+        Role::create(['name' => 'superadmin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('superadmin');
+
+        $response = $this->graphqlAs($admin, '{ transactionCategories { name parent { name } } }');
+        $response->assertOk()->assertJsonPath('errors', null);
+
+        $categoryNames = collect($response->json('data.transactionCategories'))->pluck('name')->all();
+        $this->assertContains('Living', $categoryNames);
+        $this->assertContains('Rent', $categoryNames);
         $this->assertContains('Travel', $categoryNames);
+    }
+
+    public function test_graphql_transaction_categories_parent_relation_does_not_leak_other_users_category(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $foreignParent = \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userB->id,
+            'name' => 'ForeignParent',
+            'is_active' => true,
+        ]);
+
+        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $userA->id,
+            'parent_id' => $foreignParent->id,
+            'name' => 'OwnChild',
+            'is_active' => true,
+        ]);
+
+        $response = $this->graphqlAs($userA, '{ transactionCategories { name parent { name } } }');
+        $response->assertOk()->assertJsonPath('errors', null);
+
+        $rows = collect($response->json('data.transactionCategories'));
+        $child = $rows->firstWhere('name', 'OwnChild');
+
+        $this->assertNotNull($child, 'userA must still see their own category');
+        $this->assertNull($child['parent'], 'parent of a foreign-owned category must not be exposed');
+        $this->assertNotContains('ForeignParent', $rows->pluck('name')->all());
     }
 
     public function test_superadmin_graphql_accounts_query_returns_all_accounts(): void
