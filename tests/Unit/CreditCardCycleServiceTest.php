@@ -11,6 +11,7 @@ use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
 use App\Services\CreditCardCycleService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -147,6 +148,88 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertSame(250.0, $result['installment_amount']);
         $this->assertSame(250.0, $result['total_due']);
         $this->assertSame(500.0, $result['next_balance']);
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_anchors_period_start_to_previous_cycle_statement_date(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 6]);
+
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => '2027-05-07',
+            'statement_date' => '2027-06-06',
+            'status' => CreditCardCycleStatus::PAID,
+        ]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-03'));
+
+        $this->assertSame('2027-06-07', $cycle->period_start_date->toDateString());
+        $this->assertSame('2027-07-06', $cycle->statement_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_falls_back_to_month_start_with_no_previous_cycle(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 6]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-03'));
+
+        $this->assertSame('2027-07-01', $cycle->period_start_date->toDateString());
+        $this->assertSame('2027-07-06', $cycle->statement_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_clamps_statement_day_31_into_short_month(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 31]);
+
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => '2027-01-01',
+            'statement_date' => '2027-01-31',
+            'status' => CreditCardCycleStatus::PAID,
+        ]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-02-15'));
+
+        $this->assertSame('2027-02-28', $cycle->statement_date->toDateString());
+        $this->assertSame('2027-02-01', $cycle->period_start_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_clamps_statement_day_30_into_short_month(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 30]);
+
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => '2027-02-01',
+            'statement_date' => '2027-02-28',
+            'status' => CreditCardCycleStatus::PAID,
+        ]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-03-10'));
+
+        $this->assertSame('2027-03-30', $cycle->statement_date->toDateString());
+        $this->assertSame('2027-03-01', $cycle->period_start_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_is_idempotent_for_same_statement_date(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 6]);
+
+        $service = app(CreditCardCycleService::class);
+        $first = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-03'));
+        $second = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-20'));
+
+        $this->assertSame($first->id, $second->id);
+        $this->assertSame(1, CreditCardCycle::count());
     }
 
     /**
