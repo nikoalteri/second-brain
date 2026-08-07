@@ -183,11 +183,11 @@ Plans:
 **Goal:** The revolving interest engine computes statement-consistent numbers: cycle periods run from the day after the previous cycle's statement date, mid-cycle payments reduce the daily balance by their principal portion, the fixed-payment/stamp-duty split is a per-card configurable behavior, and the `direct_monthly` method charges one twelfth of the annual rate instead of the full annual rate.
 **Requirements**: D-01, D-02, D-03, D-04 (from 19-CONTEXT.md; no ROADMAP requirement IDs assigned)
 **Depends on:** Phase 18
-**Plans:** 5 plans
+**Plans:** 2/5 plans executed
 
 Plans:
-- [ ] 19-01-PLAN.md — Add the per-card `fixed_payment_includes_stamp_duty` flag across schema, model, Filament form, and REST surface (default false)
-- [ ] 19-02-PLAN.md — Derive cycle `period_start_date` from the previous cycle's statement date and fix the legacy flat-monthly rate
+- [x] 19-01-PLAN.md — Add the per-card `fixed_payment_includes_stamp_duty` flag across schema, model, Filament form, and REST surface (default false)
+- [x] 19-02-PLAN.md — Derive cycle `period_start_date` from the previous cycle's statement date and fix the legacy flat-monthly rate
 - [ ] 19-03-PLAN.md — Apply PAID payments in the daily-balance walk and branch the payment breakdown on the stamp-duty flag
 - [ ] 19-04-PLAN.md — Correct the `direct_monthly` formula to annual/12 and fix every stale assertion pinning the old figure
 - [ ] 19-05-PLAN.md — End-to-end synthetic regression across both cycles and both stamp-duty modes; full suite green
