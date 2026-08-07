@@ -25,6 +25,7 @@ class CreditCardFactory extends Factory
             'fixed_payment' => 250.00,
             'interest_rate' => 12.00,
             'stamp_duty_amount' => 2.00,
+            'fixed_payment_includes_stamp_duty' => false,
             'statement_day' => 20,
             'due_day' => 25,
             'skip_weekends' => false,
