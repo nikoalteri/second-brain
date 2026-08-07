@@ -92,6 +92,10 @@ class CreditCardForm
                             ->default(0)
                             ->step(0.01)
                             ->required(),
+                        Toggle::make('fixed_payment_includes_stamp_duty')
+                            ->label('Fixed payment includes stamp duty')
+                            ->helperText('On: the stamp duty is already inside the max monthly installment (principal = installment − interest − stamp duty, total due = installment). Off: the stamp duty is charged on top (total due = installment + stamp duty).')
+                            ->default(false),
                         TextInput::make('statement_day')
                             ->label('Statement day')
                             ->numeric()
