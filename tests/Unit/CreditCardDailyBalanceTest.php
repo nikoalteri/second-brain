@@ -2,14 +2,17 @@
 
 namespace Tests\Unit;
 
+use App\Enums\CreditCardPaymentStatus;
 use App\Enums\CreditCardType;
 use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
+use App\Models\CreditCardPayment;
 use App\Services\CreditCardCycleService;
 use App\Services\RevolvingCreditCalculator;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CreditCardDailyBalanceTest extends TestCase
@@ -144,6 +147,114 @@ class CreditCardDailyBalanceTest extends TestCase
         $this->assertSame(250.0, $breakdown['installment_amount']);
         $this->assertSame(2.0, $breakdown['stamp_duty_amount']);
         $this->assertSame(252.0, $breakdown['total_due']);
+    }
+
+    #[Test]
+    public function mid_cycle_paid_payment_reduces_daily_balance_from_its_actual_date(): void
+    {
+        $calculator = new RevolvingCreditCalculator();
+
+        $card = CreditCard::factory()->create([
+            'type' => CreditCardType::REVOLVING,
+            'interest_rate' => 14,
+            'credit_limit' => 4000,
+            'fixed_payment' => 250,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        // Expense belonging to an earlier cycle
+        CreditCardExpense::factory()->create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2027-04-10'),
+            'amount' => 1200.00,
+        ]);
+
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-05-07'),
+            'statement_date' => Carbon::parse('2027-06-06'),
+            'total_spent' => 0,
+        ]);
+
+        CreditCardPayment::create([
+            'credit_card_id' => $card->id,
+            'credit_card_cycle_id' => $cycle->id,
+            'due_date' => Carbon::parse('2027-05-22'),
+            'actual_date' => Carbon::parse('2027-05-22'),
+            'installment_amount' => 217.00,
+            'interest_amount' => 15.00,
+            'principal_amount' => 200.00,
+            'stamp_duty_amount' => 2.00,
+            'total_amount' => 217.00,
+            'status' => CreditCardPaymentStatus::PAID,
+        ]);
+
+        $card->update(['current_balance' => 1000.00]);
+        $card->refresh();
+
+        $dailyBalances = $calculator->calculateDailyBalances($cycle);
+
+        $this->assertCount(31, $dailyBalances);
+        $this->assertSame(1200.0, $dailyBalances['2027-05-21']);
+        $this->assertSame(1000.0, $dailyBalances['2027-05-22']);
+        $this->assertSame(1000.0, $dailyBalances['2027-06-06']);
+        $this->assertSame((float) $card->current_balance, $dailyBalances['2027-06-06']);
+
+        $interest = $calculator->calculateInterestFromDailyBalances($dailyBalances, 14.0);
+        $this->assertEqualsWithDelta(13.04, $interest, 0.01);
+    }
+
+    #[Test]
+    public function pending_payment_does_not_reduce_daily_balance(): void
+    {
+        $calculator = new RevolvingCreditCalculator();
+
+        $card = CreditCard::factory()->create([
+            'type' => CreditCardType::REVOLVING,
+            'interest_rate' => 14,
+            'credit_limit' => 4000,
+            'fixed_payment' => 250,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        CreditCardExpense::factory()->create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2027-04-10'),
+            'amount' => 1200.00,
+        ]);
+
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-05-07'),
+            'statement_date' => Carbon::parse('2027-06-06'),
+            'total_spent' => 0,
+        ]);
+
+        CreditCardPayment::create([
+            'credit_card_id' => $card->id,
+            'credit_card_cycle_id' => $cycle->id,
+            'due_date' => Carbon::parse('2027-05-22'),
+            'actual_date' => null,
+            'installment_amount' => 217.00,
+            'interest_amount' => 15.00,
+            'principal_amount' => 200.00,
+            'stamp_duty_amount' => 2.00,
+            'total_amount' => 217.00,
+            'status' => CreditCardPaymentStatus::PENDING,
+        ]);
+
+        $card->update(['current_balance' => 1200.00]);
+        $card->refresh();
+
+        $dailyBalances = $calculator->calculateDailyBalances($cycle);
+
+        $this->assertCount(31, $dailyBalances);
+        foreach ($dailyBalances as $balance) {
+            $this->assertSame(1200.0, $balance);
+        }
+
+        $interest = $calculator->calculateInterestFromDailyBalances($dailyBalances, 14.0);
+        $this->assertEqualsWithDelta(14.28, $interest, 0.01);
     }
 
     #[Test]
