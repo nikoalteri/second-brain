@@ -11,6 +11,7 @@ use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
 use App\Services\CreditCardCycleService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -33,17 +34,17 @@ class CreditCardCycleServiceTest extends TestCase
 
         $result = $service->calculateRevolvingPaymentBreakdown($card, 1000);
 
-        // 12% of 1000 = 120, principal = 250 - 120 = 130
-        $this->assertSame(120.0, $result['interest_amount']);
-        $this->assertSame(130.0, $result['principal_amount']);
+        // 12% annual = 1% monthly of 1000 = 10, principal = 250 - 10 = 240
+        $this->assertSame(10.0, $result['interest_amount']);
+        $this->assertSame(240.0, $result['principal_amount']);
         $this->assertSame(250.0, $result['installment_amount']);
         $this->assertSame(252.0, $result['total_due']);
-        $this->assertSame(870.0, $result['next_balance']);
+        $this->assertSame(760.0, $result['next_balance']);
         $this->assertFalse($result['invalid_installment']);
     }
 
     #[Test]
-    public function revolving_breakdown_with_14_percent_rate_matches_bank_statement(): void
+    public function revolving_breakdown_splits_interest_and_principal_at_14_percent(): void
     {
         $service = new CreditCardCycleService();
 
@@ -54,15 +55,14 @@ class CreditCardCycleServiceTest extends TestCase
             'stamp_duty_amount' => 2,
         ]);
 
-        // Real bank data: debt €542, rate 14%, should yield interest €75.88
-        $result = $service->calculateRevolvingPaymentBreakdown($card, 542);
+        $result = $service->calculateRevolvingPaymentBreakdown($card, 600);
 
-        // 14% of 542 = 75.88, principal = 250 - 75.88 = 174.12
-        $this->assertSame(75.88, $result['interest_amount']);
-        $this->assertSame(174.12, $result['principal_amount']);
+        // 14% annual = 7/6 % monthly of 600 = 7.00, principal = 250 - 7 = 243
+        $this->assertSame(7.0, $result['interest_amount']);
+        $this->assertSame(243.0, $result['principal_amount']);
         $this->assertSame(250.0, $result['installment_amount']);
         $this->assertSame(252.0, $result['total_due']);
-        $this->assertSame(367.88, $result['next_balance']);
+        $this->assertSame(357.0, $result['next_balance']);
         $this->assertFalse($result['invalid_installment']);
     }
 
@@ -78,11 +78,11 @@ class CreditCardCycleServiceTest extends TestCase
             'stamp_duty_amount' => 2,
         ]);
 
-        // 24% of 5000 = 1200, interest exceeds installment
+        // 24% annual = 2% monthly of 5000 = 100, which still exceeds the 5 installment
         $result = $service->calculateRevolvingPaymentBreakdown($card, 5000);
 
         $this->assertTrue($result['invalid_installment']);
-        $this->assertSame(1200.0, $result['interest_amount']);
+        $this->assertSame(100.0, $result['interest_amount']);
         $this->assertSame(2.0, $result['stamp_duty_amount']);
         $this->assertSame(7.0, $result['total_due']);
     }
@@ -117,13 +117,13 @@ class CreditCardCycleServiceTest extends TestCase
             'stamp_duty_amount' => 2,
         ]);
 
-        // 12% of 100 = 12, principal = min(100, 250 - 12) = 100
+        // 12% annual = 1% monthly of 100 = 1, principal = min(100, 250 - 1) = 100
         $result = $service->calculateRevolvingPaymentBreakdown($card, 100);
 
-        $this->assertSame(12.0, $result['interest_amount']);
+        $this->assertSame(1.0, $result['interest_amount']);
         $this->assertSame(100.0, $result['principal_amount']);
-        $this->assertSame(112.0, $result['installment_amount']);
-        $this->assertSame(114.0, $result['total_due']);
+        $this->assertSame(101.0, $result['installment_amount']);
+        $this->assertSame(103.0, $result['total_due']);
         $this->assertSame(0.0, $result['next_balance']);
         $this->assertFalse($result['invalid_installment']);
     }
@@ -147,6 +147,88 @@ class CreditCardCycleServiceTest extends TestCase
         $this->assertSame(250.0, $result['installment_amount']);
         $this->assertSame(250.0, $result['total_due']);
         $this->assertSame(500.0, $result['next_balance']);
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_anchors_period_start_to_previous_cycle_statement_date(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 6]);
+
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => '2027-05-07',
+            'statement_date' => '2027-06-06',
+            'status' => CreditCardCycleStatus::PAID,
+        ]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-03'));
+
+        $this->assertSame('2027-06-07', $cycle->period_start_date->toDateString());
+        $this->assertSame('2027-07-06', $cycle->statement_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_falls_back_to_month_start_with_no_previous_cycle(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 6]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-03'));
+
+        $this->assertSame('2027-07-01', $cycle->period_start_date->toDateString());
+        $this->assertSame('2027-07-06', $cycle->statement_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_clamps_statement_day_31_into_short_month(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 31]);
+
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => '2027-01-01',
+            'statement_date' => '2027-01-31',
+            'status' => CreditCardCycleStatus::PAID,
+        ]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-02-15'));
+
+        $this->assertSame('2027-02-28', $cycle->statement_date->toDateString());
+        $this->assertSame('2027-02-01', $cycle->period_start_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_clamps_statement_day_30_into_short_month(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 30]);
+
+        CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => '2027-02-01',
+            'statement_date' => '2027-02-28',
+            'status' => CreditCardCycleStatus::PAID,
+        ]);
+
+        $service = app(CreditCardCycleService::class);
+        $cycle = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-03-10'));
+
+        $this->assertSame('2027-03-30', $cycle->statement_date->toDateString());
+        $this->assertSame('2027-03-01', $cycle->period_start_date->toDateString());
+    }
+
+    #[Test]
+    public function ensure_current_month_cycle_is_idempotent_for_same_statement_date(): void
+    {
+        $card = CreditCard::factory()->create(['statement_day' => 6]);
+
+        $service = app(CreditCardCycleService::class);
+        $first = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-03'));
+        $second = $service->ensureCurrentMonthCycle($card, Carbon::parse('2027-07-20'));
+
+        $this->assertSame($first->id, $second->id);
+        $this->assertSame(1, CreditCardCycle::count());
     }
 
     /**

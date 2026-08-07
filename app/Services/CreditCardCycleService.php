@@ -28,8 +28,8 @@ class CreditCardCycleService
     }
 
     /**
-     * @deprecated Use RevolvingCreditCalculator directly
-     * Kept for backward compatibility with existing tests
+     * @deprecated Superseded by RevolvingCreditCalculator::calculatePaymentBreakdown(); retained
+     * only for the unit tests that pin this legacy shape. No production code path calls it.
      */
     public function calculateRevolvingPaymentBreakdown(CreditCard $card, float $currentBalance): array
     {
@@ -71,8 +71,10 @@ class CreditCardCycleService
             ];
         }
 
-        // Direct monthly application: 14% annual = 14% monthly per user's requirement
-        $monthlyRate = $rate / 100;
+        // Flat monthly approximation: the stored rate is the ANNUAL nominal rate (TAN), so one
+        // month's charge is one twelfth of it. The previous form applied the full annual rate
+        // every month (~12x too high). This mirrors RevolvingCreditCalculator::calculateInterestDirectMonthly().
+        $monthlyRate = $rate / 100 / 12;
         $interestAmount = $monthlyRate > 0 ? round($currentBalance * $monthlyRate, 2) : 0.0;
         $effectiveInstallment = min($maxInstallment, $currentBalance + $interestAmount);
         $principalAmount = round(min($currentBalance, max(0.0, $effectiveInstallment - $interestAmount)), 2);
@@ -197,12 +199,31 @@ class CreditCardCycleService
     public function ensureCurrentMonthCycle(CreditCard $card, ?Carbon $referenceDate = null): CreditCardCycle
     {
         $referenceDate ??= now();
-        $periodMonth = $referenceDate->format('Y-m');
-        $periodStartDate = $referenceDate->copy()->startOfMonth();
 
+        // The current cycle's closing date. Derivation intentionally UNCHANGED — the existing
+        // min(statement_day, daysInMonth) clamp already handles day 30/31 in short months.
         $statementDate = $referenceDate->copy()->day(
             min((int) $card->statement_day, $referenceDate->daysInMonth)
-        );
+        )->startOfDay();
+
+        $periodMonth = $statementDate->format('Y-m');
+
+        // D-02: the period runs from the day AFTER the previous cycle closed, through this
+        // cycle's closing date. Read the previous cycle's persisted statement_date directly
+        // instead of recomputing last month's clamped statement day (re-derivation is exactly
+        // the class of off-by-one bug this phase removes).
+        $previousCycle = CreditCardCycle::query()
+            ->where('credit_card_id', $card->id)
+            ->whereDate('statement_date', '<', $statementDate->toDateString())
+            ->orderByDesc('statement_date')
+            ->first();
+
+        $periodStartDate = $previousCycle
+            ? $previousCycle->statement_date->copy()->addDay()->startOfDay()
+            // First-cycle anchor: calendar-month start of the first statement's month.
+            // isFirstCycle() forces interest to 0.0 for that cycle regardless of period length,
+            // so this anchor cannot affect any computed interest figure.
+            : $statementDate->copy()->startOfMonth();
 
         $dueDate = null;
         if (! empty($card->due_day)) {
@@ -214,11 +235,10 @@ class CreditCardCycleService
         return CreditCardCycle::query()->firstOrCreate(
             [
                 'credit_card_id' => $card->id,
-                'period_month' => $periodMonth,
-                'period_start_date' => $periodStartDate,
                 'statement_date' => $statementDate,
             ],
             [
+                'period_month' => $periodMonth,
                 'period_start_date' => $periodStartDate,
                 'statement_date' => $statementDate,
                 'due_date' => $dueDate,
