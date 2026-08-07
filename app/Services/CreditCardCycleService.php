@@ -28,8 +28,8 @@ class CreditCardCycleService
     }
 
     /**
-     * @deprecated Use RevolvingCreditCalculator directly
-     * Kept for backward compatibility with existing tests
+     * @deprecated Superseded by RevolvingCreditCalculator::calculatePaymentBreakdown(); retained
+     * only for the unit tests that pin this legacy shape. No production code path calls it.
      */
     public function calculateRevolvingPaymentBreakdown(CreditCard $card, float $currentBalance): array
     {
@@ -71,8 +71,10 @@ class CreditCardCycleService
             ];
         }
 
-        // Direct monthly application: 14% annual = 14% monthly per user's requirement
-        $monthlyRate = $rate / 100;
+        // Flat monthly approximation: the stored rate is the ANNUAL nominal rate (TAN), so one
+        // month's charge is one twelfth of it. The previous form applied the full annual rate
+        // every month (~12x too high). This mirrors RevolvingCreditCalculator::calculateInterestDirectMonthly().
+        $monthlyRate = $rate / 100 / 12;
         $interestAmount = $monthlyRate > 0 ? round($currentBalance * $monthlyRate, 2) : 0.0;
         $effectiveInstallment = min($maxInstallment, $currentBalance + $interestAmount);
         $principalAmount = round(min($currentBalance, max(0.0, $effectiveInstallment - $interestAmount)), 2);
