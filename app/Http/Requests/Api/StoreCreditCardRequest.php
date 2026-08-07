@@ -27,6 +27,7 @@ class StoreCreditCardRequest extends FormRequest
             'fixed_payment'               => ['nullable', 'numeric', 'min:0'],
             'interest_rate'               => ['nullable', 'numeric', 'min:0', 'max:100'],
             'stamp_duty_amount'           => ['nullable', 'numeric', 'min:0'],
+            'fixed_payment_includes_stamp_duty' => ['sometimes', 'boolean'],
             'statement_day'               => ['required', 'integer', 'min:1', 'max:31'],
             'due_day'                     => ['required', 'integer', 'min:1', 'max:31'],
             'skip_weekends'               => ['boolean'],

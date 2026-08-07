@@ -21,6 +21,7 @@ class CreditCardResource extends JsonResource
             'fixed_payment'               => ! $isChargeCard && $this->fixed_payment !== null ? (float) $this->fixed_payment : null,
             'interest_rate'               => ! $isChargeCard && $this->interest_rate !== null ? (float) $this->interest_rate : null,
             'stamp_duty_amount'           => $this->stamp_duty_amount !== null ? (float) $this->stamp_duty_amount : null,
+            'fixed_payment_includes_stamp_duty' => (bool) $this->fixed_payment_includes_stamp_duty,
             'statement_day'               => $this->statement_day,
             'due_day'                     => $this->due_day,
             'skip_weekends'               => (bool) $this->skip_weekends,
