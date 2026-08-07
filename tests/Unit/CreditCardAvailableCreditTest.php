@@ -7,6 +7,7 @@ use App\Enums\CreditCardType;
 use App\Models\Account;
 use App\Models\CreditCard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CreditCardAvailableCreditTest extends TestCase

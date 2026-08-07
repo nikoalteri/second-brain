@@ -14,6 +14,7 @@ use App\Models\CreditCardPayment;
 use App\Services\CreditCardKpiService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CreditCardKpiServiceTest extends TestCase

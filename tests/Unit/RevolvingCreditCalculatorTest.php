@@ -7,6 +7,7 @@ use App\Models\CreditCardCycle;
 use App\Models\CreditCardExpense;
 use App\Services\RevolvingCreditCalculator;
 use Carbon\Carbon;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class RevolvingCreditCalculatorTest extends TestCase

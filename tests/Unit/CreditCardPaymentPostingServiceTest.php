@@ -10,6 +10,7 @@ use App\Models\CreditCard;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CreditCardPaymentPostingServiceTest extends TestCase

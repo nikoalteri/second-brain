@@ -7,6 +7,7 @@ use App\Models\Loan;
 use App\Models\User;
 use App\Repositories\LoanRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class LoanRepositoryTest extends TestCase

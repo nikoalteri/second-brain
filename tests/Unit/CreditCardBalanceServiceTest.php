@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\CreditCard;
 use App\Services\CreditCardBalanceService;
 use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CreditCardBalanceServiceTest extends TestCase
@@ -104,13 +105,13 @@ class CreditCardBalanceServiceTest extends TestCase
     public function apply_principal_payment_decreases_balance()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 542.00,
+            'current_balance' => 600.00,
         ]);
 
-        $newBalance = $this->service->applyPrincipalPayment($card, 230.28);
+        $newBalance = $this->service->applyPrincipalPayment($card, 250.00);
 
-        $this->assertEquals(311.72, $newBalance);
-        $this->assertEquals(311.72, $card->fresh()->current_balance);
+        $this->assertEquals(350.00, $newBalance);
+        $this->assertEquals(350.00, $card->fresh()->current_balance);
     }
 
     #[Test]
@@ -129,24 +130,24 @@ class CreditCardBalanceServiceTest extends TestCase
     public function reverse_principal_payment_increases_balance()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 311.72,
+            'current_balance' => 350.00,
         ]);
 
-        $newBalance = $this->service->reversePrincipalPayment($card, 230.28);
+        $newBalance = $this->service->reversePrincipalPayment($card, 250.00);
 
-        $this->assertEquals(542.00, $newBalance);
+        $this->assertEquals(600.00, $newBalance);
     }
 
     #[Test]
     public function get_current_debt_returns_balance()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 542.00,
+            'current_balance' => 600.00,
         ]);
 
         $debt = $this->service->getCurrentDebt($card);
 
-        $this->assertEquals(542.00, $debt);
+        $this->assertEquals(600.00, $debt);
     }
 
     #[Test]

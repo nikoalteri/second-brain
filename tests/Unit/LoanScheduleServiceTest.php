@@ -7,6 +7,7 @@ use App\Enums\LoanPaymentStatus;
 use App\Models\Loan;
 use App\Services\LoanScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use Carbon\Carbon;
 

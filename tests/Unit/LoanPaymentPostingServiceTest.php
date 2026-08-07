@@ -9,6 +9,7 @@ use App\Models\Transaction;
 use App\Services\LoanPaymentPostingService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class LoanPaymentPostingServiceTest extends TestCase
