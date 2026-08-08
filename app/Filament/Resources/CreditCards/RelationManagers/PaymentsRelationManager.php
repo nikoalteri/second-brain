@@ -6,8 +6,10 @@ use App\Enums\CreditCardPaymentStatus;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -48,6 +50,13 @@ class PaymentsRelationManager extends RelationManager
                     ->label('Interest charged')
                     ->money('EUR')
                     ->toggleable(),
+                IconColumn::make('confirmed_interest_amount')
+                    ->label('Confirmed')
+                    ->boolean()
+                    ->state(fn ($record) => $record->confirmed_interest_amount !== null)
+                    ->tooltip(fn ($record) => $record->confirmed_interest_amount !== null
+                        ? 'Interest matches the real statement'
+                        : 'Interest is estimated, not yet confirmed against a statement'),
                 TextColumn::make('stamp_duty_amount')
                     ->label('Stamp duty')
                     ->money('EUR')
@@ -57,6 +66,45 @@ class PaymentsRelationManager extends RelationManager
                     ->badge(),
             ])
             ->recordActions([
+                Action::make('confirmRealInterest')
+                    ->label('Confirm real interest')
+                    ->icon('heroicon-o-document-check')
+                    ->color('gray')
+                    ->form([
+                        TextInput::make('confirmed_interest_amount')
+                            ->label('Interest from the real statement')
+                            ->numeric()
+                            ->prefix('EUR')
+                            ->required(),
+                    ])
+                    ->fillForm(fn ($record) => [
+                        'confirmed_interest_amount' => $record->confirmed_interest_amount ?? $record->interest_amount,
+                    ])
+                    ->action(function ($record, array $data) {
+                        $statementInterest = round((float) $data['confirmed_interest_amount'], 2);
+                        $stampDuty = (float) $record->stamp_duty_amount;
+                        $totalAmount = (float) $record->total_amount;
+                        $newPrincipal = round(max(0.0, $totalAmount - $statementInterest - $stampDuty), 2);
+
+                        $record->update([
+                            'confirmed_interest_amount' => $statementInterest,
+                            'interest_amount' => $statementInterest,
+                            'principal_amount' => $newPrincipal,
+                        ]);
+
+                        if ($record->cycle) {
+                            $record->cycle->update([
+                                'interest_amount' => $statementInterest,
+                                'principal_amount' => $newPrincipal,
+                            ]);
+                        }
+
+                        Notification::make()
+                            ->title('Interest confirmed, balance recalculated')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn ($record) => $record->status === CreditCardPaymentStatus::PAID),
                 Action::make('markAsPaid')
                     ->label('Mark as paid')
                     ->icon('heroicon-o-check-circle')
