@@ -251,10 +251,12 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $cycle->refresh();
         $card->refresh();
 
-        // Used balance already includes expenses: 1000 + 100 = 1100, interest 132 (1100*12%), principal 118 (250-132), total due 252.
+        // Used balance already includes expenses: 1000 + 100 = 1100. direct_monthly interest
+        // is a flat twelfth of the annual rate (Phase 19): 1100 * (12 / 100 / 12) = 11.
+        // Principal = 250 - 11 = 239. Total due = 250 + 2 stamp duty = 252.
         $this->assertSame(1100.0, (float) $card->current_balance);
-        $this->assertSame(132.0, (float) $cycle->interest_amount);
-        $this->assertSame(118.0, (float) $cycle->principal_amount);
+        $this->assertSame(11.0, (float) $cycle->interest_amount);
+        $this->assertSame(239.0, (float) $cycle->principal_amount);
         $this->assertSame(252.0, (float) $cycle->total_due);
 
         $payment = $cycle->payments()->first();
@@ -268,7 +270,7 @@ class CreditCardLifecycleIntegrationTest extends TestCase
         $account->refresh();
 
         $this->assertSame(CreditCardCycleStatus::PAID, $cycle->status);
-        $this->assertSame(982.0, (float) $card->current_balance);
+        $this->assertSame(861.0, (float) $card->current_balance);
         $this->assertSame(748.0, (float) $account->balance);
     }
 
