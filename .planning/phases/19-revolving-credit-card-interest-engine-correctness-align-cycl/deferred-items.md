@@ -31,3 +31,19 @@ Discovered by 19-01 running the wider Feature suite for regression-checking. Unr
      (`git diff` shows zero difference for this file). Unrelated to credit cards; not
      investigated further as it is out of scope for this phase and reproduces on an
      unrelated, unmodified admin budget-report page.
+   - Re-confirmed during 19-05: `git log --oneline -1` and `git diff main` for this file
+     both show zero divergence from `main`, and running the test in isolation
+     (`--filter=FinanceReportPageTest`) reproduces the exact same failure with no other
+     tests running. The fixture hardcodes transaction/budget dates in `2026-04`, so the
+     failure is consistent with a date-dependent "current budget month" resolution now
+     that the system date (`2026-08-08` at time of this wave) has moved past that fixed
+     month, not a worktree asset-build gap as originally guessed by 19-01. Still unrelated
+     to credit cards and out of scope for this phase; not investigated further.
+
+## Fixed during 19-05 (not deferred)
+
+5. `Tests\Feature\ExampleTest::test_the_application_returns_a_successful_response` — the
+   worktree had no `public/build/manifest.json` (Vite assets never built here). Ran
+   `npm install && npm run build` in this worktree (build output only, gitignored, not
+   committed) and the test now passes. This was a worktree provisioning gap, not a code
+   issue, consistent with entry 3 above.
