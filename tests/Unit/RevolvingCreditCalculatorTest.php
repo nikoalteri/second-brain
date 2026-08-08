@@ -191,9 +191,11 @@ class RevolvingCreditCalculatorTest extends TestCase
             'stamp_duty_amount' => 2,
         ]);
 
-        // Simulate a second cycle (not first)
+        // Simulate a second cycle (not first) — explicit, earlier statement_date so
+        // isFirstCycle()'s date comparison isn't left to the factory's random range.
         CreditCardCycle::factory()->create([
             'credit_card_id' => $card->id,
+            'statement_date' => Carbon::parse('2027-04-06'),
             'status' => 'paid',
         ]);
 
@@ -245,14 +247,17 @@ class RevolvingCreditCalculatorTest extends TestCase
             'credit_limit' => 5000.00,
         ]);
 
-        // Not first cycle
+        // Not first cycle — explicit, earlier statement_date so isFirstCycle()'s date comparison
+        // isn't left to the factory's independent random date ranges for each call.
         CreditCardCycle::factory()->create([
             'credit_card_id' => $card->id,
+            'statement_date' => Carbon::parse('2027-04-06'),
             'status' => 'paid',
         ]);
 
         $cycle = CreditCardCycle::factory()->create([
             'credit_card_id' => $card->id,
+            'statement_date' => Carbon::parse('2027-05-06'),
             'total_spent' => 200.00,
             'status' => 'open',
         ]);
@@ -302,15 +307,19 @@ class RevolvingCreditCalculatorTest extends TestCase
             'interest_calculation_method' => 'direct_monthly',
         ]);
 
-        // First cycle (already issued)
+        // First cycle (already issued) — explicit, earlier statement_date. The factory's
+        // default random date range doesn't guarantee ordering against the second cycle below,
+        // and isFirstCycle() now determines "first" purely by statement_date comparison.
         CreditCardCycle::factory()->create([
             'credit_card_id' => $card->id,
+            'statement_date' => Carbon::parse('2027-04-06'),
             'status' => 'paid',
         ]);
 
         // Second cycle
         $cycle = CreditCardCycle::factory()->create([
             'credit_card_id' => $card->id,
+            'statement_date' => Carbon::parse('2027-05-06'),
             'total_spent' => 0,
             'status' => 'open',
         ]);

@@ -11,16 +11,23 @@ use Carbon\Carbon;
 class RevolvingCreditCalculator
 {
     /**
-     * Check if this is the first billing cycle (earliest issued/paid cycle)
+     * Check if this is the first billing cycle (no earlier cycle has ever been issued).
+     *
+     * Deliberately does NOT require $cycle itself to already be issued/paid/overdue:
+     * calculatePaymentBreakdown() calls this from inside CreditCardCycleService::issueCycle(),
+     * BEFORE that method updates $cycle's own status to ISSUED. Requiring self-inclusion in the
+     * issued/paid/overdue set would make a card's genuine first cycle never detect itself as
+     * first (no interest), because at calculation time it is still OPEN. Checking only for an
+     * EARLIER cycle already issued/paid/overdue sidesteps that ordering dependency entirely.
      */
     public function isFirstCycle(CreditCard $card, CreditCardCycle $cycle): bool
     {
-        $firstIssuedCycle = $card->cycles()
+        $earlierIssuedCycle = $card->cycles()
             ->whereIn('status', ['issued', 'paid', 'overdue'])
-            ->orderBy('statement_date')
-            ->first();
+            ->where('statement_date', '<', $cycle->statement_date)
+            ->exists();
 
-        return $firstIssuedCycle && $firstIssuedCycle->id === $cycle->id;
+        return ! $earlierIssuedCycle;
     }
 
     /**

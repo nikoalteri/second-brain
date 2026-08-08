@@ -221,6 +221,24 @@ class CreditCardLifecycleIntegrationTest extends TestCase
             'stamp_duty_amount' => 2,
         ]);
 
+        // A genuine, already-issued PRIOR cycle so isFirstCycle() correctly treats the cycle
+        // under test as NOT first (this test exercises the direct_monthly interest branch,
+        // which only applies from the second cycle onward). Deliberately isolated from the
+        // balance math below: zero spend, no payment activity, an earlier statement_date only.
+        CreditCardCycle::create([
+            'credit_card_id' => $card->id,
+            'period_month' => '2026-02',
+            'period_start_date' => Carbon::parse('2026-02-01'),
+            'statement_date' => Carbon::parse('2026-02-28'),
+            'due_date' => Carbon::parse('2026-03-15'),
+            'status' => CreditCardCycleStatus::PAID,
+            'total_spent' => 0,
+            'interest_amount' => 0,
+            'principal_amount' => 0,
+            'stamp_duty_amount' => 0,
+            'total_due' => 0,
+        ]);
+
         // Pre-existing revolving debt carried over from before this card started tracking
         // expenses. Represented as an expense row (not a directly-seeded current_balance) so
         // it is consistent with CreditCardCycleService::syncCardBalance()'s source-of-truth
