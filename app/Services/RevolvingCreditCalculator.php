@@ -31,7 +31,7 @@ class RevolvingCreditCalculator
      */
     public function calculateDailyBalances(CreditCardCycle $cycle): array
     {
-        $cycle->loadMissing(['creditCard', 'expenses', 'payments']);
+        $cycle->loadMissing(['creditCard', 'expenses']);
         $card = $cycle->creditCard;
 
         if (!$card) {
@@ -57,7 +57,16 @@ class RevolvingCreditCalculator
         // PAID payments only. Effective date mirrors CreditCardPaymentPostingService: actual_date
         // when present, else due_date. Only the PRINCIPAL portion reduces the capital; the
         // interest and stamp-duty portions are separate ledger lines and must not be subtracted.
-        $paymentsByDate = $cycle->payments()
+        //
+        // Scoped by the CARD (not the cycle's own FK): a cycle's payment is routinely collected
+        // ~1-2 weeks after that cycle closes, which lands inside the NEXT cycle's window. Real
+        // issuer statements apply that payment's principal reduction on its actual collection
+        // date regardless of which cycle originally billed it — scoping to $cycle->payments()
+        // would silently ignore it here and either overstate this cycle's interest (if ignored
+        // entirely) or, if applied at the wrong time, understate it. The date-range filter below
+        // ensures a payment is only ever counted by the one cycle whose window actually contains
+        // its effective date, so cross-cycle payments are neither dropped nor double-counted.
+        $paymentsByDate = $card->payments()
             ->where('status', CreditCardPaymentStatus::PAID)
             ->get()
             ->groupBy(fn ($p) => ($p->actual_date ?? $p->due_date)->toDateString())

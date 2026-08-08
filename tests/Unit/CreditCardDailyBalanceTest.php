@@ -258,6 +258,77 @@ class CreditCardDailyBalanceTest extends TestCase
     }
 
     #[Test]
+    public function payment_from_an_earlier_cycle_still_reduces_daily_balance_on_its_actual_date(): void
+    {
+        // Real issuer statements collect a cycle's payment ~1-2 weeks after that cycle closes,
+        // which routinely lands inside the NEXT cycle's window. The payment below is FK-owned by
+        // an earlier, already-closed cycle, but its actual_date falls inside the cycle under
+        // test — the daily-balance walk must still apply it on that date, exactly as it would
+        // for a same-cycle payment. Live-verified against a real Amex statement reconstruction
+        // during manual testing: before this fix, cross-cycle payments were silently ignored by
+        // calculateDailyBalances(), overstating interest for any cycle following a paid-off one.
+        $calculator = new RevolvingCreditCalculator();
+
+        $card = CreditCard::factory()->create([
+            'type' => CreditCardType::REVOLVING,
+            'interest_rate' => 14,
+            'credit_limit' => 4000,
+            'fixed_payment' => 250,
+            'stamp_duty_amount' => 2,
+        ]);
+
+        // Expense belonging to the earlier cycle
+        CreditCardExpense::factory()->create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2027-04-10'),
+            'amount' => 1200.00,
+        ]);
+
+        $earlierCycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-04-07'),
+            'statement_date' => Carbon::parse('2027-05-06'),
+            'total_spent' => 1200.00,
+        ]);
+
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-05-07'),
+            'statement_date' => Carbon::parse('2027-06-06'),
+            'total_spent' => 0,
+        ]);
+
+        // FK-owned by the EARLIER cycle, but paid on a date inside the LATER cycle's window.
+        CreditCardPayment::create([
+            'credit_card_id' => $card->id,
+            'credit_card_cycle_id' => $earlierCycle->id,
+            'due_date' => Carbon::parse('2027-05-20'),
+            'actual_date' => Carbon::parse('2027-05-20'),
+            'installment_amount' => 200.00,
+            'interest_amount' => 0.00,
+            'principal_amount' => 200.00,
+            'stamp_duty_amount' => 0.00,
+            'total_amount' => 200.00,
+            'status' => CreditCardPaymentStatus::PAID,
+        ]);
+
+        $card->update(['current_balance' => 1000.00]);
+        $card->refresh();
+
+        $dailyBalances = $calculator->calculateDailyBalances($cycle);
+
+        $this->assertCount(31, $dailyBalances);
+        $this->assertSame(1200.0, $dailyBalances['2027-05-19']);
+        $this->assertSame(1000.0, $dailyBalances['2027-05-20']);
+        $this->assertSame(1000.0, $dailyBalances['2027-06-06']);
+        $this->assertSame((float) $card->current_balance, $dailyBalances['2027-06-06']);
+
+        $interest = $calculator->calculateInterestFromDailyBalances($dailyBalances, 14.0);
+        // 13 days at 1200 + 18 days at 1000 = 33,600 balance-days; 33,600 * 0.14 / 365 = 12.888
+        $this->assertEqualsWithDelta(12.89, $interest, 0.01);
+    }
+
+    #[Test]
     public function payment_breakdown_charges_stamp_duty_on_top_when_flag_is_off(): void
     {
         $calculator = new RevolvingCreditCalculator();
