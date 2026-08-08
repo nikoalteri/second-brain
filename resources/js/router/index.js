@@ -156,4 +156,28 @@ export const routes = [
         component: () => import('@/views/subscriptions/SubscriptionFormView.vue'),
         meta: { requiresAuth: true },
     },
+    {
+        path: '/saving-goals',
+        name: 'saving-goals',
+        component: () => import('@/views/saving-goals/SavingGoalsView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/saving-goals/new',
+        name: 'saving-goals.create',
+        component: () => import('@/views/saving-goals/SavingGoalFormView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/saving-goals/:id',
+        name: 'saving-goals.show',
+        component: () => import('@/views/saving-goals/SavingGoalDetailView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/saving-goals/:id/edit',
+        name: 'saving-goals.edit',
+        component: () => import('@/views/saving-goals/SavingGoalFormView.vue'),
+        meta: { requiresAuth: true },
+    },
 ];

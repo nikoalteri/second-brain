@@ -23,6 +23,12 @@ class AccountsTable
                     ->searchable()
                     ->weight('medium'),
 
+                TextColumn::make('user.name')
+                    ->label('Owner')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('type')
                     ->label('Type')
                     ->badge()

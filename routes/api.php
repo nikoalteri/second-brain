@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\V1\CreditCardPaymentController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\LoanController;
+use App\Http\Controllers\Api\V1\SavingGoalContributionController;
+use App\Http\Controllers\Api\V1\SavingGoalController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SubscriptionFrequencyController;
 use App\Http\Controllers\Api\V1\TransactionController;
@@ -52,6 +54,8 @@ Route::prefix('v1')->group(function () {
 
         Route::get('subscriptions', [SubscriptionController::class, 'index']);
         Route::get('subscriptions/{subscription}', [SubscriptionController::class, 'show']);
+        Route::get('saving-goals', [SavingGoalController::class, 'index']);
+        Route::get('saving-goals/{savingGoal}', [SavingGoalController::class, 'show']);
         Route::get('subscription-frequencies', [SubscriptionFrequencyController::class, 'index']);
 
         Route::get('budgets/monthly', [BudgetController::class, 'index']);
@@ -102,6 +106,12 @@ Route::prefix('v1')->group(function () {
         Route::put('subscriptions/{subscription}', [SubscriptionController::class, 'update']);
         Route::patch('subscriptions/{subscription}', [SubscriptionController::class, 'update']);
         Route::delete('subscriptions/{subscription}', [SubscriptionController::class, 'destroy']);
+        Route::post('saving-goals', [SavingGoalController::class, 'store']);
+        Route::put('saving-goals/{savingGoal}', [SavingGoalController::class, 'update']);
+        Route::patch('saving-goals/{savingGoal}', [SavingGoalController::class, 'update']);
+        Route::delete('saving-goals/{savingGoal}', [SavingGoalController::class, 'destroy']);
+        Route::post('saving-goals/{savingGoal}/contributions', [SavingGoalContributionController::class, 'store']);
+        Route::delete('saving-goals/{savingGoal}/contributions/{contribution}', [SavingGoalContributionController::class, 'destroy']);
 
         Route::put('budgets/monthly/{transactionCategory}', [BudgetController::class, 'upsert']);
         Route::delete('budgets/monthly/{transactionCategory}', [BudgetController::class, 'destroy']);

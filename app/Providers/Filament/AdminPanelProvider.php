@@ -71,6 +71,9 @@ class AdminPanelProvider extends PanelProvider
                         NavigationItem::make('Credit Cards')
                             ->url('/hub/credit-cards')
                             ->icon('heroicon-o-credit-card'),
+                        NavigationItem::make('Saving Goals')
+                            ->url('/hub/saving-goals')
+                            ->icon('heroicon-o-flag'),
                         NavigationItem::make('Reports')
                             ->url('/hub/finance-report')
                             ->icon('heroicon-o-chart-bar'),

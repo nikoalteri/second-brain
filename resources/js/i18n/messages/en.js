@@ -8,6 +8,7 @@ export default {
             loans: 'Loans',
             creditCards: 'Credit Cards',
             subscriptions: 'Subscriptions',
+            savingGoals: 'Saving Goals',
         },
         userMenu: {
             account: 'Account',

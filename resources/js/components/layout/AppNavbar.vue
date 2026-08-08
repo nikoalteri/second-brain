@@ -14,6 +14,7 @@ import {
     ChevronDownIcon,
     Cog6ToothIcon,
     DocumentTextIcon,
+    FlagIcon,
     HomeIcon,
     UserCircleIcon,
     XMarkIcon,
@@ -74,6 +75,7 @@ const navLinks = computed(() => [
     { name: t('shell.nav.loans'), to: '/loans', icon: DocumentTextIcon },
     { name: t('shell.nav.creditCards'), to: '/credit-cards', icon: CreditCardIcon },
     { name: t('shell.nav.subscriptions'), to: '/subscriptions', icon: CalendarDaysIcon },
+    { name: t('shell.nav.savingGoals'), to: '/saving-goals', icon: FlagIcon },
 ]);
 
 async function handleLogout() {

@@ -8,6 +8,8 @@ use App\Models\CreditCardCycle;
 use App\Models\CreditCardPayment;
 use App\Models\Loan;
 use App\Models\LoanPayment;
+use App\Models\SavingGoal;
+use App\Models\SavingGoalContribution;
 use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Models\TransactionCategory;
@@ -19,6 +21,8 @@ use App\Policies\CreditCardPaymentPolicy;
 use App\Policies\CreditCardPolicy;
 use App\Policies\LoanPaymentPolicy;
 use App\Policies\LoanPolicy;
+use App\Policies\SavingGoalContributionPolicy;
+use App\Policies\SavingGoalPolicy;
 use App\Policies\SubscriptionPolicy;
 use App\Policies\TransactionCategoryPolicy;
 use App\Policies\TransactionPolicy;
@@ -41,6 +45,8 @@ class AuthServiceProvider extends ServiceProvider
         Loan::class => LoanPolicy::class,
         LoanPayment::class => LoanPaymentPolicy::class,
         Subscription::class => SubscriptionPolicy::class,
+        SavingGoal::class => SavingGoalPolicy::class,
+        SavingGoalContribution::class => SavingGoalContributionPolicy::class,
         Transaction::class => TransactionPolicy::class,
         TransactionCategory::class => TransactionCategoryPolicy::class,
         TransactionType::class => TransactionTypePolicy::class,

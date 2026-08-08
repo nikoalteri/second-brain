@@ -1,0 +1,39 @@
+<?php
+
+namespace App\Policies;
+
+use App\Models\SavingGoalContribution;
+use App\Models\User;
+
+class SavingGoalContributionPolicy
+{
+    public function before(User $user, string $ability): ?bool
+    {
+        return $user->hasRole('superadmin') ? true : null;
+    }
+
+    public function viewAny(User $user): bool
+    {
+        return true;
+    }
+
+    public function view(User $user, SavingGoalContribution $contribution): bool
+    {
+        return $user->id === $contribution->user_id;
+    }
+
+    public function create(User $user): bool
+    {
+        return true;
+    }
+
+    public function update(User $user, SavingGoalContribution $contribution): bool
+    {
+        return $user->id === $contribution->user_id;
+    }
+
+    public function delete(User $user, SavingGoalContribution $contribution): bool
+    {
+        return $user->id === $contribution->user_id;
+    }
+}
