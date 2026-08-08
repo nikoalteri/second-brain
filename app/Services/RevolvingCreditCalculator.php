@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CreditCardPaymentStatus;
 use App\Enums\InterestCalculationMethod;
 use App\Models\CreditCard;
 use App\Models\CreditCardCycle;
@@ -30,9 +31,9 @@ class RevolvingCreditCalculator
      */
     public function calculateDailyBalances(CreditCardCycle $cycle): array
     {
-        $cycle->loadMissing(['creditCard', 'expenses']);
+        $cycle->loadMissing(['creditCard', 'expenses', 'payments']);
         $card = $cycle->creditCard;
-        
+
         if (!$card) {
             return [];
         }
@@ -40,11 +41,7 @@ class RevolvingCreditCalculator
         $startDate = $cycle->period_start_date;
         $endDate = $cycle->statement_date;
         $dailyBalances = [];
-        
-        // Starting balance = debt at start of cycle, before this cycle's expenses
-        $cycleSpent = (float) ($cycle->total_spent ?? 0);
-        $currentBalance = max(0.0, (float) $card->current_balance - $cycleSpent);
-        
+
         // Group expenses by their posting date (posted_at) when available,
         // otherwise fall back to transaction date (spent_at).
         // Amex uses the contabilization/posting date for daily balance interest calculations.
@@ -54,22 +51,60 @@ class RevolvingCreditCalculator
             ->groupBy(fn($e) => ($e->posted_at ?? $e->spent_at)->toDateString())
             ->map(fn($expenses) => $expenses->sum('amount'))
             ->toArray();
-        
+
+        // Only PAID payments actually reduce the outstanding principal — a PENDING payment has
+        // not moved money yet. This matches syncCardBalance(), which sums principal_amount over
+        // PAID payments only. Effective date mirrors CreditCardPaymentPostingService: actual_date
+        // when present, else due_date. Only the PRINCIPAL portion reduces the capital; the
+        // interest and stamp-duty portions are separate ledger lines and must not be subtracted.
+        $paymentsByDate = $cycle->payments()
+            ->where('status', CreditCardPaymentStatus::PAID)
+            ->get()
+            ->groupBy(fn ($p) => ($p->actual_date ?? $p->due_date)->toDateString())
+            ->map(fn ($payments) => (float) $payments->sum('principal_amount'))
+            ->toArray();
+
+        // Ignore any payment whose effective date falls outside this cycle's window; it cannot
+        // be replayed by the loop below and must not distort the opening balance either.
+        $paymentsByDate = array_filter(
+            $paymentsByDate,
+            fn ($amount, $dateStr) => $dateStr >= $startDate->toDateString()
+                && $dateStr <= $endDate->toDateString(),
+            ARRAY_FILTER_USE_BOTH
+        );
+
+        // Starting balance = debt at start of cycle, before this cycle's expenses.
+        // current_balance is the CURRENT (post-payment) figure. To reconstruct the balance at the
+        // START of the cycle we undo this cycle's own mutations — subtract its expenses and add
+        // back its repaid principal — then replay both, day by day, below. Without adding the
+        // principal back the loop would subtract the same payment a second time and the walk
+        // would end below current_balance.
+        $cycleSpent = (float) ($cycle->total_spent ?? 0);
+        $cyclePaidPrincipal = array_sum($paymentsByDate);
+        $currentBalance = max(0.0, (float) $card->current_balance - $cycleSpent + $cyclePaidPrincipal);
+
         // Calculate balance for each day in the cycle
         $date = $startDate->copy();
         while ($date->lte($endDate)) {
             $dateStr = $date->toDateString();
-            
+
             // Add expenses posted on this date
             if (isset($expensesByDate[$dateStr])) {
                 $currentBalance += (float) $expensesByDate[$dateStr];
             }
-            
+
+            // Apply principal repaid on this date
+            if (isset($paymentsByDate[$dateStr])) {
+                $currentBalance -= (float) $paymentsByDate[$dateStr];
+            }
+
+            $currentBalance = max(0.0, $currentBalance);
+
             // Store daily balance (end of day)
             $dailyBalances[$dateStr] = round($currentBalance, 2);
             $date->addDay();
         }
-        
+
         return $dailyBalances;
     }
 
@@ -151,6 +186,7 @@ class RevolvingCreditCalculator
         $fixedPayment = (float) ($card->fixed_payment ?? 0);
         $annualRate = (float) ($card->interest_rate ?? 0);
         $stampDuty = (float) ($card->stamp_duty_amount ?? 0);
+        $includesStampDuty = (bool) ($card->fixed_payment_includes_stamp_duty ?? false);
         $currentDebt = max(0.0, (float) $card->current_balance);
         $cycleSpent = (float) ($cycle->total_spent ?? 0);
 
@@ -187,8 +223,20 @@ class RevolvingCreditCalculator
 
         // Split payment: Interest + Principal
         // Payment cannot exceed total exposure
-        $effectiveInstallment = min($fixedPayment, $totalExposed + $interestAmount);
-        $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount), 2);
+        if ($includesStampDuty) {
+            // D-03 inclusive mode: the stamp duty is already inside the fixed payment, so it
+            // consumes part of the installment. principal = installment - interest - stamp duty,
+            // and total_due is the fixed payment itself (adding the duty on top would bill it twice).
+            $effectiveInstallment = min($fixedPayment, $totalExposed + $interestAmount + $stampDuty);
+            $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount - $stampDuty), 2);
+            $totalDue = round($effectiveInstallment, 2);
+        } else {
+            // Exclusive mode (default): the stamp duty is charged on top of the fixed payment.
+            $effectiveInstallment = min($fixedPayment, $totalExposed + $interestAmount);
+            $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount), 2);
+            $totalDue = round($effectiveInstallment + $stampDuty, 2);
+        }
+
         $nextBalance = round(max(0.0, $totalExposed - $principalAmount), 2);
 
         return [
@@ -196,7 +244,7 @@ class RevolvingCreditCalculator
             'principal_amount' => $principalAmount,
             'stamp_duty_amount' => round($stampDuty, 2),
             'installment_amount' => round($effectiveInstallment, 2),
-            'total_due' => round($effectiveInstallment + $stampDuty, 2),
+            'total_due' => $totalDue,
             'next_balance' => $nextBalance,
         ];
     }
