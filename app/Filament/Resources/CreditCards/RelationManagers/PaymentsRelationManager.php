@@ -45,11 +45,11 @@ class PaymentsRelationManager extends RelationManager
                     ->money('EUR')
                     ->toggleable(),
                 TextColumn::make('interest_amount')
-                    ->label('Interest')
+                    ->label('Interest charged')
                     ->money('EUR')
                     ->toggleable(),
                 TextColumn::make('stamp_duty_amount')
-                    ->label('Stamp')
+                    ->label('Stamp duty')
                     ->money('EUR')
                     ->toggleable(),
                 TextColumn::make('status')

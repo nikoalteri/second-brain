@@ -192,6 +192,16 @@ Plans:
 - [x] 19-04-PLAN.md — Correct the `direct_monthly` formula to annual/12 and fix every stale assertion pinning the old figure
 - [x] 19-05-PLAN.md — End-to-end synthetic regression across both cycles and both stamp-duty modes; full suite green
 
+### Phase 20: Multi-currency display
+
+**Goal:** Let users select a display currency (starting with EUR and CZK) for the Filament credit-card/finance UI, with correct locale-aware number formatting per currency, while keeping all interest/balance calculations internally in EUR — no FX conversion engine.
+**Requirements**: TBD
+**Depends on:** Phase 19
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 20 to break down)
+
 ---
 
 ## Direct Next Command

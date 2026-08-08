@@ -86,10 +86,10 @@ class CyclesRelationManager extends RelationManager
                     ->money('EUR')
                     ->sortable(),
                 TextColumn::make('interest_amount')
-                    ->label('Interest')
+                    ->label('Interest charged')
                     ->money('EUR'),
                 TextColumn::make('stamp_duty_amount')
-                    ->label('Stamp')
+                    ->label('Stamp duty')
                     ->money('EUR'),
                 TextColumn::make('total_due')
                     ->label('Total due')
