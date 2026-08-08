@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CreditCards\RelationManagers;
 
 use App\Enums\CreditCardPaymentStatus;
+use App\Support\Money;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -40,15 +41,15 @@ class PaymentsRelationManager extends RelationManager
                         + (float) ($record->interest_amount ?? 0)
                         + (float) ($record->stamp_duty_amount ?? 0)
                     ))
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
                 TextColumn::make('principal_amount')
                     ->label('Principal')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->toggleable(),
                 TextColumn::make('interest_amount')
                     ->label('Interest charged')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->toggleable(),
                 IconColumn::make('confirmed_interest_amount')
                     ->label('Confirmed')
@@ -59,7 +60,7 @@ class PaymentsRelationManager extends RelationManager
                         : 'Interest is estimated, not yet confirmed against a statement'),
                 TextColumn::make('stamp_duty_amount')
                     ->label('Stamp duty')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->toggleable(),
                 TextColumn::make('status')
                     ->label('Status')

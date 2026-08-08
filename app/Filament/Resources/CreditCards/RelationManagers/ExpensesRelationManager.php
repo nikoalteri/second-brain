@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CreditCards\RelationManagers;
 
+use App\Support\Money;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -62,7 +63,7 @@ class ExpensesRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
                 TextColumn::make('description')
                     ->label('Description')

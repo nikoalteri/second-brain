@@ -195,12 +195,16 @@ Plans:
 ### Phase 20: Multi-currency display
 
 **Goal:** Let users select a display currency (starting with EUR and CZK) for the Filament credit-card/finance UI, with correct locale-aware number formatting per currency, while keeping all interest/balance calculations internally in EUR — no FX conversion engine.
-**Requirements**: TBD
+**Requirements**: none formalized — executed directly at user request, skipping discuss/research/plan
 **Depends on:** Phase 19
-**Plans:** 0 plans
+**Plans:** done, no PLAN.md files (ad-hoc execution)
 
-Plans:
-- [ ] TBD (run /gsd-plan-phase 20 to break down)
+Delivered:
+- [x] `UserSetting::KEY_DISPLAY_CURRENCY` (EUR/CZK) reusing the existing per-user settings pattern; `setting_key` widened from a fixed ENUM to a plain string so future keys don't need a schema migration
+- [x] `App\Support\Money` helper resolving the current user's currency + matching locale (EUR→it, CZK→cs)
+- [x] All 15 `->money('EUR')` / hardcoded-EUR call sites across Loans, CreditCards, and Subscriptions Filament resources switched to dynamic closures
+- [x] Regression test (`CreditCardCurrencyDisplayTest`) rendering the live Filament page under both currencies
+- [x] Full suite green (282 tests, only the 2 pre-existing unrelated failures)
 
 ---
 

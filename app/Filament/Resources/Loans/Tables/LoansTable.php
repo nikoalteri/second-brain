@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Loans\Tables;
 
+use App\Support\Money;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -10,6 +11,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Number;
 
 class LoansTable
 {
@@ -26,15 +28,14 @@ class LoansTable
                     ->sortable(),
                 TextColumn::make('monthly_payment')
                     ->label('Monthly Payment')
-                    ->money('EUR', locale: 'en'),
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale()),
                 TextColumn::make('total_with_interest')
                     ->label('Total with Interest (Remaining)')
-                    ->formatStateUsing(fn($record) => number_format(
+                    ->formatStateUsing(fn($record) => Number::currency(
                         (float) $record->monthly_payment * max(0, $record->total_installments - $record->paid_installments),
-                        2,
-                        ',',
-                        '.'
-                    ) . ' €')
+                        Money::currency(),
+                        Money::locale(),
+                    ))
                     ->sortable(query: function ($query, $direction) {
                         return $query->selectRaw('*, (monthly_payment * (total_installments - paid_installments)) as total_with_interest_calc')
                             ->orderBy('total_with_interest_calc', $direction);
@@ -49,7 +50,7 @@ class LoansTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('remaining_amount')
                     ->label('Remaining Amount')
-                    ->money('EUR', locale: 'en')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
                 TextColumn::make('withdrawal_day')
                     ->label('Withdrawal Day'),

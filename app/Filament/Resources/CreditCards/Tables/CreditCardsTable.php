@@ -2,11 +2,13 @@
 
 namespace App\Filament\Resources\CreditCards\Tables;
 
+use App\Support\Money;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Number;
 
 class CreditCardsTable
 {
@@ -30,19 +32,19 @@ class CreditCardsTable
                     ->sortable(),
                 TextColumn::make('credit_limit')
                     ->label('Credit limit')
-                    ->formatStateUsing(fn($state) => $state === null ? 'Unlimited' : number_format((float) $state, 2) . ' EUR')
+                    ->formatStateUsing(fn($state) => $state === null ? 'Unlimited' : Number::currency((float) $state, Money::currency(), Money::locale()))
                     ->sortable(),
                 TextColumn::make('current_balance')
                     ->label('Used credit')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
                 TextColumn::make('available_credit')
                     ->label('Available credit')
                     ->getStateUsing(fn($record) => $record->available_credit)
-                    ->formatStateUsing(fn($state) => $state === null ? 'Unlimited' : number_format((float) $state, 2) . ' EUR'),
+                    ->formatStateUsing(fn($state) => $state === null ? 'Unlimited' : Number::currency((float) $state, Money::currency(), Money::locale())),
                 TextColumn::make('fixed_payment')
                     ->label('Fixed installment')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->toggleable(),
                 TextColumn::make('interest_rate')
                     ->label('Rate')

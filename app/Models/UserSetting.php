@@ -15,11 +15,13 @@ class UserSetting extends Model
     public const KEY_THEME = 'theme';
     public const KEY_NOTIFICATIONS = 'notifications';
     public const KEY_PRIVACY = 'privacy';
+    public const KEY_DISPLAY_CURRENCY = 'display_currency';
 
     public const DEFAULTS = [
         self::KEY_THEME => 'system',
         self::KEY_NOTIFICATIONS => 'all',
         self::KEY_PRIVACY => 'visible',
+        self::KEY_DISPLAY_CURRENCY => 'EUR',
     ];
 
     public const VALUE_OPTIONS = [
@@ -36,12 +38,20 @@ class UserSetting extends Model
             'visible' => 'Show profile details',
             'private' => 'Hide email and user ID',
         ],
+        self::KEY_DISPLAY_CURRENCY => [
+            'EUR' => 'Euro (€)',
+            'CZK' => 'Czech Koruna (Kč)',
+            'USD' => 'US Dollar ($)',
+            'GBP' => 'British Pound (£)',
+            'CHF' => 'Swiss Franc (CHF)',
+        ],
     ];
 
     public const KEY_LABELS = [
         self::KEY_THEME => 'Theme',
         self::KEY_NOTIFICATIONS => 'Notifications',
         self::KEY_PRIVACY => 'Privacy',
+        self::KEY_DISPLAY_CURRENCY => 'Display currency',
     ];
 
     protected $fillable = [

@@ -38,6 +38,7 @@ export default {
             theme: 'Theme',
             notifications: 'Notifications',
             privacy: 'Privacy',
+            displayCurrency: 'Display currency',
         },
         options: {
             theme: {
@@ -52,6 +53,13 @@ export default {
             privacy: {
                 visible: 'Show profile details',
                 private: 'Hide email and user ID',
+            },
+            displayCurrency: {
+                EUR: 'Euro (€)',
+                CZK: 'Czech Koruna (Kč)',
+                USD: 'US Dollar ($)',
+                GBP: 'British Pound (£)',
+                CHF: 'Swiss Franc (CHF)',
             },
         },
         previewRows: {

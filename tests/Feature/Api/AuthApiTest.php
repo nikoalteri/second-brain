@@ -299,6 +299,44 @@ class AuthApiTest extends TestCase
         ]);
     }
 
+    public function test_authenticated_user_can_update_display_currency(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/settings', [
+            'theme' => 'system',
+            'notifications' => 'all',
+            'privacy' => 'visible',
+            'display_currency' => 'CZK',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('user.settings.display_currency', 'CZK');
+
+        $this->assertDatabaseHas('user_settings', [
+            'user_id' => $user->id,
+            'setting_key' => UserSetting::KEY_DISPLAY_CURRENCY,
+            'setting_value' => 'CZK',
+        ]);
+    }
+
+    public function test_authenticated_user_settings_rejects_invalid_currency(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $response = $this->putJson('/api/v1/auth/settings', [
+            'theme' => 'system',
+            'notifications' => 'all',
+            'privacy' => 'visible',
+            'display_currency' => 'JPY',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['display_currency']);
+    }
+
     public function test_authenticated_user_settings_rejects_invalid_values(): void
     {
         $user = User::factory()->create();

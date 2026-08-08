@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Loans\RelationManagers;
 
 use App\Enums\LoanPaymentStatus;
+use App\Support\Money;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -80,7 +81,7 @@ class PaymentsRelationManager extends RelationManager
                     ->sortable(),
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
                 TextColumn::make('interest_rate')
                     ->label('Rate')

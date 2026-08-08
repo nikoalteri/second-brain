@@ -19,6 +19,7 @@ class UpdateUserSettingsRequest extends FormRequest
             UserSetting::KEY_THEME => ['required', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_THEME)))],
             UserSetting::KEY_NOTIFICATIONS => ['required', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_NOTIFICATIONS)))],
             UserSetting::KEY_PRIVACY => ['required', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_PRIVACY)))],
+            UserSetting::KEY_DISPLAY_CURRENCY => ['sometimes', Rule::in(array_keys(UserSetting::optionsFor(UserSetting::KEY_DISPLAY_CURRENCY)))],
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CreditCards\RelationManagers;
 
 use App\Enums\CreditCardCycleStatus;
 use App\Services\CreditCardCycleService;
+use App\Support\Money;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -83,17 +84,17 @@ class CyclesRelationManager extends RelationManager
                     ->sortable(),
                 TextColumn::make('total_spent')
                     ->label('Spent')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
                 TextColumn::make('interest_amount')
                     ->label('Interest charged')
-                    ->money('EUR'),
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale()),
                 TextColumn::make('stamp_duty_amount')
                     ->label('Stamp duty')
-                    ->money('EUR'),
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale()),
                 TextColumn::make('total_due')
                     ->label('Total due')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
                 TextColumn::make('status')
                     ->label('Status')

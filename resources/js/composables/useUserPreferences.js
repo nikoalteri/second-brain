@@ -6,6 +6,7 @@ const defaults = {
     theme: 'system',
     notifications: 'all',
     privacy: 'visible',
+    display_currency: 'EUR',
 };
 
 export function useUserPreferences() {
@@ -20,6 +21,7 @@ export function useUserPreferences() {
     const locale = computed(() => resolveBrowserLocale());
     const notificationsMode = computed(() => settings.value.notifications);
     const profileIsPrivate = computed(() => settings.value.privacy === 'private');
+    const displayCurrency = computed(() => settings.value.display_currency);
 
     function allowsToast(type = 'success') {
         return notificationsMode.value === 'all' || type === 'error';
@@ -31,6 +33,7 @@ export function useUserPreferences() {
         locale,
         notificationsMode,
         profileIsPrivate,
+        displayCurrency,
         allowsToast,
     };
 }

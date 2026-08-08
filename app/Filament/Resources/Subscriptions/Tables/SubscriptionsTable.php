@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Subscriptions\Tables;
 
 use App\Enums\SubscriptionStatus;
+use App\Support\Money;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Actions\EditAction;
@@ -28,7 +29,7 @@ class SubscriptionsTable
 
                 TextColumn::make('annual_cost')
                     ->label('Renewal amount')
-                    ->money('EUR')
+                    ->money(fn () => Money::currency(), locale: fn () => Money::locale())
                     ->sortable(),
 
                 TextColumn::make('payment_source_type')

@@ -28,6 +28,10 @@ const previewRows = computed(() => [
         label: t('settings.fields.privacy'),
         description: t(`settings.previewRows.privacy.${settingsForm.value.privacy}`),
     },
+    {
+        label: t('settings.fields.displayCurrency'),
+        description: t(`settings.options.displayCurrency.${settingsForm.value.display_currency}`),
+    },
 ]);
 
 async function saveSettings() {
@@ -115,6 +119,20 @@ async function saveSettings() {
                         >
                             <option value="visible">{{ t('settings.options.privacy.visible') }}</option>
                             <option value="private">{{ t('settings.options.privacy.private') }}</option>
+                        </select>
+                    </label>
+
+                    <label class="block">
+                        <span class="text-sm font-medium text-gray-700">{{ t('settings.fields.displayCurrency') }}</span>
+                        <select
+                            v-model="settingsForm.display_currency"
+                            class="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                        >
+                            <option value="EUR">{{ t('settings.options.displayCurrency.EUR') }}</option>
+                            <option value="CZK">{{ t('settings.options.displayCurrency.CZK') }}</option>
+                            <option value="USD">{{ t('settings.options.displayCurrency.USD') }}</option>
+                            <option value="GBP">{{ t('settings.options.displayCurrency.GBP') }}</option>
+                            <option value="CHF">{{ t('settings.options.displayCurrency.CHF') }}</option>
                         </select>
                     </label>
                 </div>
