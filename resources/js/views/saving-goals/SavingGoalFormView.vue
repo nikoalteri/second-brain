@@ -20,9 +20,11 @@ const loadingGoal = ref(false);
 const deleting = ref(false);
 const saving = ref(false);
 const errors = ref({});
+const accounts = ref([]);
 
 const form = ref({
     name: '',
+    account_id: '',
     target_amount: '',
     target_date: '',
     status: 'active',
@@ -31,9 +33,27 @@ const form = ref({
 
 const statusOptions = [
     { value: 'active', label: 'Active' },
-    { value: 'achieved', label: 'Achieved' },
     { value: 'archived', label: 'Archived' },
 ];
+
+const accountOptions = computed(() =>
+    accounts.value.map((account) => ({ value: account.id, label: account.name })),
+);
+
+async function fetchAccounts() {
+    try {
+        const response = await fetch('/api/v1/accounts?per_page=100', {
+            headers: authHeaders(),
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        accounts.value = data.data ?? [];
+    } catch {
+        // Leave the picker empty; handleSubmit's own validation will catch a missing account.
+    }
+}
 
 function authHeaders(includeJson = false) {
     return {
@@ -60,6 +80,7 @@ async function fetchGoal() {
         const { data } = await response.json();
         form.value = {
             name: data.name,
+            account_id: data.account_id,
             target_amount: String(data.target_amount),
             target_date: data.target_date ?? '',
             status: data.status,
@@ -80,6 +101,11 @@ async function handleSubmit() {
         return;
     }
 
+    if (!form.value.account_id) {
+        errors.value.account_id = 'Choose an account';
+        return;
+    }
+
     if (!form.value.target_amount || Number(form.value.target_amount) <= 0) {
         errors.value.target_amount = 'Enter a target amount greater than zero';
         return;
@@ -90,6 +116,7 @@ async function handleSubmit() {
     try {
         const payload = {
             name: form.value.name,
+            account_id: form.value.account_id,
             target_amount: Number(form.value.target_amount),
             target_date: form.value.target_date || null,
             status: form.value.status,
@@ -150,6 +177,7 @@ async function handleDelete() {
 }
 
 onMounted(() => {
+    void fetchAccounts();
     void fetchGoal();
 });
 </script>
@@ -172,6 +200,14 @@ onMounted(() => {
                             placeholder="e.g., Emergency fund"
                             required
                             :error="errors.name"
+                            class="md:col-span-2"
+                        />
+                        <FormSelect
+                            v-model="form.account_id"
+                            label="Account"
+                            placeholder="Choose an account"
+                            :options="accountOptions"
+                            :error="errors.account_id"
                             class="md:col-span-2"
                         />
                         <FormInput

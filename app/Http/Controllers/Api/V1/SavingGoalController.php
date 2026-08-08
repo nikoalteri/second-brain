@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreSavingGoalRequest;
 use App\Http\Requests\Api\UpdateSavingGoalRequest;
 use App\Http\Resources\Api\SavingGoalResource;
+use App\Models\Account;
 use App\Models\SavingGoal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Validation\ValidationException;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -29,8 +31,9 @@ class SavingGoalController extends Controller
                 ! $request->user()->hasRole('superadmin'),
                 fn ($query) => $query->where('user_id', $request->user()->id)
             )
+            ->with('account')
             ->allowedFilters(AllowedFilter::exact('status'))
-            ->allowedSorts('target_date', 'target_amount', 'current_amount', 'created_at')
+            ->allowedSorts('target_date', 'target_amount', 'created_at')
             ->defaultSort('-created_at')
             ->cursorPaginate($request->integer('per_page', 20));
 
@@ -42,10 +45,16 @@ class SavingGoalController extends Controller
     {
         $this->authorize('create', SavingGoal::class);
 
+        // Scoped lookup: HasUserScoping filters non-superadmin to their own accounts, so a
+        // foreign account id 404s. For superadmin (exempt from that scoping in Filament's
+        // account picker), the goal's owner follows the CHOSEN account, not the acting admin.
+        $account = Account::query()->findOrFail($request->validated('account_id'));
+
         $goal = SavingGoal::create(array_merge(
             $request->validated(),
-            ['user_id' => $request->user()->id],
+            ['user_id' => $account->user_id],
         ));
+        $goal->load('account');
 
         return (new SavingGoalResource($goal))->response()->setStatusCode(201);
     }
@@ -54,7 +63,7 @@ class SavingGoalController extends Controller
     public function show(Request $request, SavingGoal $savingGoal): SavingGoalResource
     {
         $this->authorize('view', $savingGoal);
-        $savingGoal->load(['contributions' => fn ($query) => $query->latest('date')->with('account')]);
+        $savingGoal->load('account');
 
         return new SavingGoalResource($savingGoal);
     }
@@ -64,7 +73,20 @@ class SavingGoalController extends Controller
     {
         $this->authorize('update', $savingGoal);
 
-        $savingGoal->update($request->validated());
+        $data = $request->validated();
+
+        if (array_key_exists('account_id', $data)) {
+            $account = Account::query()->findOrFail($data['account_id']);
+
+            if ((int) $account->user_id !== (int) $savingGoal->user_id) {
+                throw ValidationException::withMessages([
+                    'account_id' => 'The account must belong to the same user as the goal.',
+                ]);
+            }
+        }
+
+        $savingGoal->update($data);
+        $savingGoal->load('account');
 
         return new SavingGoalResource($savingGoal);
     }

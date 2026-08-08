@@ -7,7 +7,6 @@ use App\Traits\HasUserScoping;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SavingGoal extends Model
@@ -15,15 +14,14 @@ class SavingGoal extends Model
     use HasFactory, SoftDeletes, HasUserScoping;
 
     protected $attributes = [
-        'current_amount' => 0,
         'status' => 'active',
     ];
 
     protected $fillable = [
         'user_id',
+        'account_id',
         'name',
         'target_amount',
-        'current_amount',
         'target_date',
         'status',
         'notes',
@@ -31,7 +29,6 @@ class SavingGoal extends Model
 
     protected $casts = [
         'target_amount' => 'decimal:2',
-        'current_amount' => 'decimal:2',
         'target_date' => 'date',
         'status' => SavingGoalStatus::class,
     ];
@@ -41,9 +38,18 @@ class SavingGoal extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function contributions(): HasMany
+    public function account(): BelongsTo
     {
-        return $this->hasMany(SavingGoalContribution::class);
+        return $this->belongsTo(Account::class);
+    }
+
+    /**
+     * Progress is the linked account's live balance — never a separately-maintained running
+     * total — so it can never drift from what the account actually holds.
+     */
+    public function getCurrentAmountAttribute(): float
+    {
+        return (float) ($this->account?->balance ?? 0);
     }
 
     public function getProgressPercentAttribute(): float
@@ -54,6 +60,11 @@ class SavingGoal extends Model
             return 0.0;
         }
 
-        return round(min(100.0, max(0.0, ((float) $this->current_amount / $target) * 100)), 1);
+        return round(min(100.0, max(0.0, ($this->current_amount / $target) * 100)), 1);
+    }
+
+    public function getIsAchievedAttribute(): bool
+    {
+        return (float) $this->target_amount > 0 && $this->current_amount >= (float) $this->target_amount;
     }
 }

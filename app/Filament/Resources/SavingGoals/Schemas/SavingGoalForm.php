@@ -23,6 +23,14 @@ class SavingGoalForm
                             ->maxLength(255)
                             ->placeholder('e.g., Emergency fund, New car'),
 
+                        Select::make('account_id')
+                            ->label('Account')
+                            ->relationship('account', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->helperText('Progress tracks this account\'s real balance'),
+
                         TextInput::make('target_amount')
                             ->label('Target amount')
                             ->numeric()

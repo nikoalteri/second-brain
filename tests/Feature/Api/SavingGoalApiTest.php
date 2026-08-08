@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Models\Account;
 use App\Models\SavingGoal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -29,89 +30,69 @@ class SavingGoalApiTest extends TestCase
         $response->assertOk()->assertJsonCount(2, 'data');
     }
 
-    public function test_user_can_create_a_saving_goal(): void
+    public function test_user_can_create_a_saving_goal_linked_to_own_account(): void
     {
         $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
         Sanctum::actingAs($user);
 
         $response = $this->postJson('/api/v1/saving-goals', [
             'name' => 'Emergency fund',
+            'account_id' => $account->id,
             'target_amount' => 5000.5,
             'target_date' => '2027-01-01',
         ]);
 
         $response->assertCreated()
             ->assertJsonPath('data.name', 'Emergency fund')
+            ->assertJsonPath('data.account_id', $account->id)
             ->assertJsonPath('data.target_amount', 5000.5)
             ->assertJsonPath('data.status', 'active');
-
-        $this->assertSame(0.0, (float) $response->json('data.current_amount'));
-        $this->assertSame(0.0, (float) $response->json('data.progress_percent'));
     }
 
-    public function test_contribution_updates_progress_and_flips_status_to_achieved(): void
+    public function test_progress_tracks_the_linked_account_balance_live(): void
     {
         $user = User::factory()->create();
-        $goal = SavingGoal::factory()->create(['user_id' => $user->id, 'target_amount' => 1000]);
-
-        Sanctum::actingAs($user);
-
-        $this->postJson("/api/v1/saving-goals/{$goal->id}/contributions", [
-            'amount' => 600,
-            'date' => '2026-08-08',
-        ])->assertCreated();
-
-        $goal->refresh();
-        $this->assertSame(600.0, (float) $goal->current_amount);
-        $this->assertSame('active', $goal->status->value);
-        $this->assertSame(60.0, $goal->progress_percent);
-
-        $response = $this->postJson("/api/v1/saving-goals/{$goal->id}/contributions", [
-            'amount' => 500,
-            'date' => '2026-08-09',
+        $account = Account::factory()->create(['user_id' => $user->id, 'balance' => 1200.5]);
+        $goal = SavingGoal::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'target_amount' => 5000,
         ]);
 
-        $response->assertCreated();
-        $goal->refresh();
-        $this->assertSame(1100.0, (float) $goal->current_amount);
-        $this->assertSame('achieved', $goal->status->value);
-        $this->assertSame(100.0, $goal->progress_percent);
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/saving-goals/{$goal->id}");
+
+        $response->assertOk()->assertJsonPath('data.is_achieved', false);
+        $this->assertSame(1200.5, (float) $response->json('data.current_amount'));
+        $this->assertSame(24.0, (float) $response->json('data.progress_percent'));
+
+        $account->increment('balance', 3799.5);
+
+        $response = $this->getJson("/api/v1/saving-goals/{$goal->id}");
+
+        $response->assertOk()->assertJsonPath('data.is_achieved', true);
+        $this->assertSame(5000.0, (float) $response->json('data.current_amount'));
+        $this->assertSame(100.0, (float) $response->json('data.progress_percent'));
     }
 
-    public function test_deleting_a_contribution_reverses_its_effect(): void
+    public function test_saving_goal_creation_rejects_another_users_account(): void
     {
         $user = User::factory()->create();
-        $goal = SavingGoal::factory()->create(['user_id' => $user->id, 'target_amount' => 1000]);
+        $otherUser = User::factory()->create();
+        $foreignAccount = Account::factory()->create(['user_id' => $otherUser->id]);
 
         Sanctum::actingAs($user);
 
-        $contribution = $this->postJson("/api/v1/saving-goals/{$goal->id}/contributions", [
-            'amount' => 400,
-            'date' => '2026-08-08',
-        ])->json('data');
-
-        $this->deleteJson("/api/v1/saving-goals/{$goal->id}/contributions/{$contribution['id']}")
-            ->assertNoContent();
-
-        $this->assertSame(0.0, (float) $goal->fresh()->current_amount);
+        $this->postJson('/api/v1/saving-goals', [
+            'name' => 'Emergency fund',
+            'account_id' => $foreignAccount->id,
+            'target_amount' => 1000,
+        ])->assertStatus(404);
     }
 
-    public function test_negative_contribution_withdraws_from_progress(): void
-    {
-        $user = User::factory()->create();
-        $goal = SavingGoal::factory()->create(['user_id' => $user->id, 'target_amount' => 1000, 'current_amount' => 500]);
-
-        Sanctum::actingAs($user);
-
-        $this->postJson("/api/v1/saving-goals/{$goal->id}/contributions", [
-            'amount' => -200,
-            'date' => '2026-08-08',
-        ])->assertCreated();
-
-        $this->assertSame(300.0, (float) $goal->fresh()->current_amount);
-    }
-
-    public function test_user_cannot_contribute_to_another_users_goal(): void
+    public function test_user_cannot_view_another_users_saving_goal(): void
     {
         $owner = User::factory()->create();
         $intruder = User::factory()->create();
@@ -119,29 +100,6 @@ class SavingGoalApiTest extends TestCase
 
         Sanctum::actingAs($intruder);
 
-        $this->postJson("/api/v1/saving-goals/{$goal->id}/contributions", [
-            'amount' => 100,
-            'date' => '2026-08-08',
-        ])->assertStatus(404);
-    }
-
-    public function test_archived_goal_status_is_not_overridden_by_contributions(): void
-    {
-        $user = User::factory()->create();
-        $goal = SavingGoal::factory()->create([
-            'user_id' => $user->id,
-            'target_amount' => 1000,
-            'current_amount' => 1000,
-            'status' => 'archived',
-        ]);
-
-        Sanctum::actingAs($user);
-
-        $this->postJson("/api/v1/saving-goals/{$goal->id}/contributions", [
-            'amount' => 50,
-            'date' => '2026-08-08',
-        ])->assertCreated();
-
-        $this->assertSame('archived', $goal->fresh()->status->value);
+        $this->getJson("/api/v1/saving-goals/{$goal->id}")->assertStatus(404);
     }
 }

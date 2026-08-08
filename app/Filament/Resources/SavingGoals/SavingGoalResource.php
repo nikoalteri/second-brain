@@ -5,7 +5,6 @@ namespace App\Filament\Resources\SavingGoals;
 use App\Filament\Resources\SavingGoals\Pages\CreateSavingGoal;
 use App\Filament\Resources\SavingGoals\Pages\EditSavingGoal;
 use App\Filament\Resources\SavingGoals\Pages\ListSavingGoals;
-use App\Filament\Resources\SavingGoals\RelationManagers\ContributionsRelationManager;
 use App\Filament\Resources\SavingGoals\Schemas\SavingGoalForm;
 use App\Filament\Resources\SavingGoals\Tables\SavingGoalsTable;
 use App\Models\SavingGoal;
@@ -48,13 +47,6 @@ class SavingGoalResource extends Resource
         }
 
         return $query->where('user_id', Auth::id());
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            ContributionsRelationManager::class,
-        ];
     }
 
     public static function getPages(): array

@@ -3,8 +3,8 @@
 namespace App\Filament\Resources\SavingGoals\Pages;
 
 use App\Filament\Resources\SavingGoals\SavingGoalResource;
+use App\Models\Account;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Support\Facades\Auth;
 
 class CreateSavingGoal extends CreateRecord
 {
@@ -12,7 +12,10 @@ class CreateSavingGoal extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['user_id'] = Auth::id();
+        // The goal's owner follows the CHOSEN account, not the acting admin: Filament exempts
+        // superadmin from HasUserScoping, so its account picker can list accounts across every
+        // user.
+        $data['user_id'] = Account::query()->findOrFail($data['account_id'])->user_id;
 
         return $data;
     }

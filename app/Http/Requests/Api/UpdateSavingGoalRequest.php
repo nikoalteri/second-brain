@@ -16,9 +16,10 @@ class UpdateSavingGoalRequest extends FormRequest
     {
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'account_id' => ['sometimes', 'required', 'integer', 'exists:accounts,id'],
             'target_amount' => ['sometimes', 'required', 'numeric', 'min:0.01'],
             'target_date' => ['sometimes', 'nullable', 'date'],
-            'status' => ['sometimes', Rule::in(['active', 'achieved', 'archived'])],
+            'status' => ['sometimes', Rule::in(['active', 'archived'])],
             'notes' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }

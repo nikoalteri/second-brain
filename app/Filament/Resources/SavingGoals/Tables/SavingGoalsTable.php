@@ -23,10 +23,14 @@ class SavingGoalsTable
                     ->searchable()
                     ->weight('medium'),
 
+                TextColumn::make('account.name')
+                    ->label('Account')
+                    ->searchable(),
+
                 TextColumn::make('current_amount')
                     ->label('Saved')
-                    ->formatStateUsing(fn ($state) => Number::currency($state, Money::currency(), Money::locale()))
-                    ->sortable(),
+                    ->state(fn ($record) => $record->current_amount)
+                    ->formatStateUsing(fn ($state) => Number::currency($state, Money::currency(), Money::locale())),
 
                 TextColumn::make('target_amount')
                     ->label('Target')
@@ -35,6 +39,7 @@ class SavingGoalsTable
 
                 TextColumn::make('progress_percent')
                     ->label('Progress')
+                    ->state(fn ($record) => $record->progress_percent)
                     ->formatStateUsing(fn ($state) => number_format((float) $state, 1) . '%')
                     ->color(fn ($state) => match (true) {
                         $state >= 100 => 'success',
@@ -57,7 +62,6 @@ class SavingGoalsTable
                 SelectFilter::make('status')
                     ->options([
                         'active' => 'Active',
-                        'achieved' => 'Achieved',
                         'archived' => 'Archived',
                     ]),
             ])

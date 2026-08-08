@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\V1\CreditCardPaymentController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\LoanController;
-use App\Http\Controllers\Api\V1\SavingGoalContributionController;
 use App\Http\Controllers\Api\V1\SavingGoalController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SubscriptionFrequencyController;
@@ -110,8 +109,6 @@ Route::prefix('v1')->group(function () {
         Route::put('saving-goals/{savingGoal}', [SavingGoalController::class, 'update']);
         Route::patch('saving-goals/{savingGoal}', [SavingGoalController::class, 'update']);
         Route::delete('saving-goals/{savingGoal}', [SavingGoalController::class, 'destroy']);
-        Route::post('saving-goals/{savingGoal}/contributions', [SavingGoalContributionController::class, 'store']);
-        Route::delete('saving-goals/{savingGoal}/contributions/{contribution}', [SavingGoalContributionController::class, 'destroy']);
 
         Route::put('budgets/monthly/{transactionCategory}', [BudgetController::class, 'upsert']);
         Route::delete('budgets/monthly/{transactionCategory}', [BudgetController::class, 'destroy']);
