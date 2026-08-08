@@ -186,6 +186,7 @@ class RevolvingCreditCalculator
         $fixedPayment = (float) ($card->fixed_payment ?? 0);
         $annualRate = (float) ($card->interest_rate ?? 0);
         $stampDuty = (float) ($card->stamp_duty_amount ?? 0);
+        $includesStampDuty = (bool) ($card->fixed_payment_includes_stamp_duty ?? false);
         $currentDebt = max(0.0, (float) $card->current_balance);
         $cycleSpent = (float) ($cycle->total_spent ?? 0);
 
@@ -222,8 +223,20 @@ class RevolvingCreditCalculator
 
         // Split payment: Interest + Principal
         // Payment cannot exceed total exposure
-        $effectiveInstallment = min($fixedPayment, $totalExposed + $interestAmount);
-        $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount), 2);
+        if ($includesStampDuty) {
+            // D-03 inclusive mode: the stamp duty is already inside the fixed payment, so it
+            // consumes part of the installment. principal = installment - interest - stamp duty,
+            // and total_due is the fixed payment itself (adding the duty on top would bill it twice).
+            $effectiveInstallment = min($fixedPayment, $totalExposed + $interestAmount + $stampDuty);
+            $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount - $stampDuty), 2);
+            $totalDue = round($effectiveInstallment, 2);
+        } else {
+            // Exclusive mode (default): the stamp duty is charged on top of the fixed payment.
+            $effectiveInstallment = min($fixedPayment, $totalExposed + $interestAmount);
+            $principalAmount = round(max(0.0, $effectiveInstallment - $interestAmount), 2);
+            $totalDue = round($effectiveInstallment + $stampDuty, 2);
+        }
+
         $nextBalance = round(max(0.0, $totalExposed - $principalAmount), 2);
 
         return [
@@ -231,7 +244,7 @@ class RevolvingCreditCalculator
             'principal_amount' => $principalAmount,
             'stamp_duty_amount' => round($stampDuty, 2),
             'installment_amount' => round($effectiveInstallment, 2),
-            'total_due' => round($effectiveInstallment + $stampDuty, 2),
+            'total_due' => $totalDue,
             'next_balance' => $nextBalance,
         ];
     }
