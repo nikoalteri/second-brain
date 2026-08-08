@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CreditCards\RelationManagers;
 
 use App\Enums\CreditCardPaymentStatus;
+use App\Services\CreditCardCycleService;
 use App\Support\Money;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -82,23 +83,10 @@ class PaymentsRelationManager extends RelationManager
                         'confirmed_interest_amount' => $record->confirmed_interest_amount ?? $record->interest_amount,
                     ])
                     ->action(function ($record, array $data) {
-                        $statementInterest = round((float) $data['confirmed_interest_amount'], 2);
-                        $stampDuty = (float) $record->stamp_duty_amount;
-                        $totalAmount = (float) $record->total_amount;
-                        $newPrincipal = round(max(0.0, $totalAmount - $statementInterest - $stampDuty), 2);
-
-                        $record->update([
-                            'confirmed_interest_amount' => $statementInterest,
-                            'interest_amount' => $statementInterest,
-                            'principal_amount' => $newPrincipal,
-                        ]);
-
-                        if ($record->cycle) {
-                            $record->cycle->update([
-                                'interest_amount' => $statementInterest,
-                                'principal_amount' => $newPrincipal,
-                            ]);
-                        }
+                        app(CreditCardCycleService::class)->confirmRealInterest(
+                            $record,
+                            (float) $data['confirmed_interest_amount'],
+                        );
 
                         Notification::make()
                             ->title('Interest confirmed, balance recalculated')

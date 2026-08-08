@@ -138,6 +138,37 @@ class CreditCardCycleService
         });
     }
 
+    /**
+     * Overwrite a paid payment's interest with the figure from the real statement, once it
+     * arrives. The daily-balance engine is an estimate; this lets the actual debt (principal)
+     * be corrected so it never permanently drifts from what the issuer actually charged.
+     * Recomputes principal from the fixed total_amount so the installment itself is unchanged.
+     */
+    public function confirmRealInterest(CreditCardPayment $payment, float $statementInterest): CreditCardPayment
+    {
+        return DB::transaction(function () use ($payment, $statementInterest) {
+            $statementInterest = round($statementInterest, 2);
+            $stampDuty = (float) $payment->stamp_duty_amount;
+            $totalAmount = (float) $payment->total_amount;
+            $newPrincipal = round(max(0.0, $totalAmount - $statementInterest - $stampDuty), 2);
+
+            $payment->update([
+                'confirmed_interest_amount' => $statementInterest,
+                'interest_amount' => $statementInterest,
+                'principal_amount' => $newPrincipal,
+            ]);
+
+            if ($payment->cycle) {
+                $payment->cycle->update([
+                    'interest_amount' => $statementInterest,
+                    'principal_amount' => $newPrincipal,
+                ]);
+            }
+
+            return $payment;
+        });
+    }
+
     public function syncIssuedCycle(CreditCardCycle $cycle): void
     {
         $cycle->loadMissing(['creditCard', 'payments']);

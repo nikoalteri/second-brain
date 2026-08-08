@@ -411,6 +411,76 @@ class CreditCardApiTest extends TestCase
         ]);
     }
 
+    public function test_confirming_real_interest_recomputes_principal_and_balance(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $creditCard = CreditCard::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'current_balance' => 1000,
+        ]);
+        $cycle = CreditCardCycle::factory()->issued()->create([
+            'credit_card_id' => $creditCard->id,
+            'total_due' => 250,
+        ]);
+        $payment = CreditCardPayment::create([
+            'credit_card_id' => $creditCard->id,
+            'credit_card_cycle_id' => $cycle->id,
+            'due_date' => '2026-05-19',
+            'actual_date' => '2026-05-19',
+            'installment_amount' => 250,
+            'interest_amount' => 20,
+            'principal_amount' => 228,
+            'stamp_duty_amount' => 2,
+            'total_amount' => 250,
+            'status' => 'paid',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson(
+            "/api/v1/credit-cards/{$creditCard->id}/payments/{$payment->id}/confirm-interest",
+            ['confirmed_interest_amount' => 25.5],
+        );
+
+        $response->assertOk()
+            ->assertJsonPath('data.interest_amount', 25.5)
+            ->assertJsonPath('data.confirmed_interest_amount', 25.5)
+            ->assertJsonPath('data.principal_amount', 222.5);
+
+        $payment->refresh();
+        $this->assertSame(25.5, (float) $payment->confirmed_interest_amount);
+        $this->assertSame(222.5, (float) $payment->principal_amount);
+        $this->assertSame($cycle->fresh()->interest_amount, $payment->interest_amount);
+    }
+
+    public function test_confirming_interest_on_a_pending_payment_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $creditCard = CreditCard::factory()->create(['user_id' => $user->id, 'account_id' => $account->id]);
+        $cycle = CreditCardCycle::factory()->issued()->create(['credit_card_id' => $creditCard->id]);
+        $payment = CreditCardPayment::create([
+            'credit_card_id' => $creditCard->id,
+            'credit_card_cycle_id' => $cycle->id,
+            'due_date' => '2026-05-19',
+            'installment_amount' => 250,
+            'interest_amount' => 20,
+            'principal_amount' => 228,
+            'stamp_duty_amount' => 2,
+            'total_amount' => 250,
+            'status' => 'pending',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson(
+            "/api/v1/credit-cards/{$creditCard->id}/payments/{$payment->id}/confirm-interest",
+            ['confirmed_interest_amount' => 25],
+        )->assertStatus(422);
+    }
+
     public function test_user_cannot_mark_paid_against_another_users_credit_card_resource(): void
     {
         $owner = User::factory()->create();

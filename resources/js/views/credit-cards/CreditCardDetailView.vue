@@ -21,6 +21,9 @@ const issuingCycleId = ref(null);
 const deletingCycleId = ref(null);
 const payingPaymentId = ref(null);
 const deletingPaymentId = ref(null);
+const confirmingInterestId = ref(null);
+const interestConfirmPaymentId = ref(null);
+const interestConfirmValue = ref('');
 const savingExpense = ref(false);
 const deletingExpenseId = ref(null);
 const expandedCycles = ref(new Set());
@@ -340,6 +343,47 @@ function confirmDeletePayment(payment) {
     paymentToDelete.value = payment;
 }
 
+function startConfirmInterest(payment) {
+    interestConfirmPaymentId.value = payment.id;
+    interestConfirmValue.value = String(payment.confirmed_interest_amount ?? payment.interest_amount ?? 0);
+}
+
+function cancelConfirmInterest() {
+    interestConfirmPaymentId.value = null;
+    interestConfirmValue.value = '';
+}
+
+async function submitConfirmInterest(paymentId) {
+    const amount = Number(interestConfirmValue.value);
+
+    if (Number.isNaN(amount) || amount < 0) {
+        addToast('Enter a valid interest amount.', 'error');
+        return;
+    }
+
+    confirmingInterestId.value = paymentId;
+
+    try {
+        const response = await fetch(`/api/v1/credit-cards/${route.params.id}/payments/${paymentId}/confirm-interest`, {
+            method: 'POST',
+            headers: authHeaders(true),
+            body: JSON.stringify({ confirmed_interest_amount: amount }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to confirm interest.');
+        }
+
+        await fetchCard();
+        cancelConfirmInterest();
+        addToast('Interest confirmed, balance recalculated.', 'success');
+    } catch {
+        addToast('Could not confirm the interest. Please try again.', 'error');
+    } finally {
+        confirmingInterestId.value = null;
+    }
+}
+
 async function deletePayment() {
     if (!paymentToDelete.value) return;
 
@@ -622,45 +666,100 @@ onMounted(() => {
                                 <th class="pb-3 pr-4 text-left font-medium text-gray-500">Due</th>
                                 <th class="pb-3 pr-4 text-left font-medium text-gray-500">Paid on</th>
                                 <th class="pb-3 pr-4 text-right font-medium text-gray-500">Total</th>
+                                <th class="pb-3 pr-4 text-right font-medium text-gray-500">Interest</th>
                                 <th class="pb-3 pr-4 text-left font-medium text-gray-500">Status</th>
                                 <th class="pb-3 pr-4 text-left font-medium text-gray-500">Transactions</th>
                                 <th class="pb-3 text-right font-medium text-gray-500">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                            <tr v-for="payment in payments" :key="payment.id">
-                                <td class="py-3 pr-4 text-gray-900">{{ payment.due_date ?? '—' }}</td>
-                                <td class="py-3 pr-4 text-gray-500">{{ payment.actual_date ?? '—' }}</td>
-                                <td class="py-3 pr-4 text-right font-mono text-gray-900">{{ formatCurrency(payment.total_amount ?? 0) }}</td>
-                                <td class="py-3 pr-4">
-                                    <span :class="paymentStatusClass(payment.status)" class="rounded px-2 py-0.5 text-sm capitalize">
-                                        {{ payment.status }}
-                                    </span>
-                                </td>
-                                <td class="py-3 pr-4 text-xs" :class="payment.transaction_posted ? 'text-emerald-600' : 'text-gray-500'">
-                                    {{ payment.transaction_posted ? 'Posted' : 'Pending' }}
-                                </td>
-                                <td class="py-3 text-right">
-                                    <div class="flex justify-end gap-2">
-                                        <button
-                                            v-if="payment.status === 'pending'"
-                                            type="button"
-                                            class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60"
-                                            :disabled="payingPaymentId === payment.id"
-                                            @click="markPaymentAsPaid(payment.id)"
-                                        >
-                                            {{ payingPaymentId === payment.id ? 'Recording…' : 'Mark as paid' }}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
-                                            @click="confirmDeletePayment(payment)"
-                                        >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            <template v-for="payment in payments" :key="payment.id">
+                                <tr>
+                                    <td class="py-3 pr-4 text-gray-900">{{ payment.due_date ?? '—' }}</td>
+                                    <td class="py-3 pr-4 text-gray-500">{{ payment.actual_date ?? '—' }}</td>
+                                    <td class="py-3 pr-4 text-right font-mono text-gray-900">{{ formatCurrency(payment.total_amount ?? 0) }}</td>
+                                    <td class="py-3 pr-4 text-right font-mono text-gray-900">
+                                        {{ formatCurrency(payment.interest_amount ?? 0) }}
+                                        <span
+                                            v-if="payment.confirmed_interest_amount !== null"
+                                            class="ml-1 rounded bg-emerald-500/10 px-1.5 py-0.5 text-xs font-medium text-emerald-600"
+                                            title="Confirmed against the real statement"
+                                        >confirmed</span>
+                                        <span
+                                            v-else
+                                            class="ml-1 rounded bg-gray-500/10 px-1.5 py-0.5 text-xs font-medium text-gray-500"
+                                            title="Estimated, not yet confirmed against a statement"
+                                        >estimated</span>
+                                    </td>
+                                    <td class="py-3 pr-4">
+                                        <span :class="paymentStatusClass(payment.status)" class="rounded px-2 py-0.5 text-sm capitalize">
+                                            {{ payment.status }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 pr-4 text-xs" :class="payment.transaction_posted ? 'text-emerald-600' : 'text-gray-500'">
+                                        {{ payment.transaction_posted ? 'Posted' : 'Pending' }}
+                                    </td>
+                                    <td class="py-3 text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <button
+                                                v-if="payment.status === 'pending'"
+                                                type="button"
+                                                class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:opacity-60"
+                                                :disabled="payingPaymentId === payment.id"
+                                                @click="markPaymentAsPaid(payment.id)"
+                                            >
+                                                {{ payingPaymentId === payment.id ? 'Recording…' : 'Mark as paid' }}
+                                            </button>
+                                            <button
+                                                v-if="payment.status === 'paid' && interestConfirmPaymentId !== payment.id"
+                                                type="button"
+                                                class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100"
+                                                @click="startConfirmInterest(payment)"
+                                            >
+                                                Confirm interest
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100"
+                                                @click="confirmDeletePayment(payment)"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-if="interestConfirmPaymentId === payment.id">
+                                    <td colspan="7" class="bg-amber-50/60 px-4 py-3">
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <label class="text-sm font-medium text-gray-700">
+                                                Interest from the real statement
+                                            </label>
+                                            <input
+                                                v-model="interestConfirmValue"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                class="w-32 rounded-lg border border-gray-300 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                                            />
+                                            <button
+                                                type="button"
+                                                class="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:opacity-60"
+                                                :disabled="confirmingInterestId === payment.id"
+                                                @click="submitConfirmInterest(payment.id)"
+                                            >
+                                                {{ confirmingInterestId === payment.id ? 'Saving…' : 'Save' }}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                                @click="cancelConfirmInterest"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
                 </div>

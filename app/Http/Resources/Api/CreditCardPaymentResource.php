@@ -16,6 +16,7 @@ class CreditCardPaymentResource extends JsonResource
             'actual_date' => $this->actual_date?->toDateString(),
             'installment_amount' => $this->installment_amount !== null ? (float) $this->installment_amount : null,
             'interest_amount' => (float) ($this->interest_amount ?? 0),
+            'confirmed_interest_amount' => $this->confirmed_interest_amount !== null ? (float) $this->confirmed_interest_amount : null,
             'principal_amount' => (float) ($this->principal_amount ?? 0),
             'stamp_duty_amount' => (float) ($this->stamp_duty_amount ?? 0),
             'total_amount' => (float) ($this->total_amount ?? 0),

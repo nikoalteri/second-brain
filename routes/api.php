@@ -83,6 +83,7 @@ Route::prefix('v1')->group(function () {
         Route::post('credit-cards/{creditCard}/cycles', [CreditCardCycleController::class, 'store']);
         Route::post('credit-cards/{creditCard}/cycles/{cycle}/issue', [CreditCardCycleController::class, 'issue']);
         Route::post('credit-cards/{creditCard}/payments/{payment}/mark-paid', [CreditCardPaymentController::class, 'markPaid']);
+        Route::post('credit-cards/{creditCard}/payments/{payment}/confirm-interest', [CreditCardPaymentController::class, 'confirmInterest']);
         Route::post('credit-cards/{creditCard}/expenses', [CreditCardExpenseController::class, 'store']);
         Route::put('credit-cards/{creditCard}', [CreditCardController::class, 'update']);
         Route::patch('credit-cards/{creditCard}', [CreditCardController::class, 'update']);
