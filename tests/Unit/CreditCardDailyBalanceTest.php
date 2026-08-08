@@ -374,19 +374,18 @@ class CreditCardDailyBalanceTest extends TestCase
     }
 
     #[Test]
-    public function daily_balance_interest_is_lower_than_direct_monthly_rate(): void
+    public function daily_balance_interest_over_20_days_is_lower_than_the_flat_monthly_rate(): void
     {
         $calculator = new RevolvingCreditCalculator();
 
         // 20-day cycle with constant balance
-        $dailyBalances = array_fill_keys(range(1, 20), 542.0);
+        $dailyBalances = array_fill_keys(range(1, 20), 600.0);
 
         $dailyInterest = $calculator->calculateInterestFromDailyBalances($dailyBalances, 14.0);
 
-        // Direct monthly: 542 * 0.14 = 75.88
-        // Daily over 20 days: 542 * (0.14/365) * 20 = 542 * 0.00766... = 4.16
-        // (Daily method accumulates interest slowly)
-        $this->assertLessThan(75.88, $dailyInterest);
-        $this->assertEqualsWithDelta(4.16, $dailyInterest, 0.01);
+        $monthlyInterest = $calculator->calculateInterestDirectMonthly(600.0, 14.0);
+        $this->assertSame(7.0, $monthlyInterest);
+        $this->assertLessThan($monthlyInterest, $dailyInterest);
+        $this->assertEqualsWithDelta(4.60, $dailyInterest, 0.01);
     }
 }

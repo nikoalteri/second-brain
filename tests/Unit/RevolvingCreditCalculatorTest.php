@@ -26,7 +26,7 @@ class RevolvingCreditCalculatorTest extends TestCase
     public function it_calculates_daily_balances_for_a_cycle()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 692.00, // 542 pre-cycle + 150 total_spent (withoutEvents, so manual)
+            'current_balance' => 750.00, // 600 pre-cycle + 150 total_spent (withoutEvents, so manual)
             'interest_rate' => 14.00,
         ]);
 
@@ -56,19 +56,19 @@ class RevolvingCreditCalculatorTest extends TestCase
 
         $dailyBalances = $this->calculator->calculateDailyBalances($cycle);
 
-        // Starting balance: 542
-        // Mar 1: 542 + 100 = 642
-        $this->assertEquals(642.00, $dailyBalances['2026-03-01']);
+        // Starting balance: 600
+        // Mar 1: 600 + 100 = 700
+        $this->assertEquals(700.00, $dailyBalances['2026-03-01']);
 
         // Mar 2-4: no expenses
-        $this->assertEquals(642.00, $dailyBalances['2026-03-02']);
-        $this->assertEquals(642.00, $dailyBalances['2026-03-04']);
+        $this->assertEquals(700.00, $dailyBalances['2026-03-02']);
+        $this->assertEquals(700.00, $dailyBalances['2026-03-04']);
 
-        // Mar 5: 642 + 50 = 692
-        $this->assertEquals(692.00, $dailyBalances['2026-03-05']);
+        // Mar 5: 700 + 50 = 750
+        $this->assertEquals(750.00, $dailyBalances['2026-03-05']);
 
-        // Mar 20: still 692
-        $this->assertEquals(692.00, $dailyBalances['2026-03-20']);
+        // Mar 20: still 750
+        $this->assertEquals(750.00, $dailyBalances['2026-03-20']);
 
         // Should have exactly 20 days (Mar 1-20)
         $this->assertCount(20, $dailyBalances);
@@ -78,40 +78,40 @@ class RevolvingCreditCalculatorTest extends TestCase
     public function it_calculates_interest_from_daily_balances()
     {
         $dailyBalances = [
-            '2026-03-01' => 542.00,
-            '2026-03-02' => 542.00,
-            '2026-03-03' => 542.00,
-            '2026-03-04' => 542.00,
-            '2026-03-05' => 542.00,
-            '2026-03-06' => 542.00,
-            '2026-03-07' => 542.00,
-            '2026-03-08' => 542.00,
-            '2026-03-09' => 542.00,
-            '2026-03-10' => 542.00,
-            '2026-03-11' => 542.00,
-            '2026-03-12' => 542.00,
-            '2026-03-13' => 542.00,
-            '2026-03-14' => 542.00,
-            '2026-03-15' => 542.00,
-            '2026-03-16' => 542.00,
-            '2026-03-17' => 542.00,
-            '2026-03-18' => 542.00,
-            '2026-03-19' => 542.00,
-            '2026-03-20' => 542.00,
+            '2026-03-01' => 600.00,
+            '2026-03-02' => 600.00,
+            '2026-03-03' => 600.00,
+            '2026-03-04' => 600.00,
+            '2026-03-05' => 600.00,
+            '2026-03-06' => 600.00,
+            '2026-03-07' => 600.00,
+            '2026-03-08' => 600.00,
+            '2026-03-09' => 600.00,
+            '2026-03-10' => 600.00,
+            '2026-03-11' => 600.00,
+            '2026-03-12' => 600.00,
+            '2026-03-13' => 600.00,
+            '2026-03-14' => 600.00,
+            '2026-03-15' => 600.00,
+            '2026-03-16' => 600.00,
+            '2026-03-17' => 600.00,
+            '2026-03-18' => 600.00,
+            '2026-03-19' => 600.00,
+            '2026-03-20' => 600.00,
         ];
 
-        // 20 days at 542 * (14% / 365)
-        // Expected: 542 * 0.14 / 365 * 20 ≈ 4.16
+        // 20 days at 600 * (14% / 365)
+        // Expected: 600 * 0.14 / 365 * 20 ≈ 4.60
         $interest = $this->calculator->calculateInterestFromDailyBalances($dailyBalances, 14.00);
 
-        $this->assertEqualsWithDelta(4.16, $interest, 0.01);
+        $this->assertEqualsWithDelta(4.60, $interest, 0.01);
     }
 
     #[Test]
     public function first_cycle_has_zero_interest()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 542.00,
+            'current_balance' => 600.00,
             'interest_rate' => 14.00,
             'fixed_payment' => 250.00,
             'credit_limit' => 4000.00,
@@ -182,15 +182,13 @@ class RevolvingCreditCalculatorTest extends TestCase
     }
 
     #[Test]
-    public function it_validates_user_bank_statement_14_percent()
+    public function daily_balance_interest_over_a_31_day_cycle_at_14_percent()
     {
-        // User's real case: 542 debt, 14% rate, expects 75.88 interest
-        // Using daily balance with varying balance throughout cycle
-
         $card = CreditCard::factory()->create([
-            'current_balance' => 542.00,
+            'current_balance' => 600.00,
             'interest_rate' => 14.00,
             'fixed_payment' => 250.00,
+            'stamp_duty_amount' => 2,
         ]);
 
         // Simulate a second cycle (not first)
@@ -201,31 +199,16 @@ class RevolvingCreditCalculatorTest extends TestCase
 
         $cycle = CreditCardCycle::factory()->create([
             'credit_card_id' => $card->id,
-            'period_start_date' => Carbon::parse('2026-03-21'),
-            'statement_date' => Carbon::parse('2026-04-20'),
+            'period_start_date' => Carbon::parse('2027-05-07'),
+            'statement_date' => Carbon::parse('2027-06-06'),
             'total_spent' => 0,
             'status' => 'open',
         ]);
 
-        // With constant 542 balance for 31 days:
-        // Interest = 542 * (0.14 / 365) * 31 = 6.49 (not 75.88)
-        // 
-        // The 75.88 figure suggests either:
-        // 1. Different balance variation throughout the cycle
-        // 2. Interest calculation method is monthly: 542 * 0.14 = 75.88
-        //
-        // User confirmed 14% is annual, applied monthly
-        // So: 542 * (14 / 100) = 75.88 ✓
-
-        // For now, daily method would give ~6.49
-        // This validates that daily method is different from user's bank
-        // User will provide more statements to confirm which method their bank uses
-
         $breakdown = $this->calculator->calculatePaymentBreakdown($cycle);
-        
-        // Daily method for constant balance: ~6.49
-        $this->assertGreaterThan(5.0, $breakdown['interest_amount']);
-        $this->assertLessThan(8.0, $breakdown['interest_amount']);
+
+        // 31 days × 600 balance-days × 14% / 365 = 7.13
+        $this->assertEqualsWithDelta(7.13, $breakdown['interest_amount'], 0.01);
     }
 
     #[Test]
@@ -295,20 +278,25 @@ class RevolvingCreditCalculatorTest extends TestCase
     #[Test]
     public function it_calculates_interest_using_direct_monthly_method()
     {
-        $currentBalance = 542.00;
+        $currentBalance = 600.00;
         $annualRate = 14.00;
 
-        // Direct monthly: 542 * (14 / 100) = 75.88
+        // Flat monthly: 600 * (14 / 100 / 12) = 7.00
         $interest = $this->calculator->calculateInterestDirectMonthly($currentBalance, $annualRate);
 
-        $this->assertEqualsWithDelta(75.88, $interest, 0.01);
+        $this->assertSame(7.0, $interest);
+
+        $this->assertSame(10.0, $this->calculator->calculateInterestDirectMonthly(1000.00, 12.0));
+        $this->assertSame(0.0, $this->calculator->calculateInterestDirectMonthly(0.0, 14.0));
+        $this->assertSame(0.0, $this->calculator->calculateInterestDirectMonthly(600.00, 0.0));
+        $this->assertSame(0.0, $this->calculator->calculateInterestDirectMonthly(-50.0, 14.0));
     }
 
     #[Test]
     public function it_uses_direct_monthly_method_when_configured()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 542.00,
+            'current_balance' => 600.00,
             'interest_rate' => 14.00,
             'fixed_payment' => 250.00,
             'interest_calculation_method' => 'direct_monthly',
@@ -329,15 +317,17 @@ class RevolvingCreditCalculatorTest extends TestCase
 
         $breakdown = $this->calculator->calculatePaymentBreakdown($cycle);
 
-        // Should use direct monthly: 542 * 0.14 = 75.88
-        $this->assertEqualsWithDelta(75.88, $breakdown['interest_amount'], 0.01);
+        // direct_monthly: 600 * 14 / 100 / 12 = 7.00
+        $this->assertSame(7.0, $breakdown['interest_amount']);
+        $this->assertSame(243.0, $breakdown['principal_amount']);
+        $this->assertSame(252.0, $breakdown['total_due']);
     }
 
     #[Test]
     public function daily_balance_and_direct_monthly_produce_different_results()
     {
         $card = CreditCard::factory()->create([
-            'current_balance' => 542.00,
+            'current_balance' => 600.00,
             'interest_rate' => 14.00,
             'fixed_payment' => 250.00,
             'interest_calculation_method' => 'daily_balance',
@@ -350,6 +340,8 @@ class RevolvingCreditCalculatorTest extends TestCase
 
         $cycle = CreditCardCycle::factory()->create([
             'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-05-07'),
+            'statement_date' => Carbon::parse('2027-06-06'),
             'total_spent' => 0,
             'status' => 'open',
         ]);
@@ -365,8 +357,9 @@ class RevolvingCreditCalculatorTest extends TestCase
 
         // They should produce different results
         $this->assertNotEquals($breakdownDaily['interest_amount'], $breakdownMonthly['interest_amount']);
-        
-        // Direct monthly should be ~75.88, daily should be much lower (~6.49 for 31 days)
-        $this->assertGreaterThan($breakdownDaily['interest_amount'], $breakdownMonthly['interest_amount']);
+
+        // Daily accrual over a 31-day period and a flat monthly twelfth are close but not identical.
+        $this->assertEqualsWithDelta(7.13, $breakdownDaily['interest_amount'], 0.01);
+        $this->assertSame(7.0, $breakdownMonthly['interest_amount']);
     }
 }

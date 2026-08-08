@@ -30,7 +30,7 @@ enum InterestCalculationMethod: string implements HasLabel, HasColor
     {
         return match ($this) {
             self::DAILY_BALANCE => 'Interest = Σ(daily_balance × rate/365) per each day',
-            self::DIRECT_MONTHLY => 'Interest = balance × (annual_rate / 100) applied directly each month',
+            self::DIRECT_MONTHLY => 'Interest = balance × (annual_rate / 100 / 12) — a flat twelfth of the annual rate, applied directly each month',
         };
     }
 }

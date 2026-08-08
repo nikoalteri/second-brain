@@ -142,11 +142,14 @@ class RevolvingCreditCalculator
     }
 
     /**
-     * Calculate total interest using direct monthly method
-     * 
-     * Interest = current_balance × (annual_rate / 100)
-     * This applies the annual rate directly as a monthly charge
-     * 
+     * Calculate total interest using the direct monthly method.
+     *
+     * Interest = current_balance × (annual_rate / 100 / 12)
+     *
+     * The stored rate is the ANNUAL nominal rate (TAN); this method charges a flat twelfth of
+     * it per month. It is a deliberate simplification — use DAILY_BALANCE for day-precise
+     * accrual. Before Phase 19 this applied the FULL annual rate every month (~12x too high).
+     *
      * @param float $currentBalance
      * @param float $annualRatePercent
      * @return float Total interest amount
@@ -159,7 +162,7 @@ class RevolvingCreditCalculator
             return 0.0;
         }
 
-        return round($currentBalance * ($annualRatePercent / 100), 2);
+        return round($currentBalance * ($annualRatePercent / 100 / 12), 2);
     }
 
     /**
