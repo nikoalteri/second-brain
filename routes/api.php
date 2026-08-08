@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SubscriptionFrequencyController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Controllers\Api\V1\TransferController;
+use App\Http\Controllers\Api\V1\TwoFactorAuthController;
 use App\Http\Controllers\Api\V1\UserSettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/register', [AuthController::class, 'register']);
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/auth/two-factor/login', [AuthController::class, 'twoFactorLogin'])
+        ->middleware('throttle:10,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [AuthController::class, 'me']);
@@ -33,6 +36,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
         Route::put('/auth/settings', [UserSettingsController::class, 'update']);
+        Route::post('/auth/two-factor/enable', [TwoFactorAuthController::class, 'enable']);
+        Route::post('/auth/two-factor/confirm', [TwoFactorAuthController::class, 'confirm']);
+        Route::post('/auth/two-factor/disable', [TwoFactorAuthController::class, 'disable']);
+        Route::post('/auth/two-factor/recovery-codes', [TwoFactorAuthController::class, 'regenerateRecoveryCodes']);
     });
 
     // ─── Read endpoints — 100 req/min ──────────────────────────────────────

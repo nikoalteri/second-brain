@@ -10,6 +10,7 @@ export const useAuthStore = defineStore('auth', () => {
     const loading = ref(false);
     const error = ref(null);
     const validationErrors = ref({});
+    const twoFactorToken = ref(null);
 
     const isAuthenticated = computed(() => !!accessToken.value);
     const isAdmin = computed(() => !!user.value?.is_admin);
@@ -121,6 +122,43 @@ export const useAuthStore = defineStore('auth', () => {
                 return false;
             }
 
+            if (data.two_factor_required) {
+                twoFactorToken.value = data.two_factor_token;
+                return 'two_factor_required';
+            }
+
+            setTokens(data.access_token, data.refresh_token, data.user ?? null);
+            return true;
+        } catch {
+            error.value = 'Network error. Please try again.';
+            return false;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function verifyTwoFactor(code) {
+        loading.value = true;
+        clearFeedback();
+
+        try {
+            const response = await fetch('/api/v1/auth/two-factor/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ two_factor_token: twoFactorToken.value, code }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setRequestError(data, 'Invalid code.');
+                return false;
+            }
+
+            twoFactorToken.value = null;
             setTokens(data.access_token, data.refresh_token, data.user ?? null);
             return true;
         } catch {
@@ -277,7 +315,9 @@ export const useAuthStore = defineStore('auth', () => {
         validationErrors,
         isAuthenticated,
         isAdmin,
+        twoFactorToken,
         login,
+        verifyTwoFactor,
         register,
         requestPasswordReset,
         resetPassword,

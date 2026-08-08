@@ -7,13 +7,16 @@ use App\Http\Requests\Api\ForgotPasswordRequest;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
 use App\Http\Requests\Api\ResetPasswordRequest;
+use App\Http\Requests\Api\TwoFactorLoginRequest;
 use App\Http\Requests\Api\UpdateProfileRequest;
 use App\Models\User;
+use App\Services\TwoFactorAuthService;
 use App\Services\UserService;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -25,8 +28,11 @@ use Spatie\Permission\Models\Role;
  */
 class AuthController extends Controller
 {
+    private const TWO_FACTOR_CACHE_PREFIX = 'two_factor_challenge:';
+
     public function __construct(
         private readonly UserService $userService,
+        private readonly TwoFactorAuthService $twoFactor,
     ) {
     }
 
@@ -49,6 +55,49 @@ class AuthController extends Controller
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        if ($user->hasTwoFactorEnabled()) {
+            $challenge = (string) Str::uuid();
+            Cache::put(self::TWO_FACTOR_CACHE_PREFIX . $challenge, $user->id, now()->addMinutes(5));
+
+            return response()->json([
+                'two_factor_required' => true,
+                'two_factor_token' => $challenge,
+            ]);
+        }
+
+        $user->tokens()->delete();
+
+        return response()->json($this->issueTokens($user));
+    }
+
+    /**
+     * Complete a login that required two-factor authentication: exchange the short-lived
+     * challenge token plus a TOTP (or recovery) code for real access/refresh tokens. No
+     * Sanctum token exists for this user until this step succeeds.
+     *
+     * @group Authentication
+     * @unauthenticated
+     */
+    public function twoFactorLogin(TwoFactorLoginRequest $request): JsonResponse
+    {
+        $cacheKey = self::TWO_FACTOR_CACHE_PREFIX . $request->validated('two_factor_token');
+        $userId = Cache::get($cacheKey);
+
+        if (! $userId) {
+            return response()->json(['message' => 'This login challenge has expired. Please sign in again.'], 422);
+        }
+
+        $user = User::findOrFail($userId);
+        $code = $request->validated('code');
+
+        $verified = $this->twoFactor->verifyCode($user, $code) || $this->twoFactor->useRecoveryCode($user, $code);
+
+        if (! $verified) {
+            return response()->json(['message' => 'Invalid code.'], 422);
+        }
+
+        Cache::forget($cacheKey);
         $user->tokens()->delete();
 
         return response()->json($this->issueTokens($user));

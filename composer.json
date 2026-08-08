@@ -16,6 +16,7 @@
         "maatwebsite/excel": "^3.1.68",
         "nikic/php-parser": "^5.7",
         "nuwave/lighthouse": "^6.65",
+        "pragmarx/google2fa": "^9.0",
         "spatie/laravel-permission": "^7.2",
         "spatie/laravel-query-builder": "^7.2",
         "tightenco/ziggy": "^2.0"
