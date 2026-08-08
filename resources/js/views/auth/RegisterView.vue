@@ -27,7 +27,7 @@ async function handleSubmit() {
     const ok = await auth.register(form);
 
     if (ok) {
-        router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard');
+        router.push(typeof route.query.redirect === 'string' ? route.query.redirect : '/home');
     }
 }
 </script>

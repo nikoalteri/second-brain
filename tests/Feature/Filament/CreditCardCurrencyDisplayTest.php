@@ -23,7 +23,7 @@ class CreditCardCurrencyDisplayTest extends TestCase
             'current_balance' => 1234.56,
         ]);
 
-        $response = $this->actingAs($user)->get('/admin/credit-cards');
+        $response = $this->actingAs($user)->get('/hub/credit-cards');
 
         $response->assertOk()->assertSee('1.234,56');
     }
@@ -41,7 +41,7 @@ class CreditCardCurrencyDisplayTest extends TestCase
             'current_balance' => 1234.56,
         ]);
 
-        $response = $this->actingAs($user)->get('/admin/credit-cards');
+        $response = $this->actingAs($user)->get('/hub/credit-cards');
 
         $response->assertOk()->assertSee('Kč');
     }

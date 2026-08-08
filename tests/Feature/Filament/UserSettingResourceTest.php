@@ -26,7 +26,7 @@ class UserSettingResourceTest extends TestCase
         ]);
         $user->assignRole('superadmin');
 
-        $response = $this->actingAs($user)->get('/admin/user-settings/create');
+        $response = $this->actingAs($user)->get('/hub/user-settings/create');
 
         $response->assertOk()
             ->assertSee('User')

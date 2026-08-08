@@ -24,7 +24,7 @@ router.beforeEach((to) => {
     }
 
     if (to.meta.guestOnly && auth.isAuthenticated) {
-        return { path: '/dashboard' };
+        return { path: '/home' };
     }
 
     return true;

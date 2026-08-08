@@ -12,6 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Forms\Components\DatePicker;
 use Filament\Actions\Action;
+use App\Support\Money;
 use Illuminate\Support\Number;
 
 class TransactionsTable
@@ -66,7 +67,7 @@ class TransactionsTable
 
                 TextColumn::make('amount')
                     ->label('Amount')
-                    ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'en'))
+                    ->formatStateUsing(fn($state) => Number::currency($state, Money::currency(), Money::locale()))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
                     ->sortable(),
 

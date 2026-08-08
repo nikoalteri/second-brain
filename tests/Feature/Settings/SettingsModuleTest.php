@@ -101,7 +101,7 @@ class SettingsModuleTest extends TestCase
             'type' => 'email',
             'title' => 'Welcome',
             'message' => 'Welcome to our app',
-            'action_url' => '/dashboard',
+            'action_url' => '/home',
         ];
 
         $notification = Notification::create($data);

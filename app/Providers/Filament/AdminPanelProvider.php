@@ -30,7 +30,7 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->default()
             ->id('admin')
-            ->path('admin')
+            ->path('hub')
             ->brandName('Fluxa')
             ->login()
             ->darkMode(false, true)
@@ -42,7 +42,7 @@ class AdminPanelProvider extends PanelProvider
             ->userMenuItems([
                 MenuItem::make()
                     ->label('Open frontend')
-                    ->url(url('/dashboard'))
+                    ->url(url('/home'))
                     ->icon('heroicon-o-arrow-top-right-on-square'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
@@ -57,22 +57,22 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Finance')
                     ->items([
                         NavigationItem::make('Accounts')
-                            ->url('/admin/accounts')
+                            ->url('/hub/accounts')
                             ->icon('heroicon-o-banknotes'),
                         NavigationItem::make('Transactions')
-                            ->url('/admin/transactions')
+                            ->url('/hub/transactions')
                             ->icon('heroicon-o-arrow-path'),
                         NavigationItem::make('Subscriptions')
-                            ->url('/admin/subscriptions')
+                            ->url('/hub/subscriptions')
                             ->icon('heroicon-o-sparkles'),
                         NavigationItem::make('Loans')
-                            ->url('/admin/loans')
+                            ->url('/hub/loans')
                             ->icon('heroicon-o-document-text'),
                         NavigationItem::make('Credit Cards')
-                            ->url('/admin/credit-cards')
+                            ->url('/hub/credit-cards')
                             ->icon('heroicon-o-credit-card'),
                         NavigationItem::make('Reports')
-                            ->url('/admin/finance-report')
+                            ->url('/hub/finance-report')
                             ->icon('heroicon-o-chart-bar'),
                     ]),
             ])

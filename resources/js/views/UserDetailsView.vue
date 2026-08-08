@@ -182,7 +182,7 @@ async function handleSubmit() {
                     <div class="mt-4 space-y-3">
                         <a
                             v-if="auth.isAdmin"
-                            href="/admin"
+                            href="/hub"
                             class="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-100"
                         >
                             <span>Open Admin</span>
@@ -190,7 +190,7 @@ async function handleSubmit() {
                         </a>
 
                         <router-link
-                            to="/dashboard"
+                            to="/home"
                             class="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
                         >
                             <span>Back to dashboard</span>

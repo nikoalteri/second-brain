@@ -24,7 +24,7 @@ export const routes = [
         meta: { requiresAuth: false, guestOnly: true },
     },
     {
-        path: '/dashboard',
+        path: '/home',
         alias: '/',
         name: 'dashboard',
         component: () => import('@/views/DashboardView.vue'),

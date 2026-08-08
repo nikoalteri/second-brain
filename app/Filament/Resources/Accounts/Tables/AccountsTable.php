@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Accounts\Tables;
 
+use App\Support\Money;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -44,13 +45,13 @@ class AccountsTable
 
                 TextColumn::make('opening_balance')
                     ->label('Opening Balance')
-                    ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'en'))
+                    ->formatStateUsing(fn($state) => Number::currency($state, Money::currency(), Money::locale()))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('balance')
                     ->label('Current Balance')
-                    ->formatStateUsing(fn($state) => Number::currency($state, 'EUR', locale: 'en'))
+                    ->formatStateUsing(fn($state) => Number::currency($state, Money::currency(), Money::locale()))
                     ->color(fn($state) => $state >= 0 ? 'success' : 'danger'),
                 IconColumn::make('is_active')
                     ->label('Active')

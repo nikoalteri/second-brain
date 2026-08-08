@@ -29,7 +29,7 @@ const { t } = useI18n();
 const mobileMenuOpen = ref(false);
 const userMenuOpen = ref(false);
 const userMenuRef = ref(null);
-const adminUrl = '/admin';
+const adminUrl = '/hub';
 const adminLinkLabel = computed(() => auth.isAdmin ? t('shell.userMenu.openAdmin') : null);
 const isUserMenuRoute = computed(() => ['profile', 'settings'].includes(route.name));
 const userDisplayName = computed(() => auth.user?.name || t('shell.userMenu.account'));
@@ -67,7 +67,7 @@ function toggleUserMenu() {
 }
 
 const navLinks = computed(() => [
-    { name: t('shell.nav.dashboard'), to: '/dashboard', icon: HomeIcon },
+    { name: t('shell.nav.dashboard'), to: '/home', icon: HomeIcon },
     { name: t('shell.nav.accounts'), to: '/accounts', icon: BanknotesIcon },
     { name: t('shell.nav.transactions'), to: '/transactions', icon: ArrowsRightLeftIcon },
     { name: t('shell.nav.reports'), to: '/reports/finance', icon: ChartPieIcon },
