@@ -258,6 +258,122 @@ class CreditCardDailyBalanceTest extends TestCase
     }
 
     #[Test]
+    public function payment_breakdown_charges_stamp_duty_on_top_when_flag_is_off(): void
+    {
+        $calculator = new RevolvingCreditCalculator();
+
+        $card = CreditCard::factory()->create([
+            'type' => CreditCardType::REVOLVING,
+            'interest_rate' => 14,
+            'credit_limit' => 4000,
+            'fixed_payment' => 250,
+            'stamp_duty_amount' => 2,
+            'fixed_payment_includes_stamp_duty' => false,
+            'current_balance' => 0,
+        ]);
+
+        // Prior cycle created FIRST (still OPEN) so the expense below, dated within its window,
+        // attaches directly to it instead of triggering an unrelated auto-created "current
+        // month" cycle. It is flipped to PAID afterward, once mutable, so isFirstCycle() sees
+        // an earlier issued/paid/overdue cycle and the target cycle is not treated as the first.
+        $priorCycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-04-07'),
+            'statement_date' => Carbon::parse('2027-05-06'),
+            'status' => \App\Enums\CreditCardCycleStatus::OPEN,
+        ]);
+
+        CreditCardExpense::factory()->create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2027-04-10'),
+            'amount' => 1000.00,
+        ]);
+
+        $priorCycle->update(['status' => \App\Enums\CreditCardCycleStatus::PAID]);
+
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-05-07'),
+            'statement_date' => Carbon::parse('2027-06-06'),
+            'total_spent' => 0,
+            'status' => \App\Enums\CreditCardCycleStatus::OPEN,
+        ]);
+
+        // Refresh BEFORE update() so Eloquent's dirty-check compares against the true DB value
+        // (mutated by the expense-creation side effects above), not a stale in-memory attribute.
+        $card->refresh();
+        $card->update(['current_balance' => 1000.00]);
+        $card->refresh();
+
+        $breakdown = $calculator->calculatePaymentBreakdown($cycle);
+
+        $this->assertEqualsWithDelta(11.89, $breakdown['interest_amount'], 0.01);
+        $this->assertSame(250.0, $breakdown['installment_amount']);
+        $this->assertSame(238.11, $breakdown['principal_amount']);
+        $this->assertSame(2.0, $breakdown['stamp_duty_amount']);
+        $this->assertSame(252.0, $breakdown['total_due']);
+        $this->assertSame(761.89, $breakdown['next_balance']);
+    }
+
+    #[Test]
+    public function payment_breakdown_absorbs_stamp_duty_into_the_installment_when_flag_is_on(): void
+    {
+        $calculator = new RevolvingCreditCalculator();
+
+        $card = CreditCard::factory()->create([
+            'type' => CreditCardType::REVOLVING,
+            'interest_rate' => 14,
+            'credit_limit' => 4000,
+            'fixed_payment' => 250,
+            'stamp_duty_amount' => 2,
+            'fixed_payment_includes_stamp_duty' => true,
+            'current_balance' => 0,
+        ]);
+
+        // Prior cycle created FIRST (still OPEN) so the expense below, dated within its window,
+        // attaches directly to it instead of triggering an unrelated auto-created "current
+        // month" cycle. It is flipped to PAID afterward, once mutable, so isFirstCycle() sees
+        // an earlier issued/paid/overdue cycle and the target cycle is not treated as the first.
+        $priorCycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-04-07'),
+            'statement_date' => Carbon::parse('2027-05-06'),
+            'status' => \App\Enums\CreditCardCycleStatus::OPEN,
+        ]);
+
+        CreditCardExpense::factory()->create([
+            'credit_card_id' => $card->id,
+            'spent_at' => Carbon::parse('2027-04-10'),
+            'amount' => 1000.00,
+        ]);
+
+        $priorCycle->update(['status' => \App\Enums\CreditCardCycleStatus::PAID]);
+
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_start_date' => Carbon::parse('2027-05-07'),
+            'statement_date' => Carbon::parse('2027-06-06'),
+            'total_spent' => 0,
+            'status' => \App\Enums\CreditCardCycleStatus::OPEN,
+        ]);
+
+        // Refresh BEFORE update() so Eloquent's dirty-check compares against the true DB value
+        // (mutated by the expense-creation side effects above), not a stale in-memory attribute.
+        $card->refresh();
+        $card->update(['current_balance' => 1000.00]);
+        $card->refresh();
+
+        $breakdown = $calculator->calculatePaymentBreakdown($cycle);
+
+        $this->assertEqualsWithDelta(11.89, $breakdown['interest_amount'], 0.01);
+        $this->assertSame(250.0, $breakdown['installment_amount']);
+        $this->assertSame(236.11, $breakdown['principal_amount']);
+        $this->assertSame(2.0, $breakdown['stamp_duty_amount']);
+        $this->assertSame(250.0, $breakdown['total_due']);
+        $this->assertSame(763.89, $breakdown['next_balance']);
+    }
+
+    #[Test]
     public function daily_balance_interest_is_lower_than_direct_monthly_rate(): void
     {
         $calculator = new RevolvingCreditCalculator();
