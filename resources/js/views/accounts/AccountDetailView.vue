@@ -8,6 +8,7 @@ import AppLayout from '@/components/layout/AppLayout.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { accountTypeIcons } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 
 const route = useRoute();
@@ -51,7 +52,10 @@ const transactions = computed(() => account.value?.transactions ?? []);
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-gray-900">{{ account.name }}</h1>
-                    <p class="mt-1 text-sm text-gray-500">{{ translateAccountType(account.type) }} · {{ account.currency }}</p>
+                    <p class="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                        <component :is="accountTypeIcons[account.type]" class="h-4 w-4" />
+                        {{ translateAccountType(account.type) }} · {{ account.currency }}
+                    </p>
                 </div>
                 <router-link
                     :to="`/accounts/${account.id}/edit`"

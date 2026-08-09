@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { ArrowRightOnRectangleIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline';
 import { useRoute, useRouter } from 'vue-router';
 import AuthLayout from '@/components/layout/AuthLayout.vue';
 import { useAuthStore } from '@/stores/auth.js';
@@ -45,7 +46,9 @@ function backToLogin() {
 <template>
     <AuthLayout width-class="max-w-lg">
         <template v-if="!twoFactorStep">
-            <h1 class="mb-6 text-xl font-semibold text-gray-900">Sign in to Fluxa</h1>
+            <h1 class="mb-6 flex items-center gap-2 text-xl font-semibold text-gray-900">
+                <ArrowRightOnRectangleIcon class="h-6 w-6 text-gray-400" /> Sign in to Fluxa
+            </h1>
             <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
                 <div class="flex flex-col gap-1">
                     <label for="email" class="text-sm font-normal text-gray-700">Email</label>
@@ -106,7 +109,9 @@ function backToLogin() {
         </template>
 
         <template v-else>
-            <h1 class="mb-2 text-xl font-semibold text-gray-900">Two-factor authentication</h1>
+            <h1 class="mb-2 flex items-center gap-2 text-xl font-semibold text-gray-900">
+                <ShieldCheckIcon class="h-6 w-6 text-gray-400" /> Two-factor authentication
+            </h1>
             <p class="mb-6 text-sm text-gray-500">
                 Enter the 6-digit code from your authenticator app, or one of your recovery codes.
             </p>

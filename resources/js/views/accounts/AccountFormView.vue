@@ -10,6 +10,7 @@ import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useToast } from '@/composables/useToast.js';
+import { accountTypeIcons } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 
 const route = useRoute();
@@ -156,7 +157,10 @@ async function handleDelete() {
             <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div class="grid gap-4 md:grid-cols-2">
                     <FormInput label="Name *" v-model="form.name" placeholder="e.g. Main Bank Account" required :error="errors.name" />
-                    <FormSelect label="Type *" v-model="form.type" :options="typeOptions" :error="errors.type" />
+                    <div class="flex items-end gap-2">
+                        <FormSelect label="Type *" v-model="form.type" :options="typeOptions" :error="errors.type" class="flex-1" />
+                        <component :is="accountTypeIcons[form.type]" class="mb-2 h-5 w-5 shrink-0 text-gray-400" />
+                    </div>
                     <FormInput
                         label="Current Balance"
                         v-model="form.balance"

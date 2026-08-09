@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue';
+import { LockClosedIcon } from '@heroicons/vue/24/outline';
 import { useRoute, useRouter } from 'vue-router';
 import AuthLayout from '@/components/layout/AuthLayout.vue';
 import { useAuthStore } from '@/stores/auth.js';
@@ -32,7 +33,9 @@ async function handleSubmit() {
 
 <template>
     <AuthLayout>
-        <h1 class="mb-3 text-xl font-semibold text-gray-900">Choose a new password</h1>
+        <h1 class="mb-3 flex items-center gap-2 text-xl font-semibold text-gray-900">
+            <LockClosedIcon class="h-6 w-6 text-gray-400" /> Choose a new password
+        </h1>
         <p class="mb-6 text-sm text-gray-500">Use the reset link you received by email to complete the password change.</p>
 
         <p v-if="!hasResetContext" class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

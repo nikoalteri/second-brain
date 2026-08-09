@@ -3,11 +3,13 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { ChevronDownIcon, ChevronUpIcon, LockClosedIcon, PencilIcon } from '@heroicons/vue/24/outline';
 import { useRoute } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import BrandLogo from '@/components/ui/BrandLogo.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { creditCardBillingTypeIcons, paymentStatusIcons } from '@/icons/domainIcons.js';
 import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
 
@@ -446,8 +448,14 @@ onMounted(() => {
         <template v-else-if="card">
             <div class="mb-6 flex items-center justify-between">
                 <div>
-                    <h1 class="text-xl font-semibold text-gray-900">{{ card.name }}</h1>
-                    <p class="mt-1 text-sm text-gray-500">{{ card.type }} card · {{ card.type === 'revolving' ? `${card.interest_rate ?? 0}% interest` : 'no interest' }}</p>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-semibold text-gray-900">{{ card.name }}</h1>
+                        <BrandLogo :brand="card.brand" />
+                    </div>
+                    <p class="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                        <component :is="creditCardBillingTypeIcons[card.type]" class="h-4 w-4" />
+                        {{ card.type }} card · {{ card.type === 'revolving' ? `${card.interest_rate ?? 0}% interest` : 'no interest' }}
+                    </p>
                 </div>
                 <router-link
                     :to="`/credit-cards/${card.id}/edit`"
@@ -699,7 +707,8 @@ onMounted(() => {
                                         >estimated</span>
                                     </td>
                                     <td class="py-3 pr-4">
-                                        <span :class="paymentStatusClass(payment.status)" class="rounded px-2 py-0.5 text-sm capitalize">
+                                        <span :class="paymentStatusClass(payment.status)" class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm capitalize">
+                                            <component :is="paymentStatusIcons[payment.status]" class="h-3.5 w-3.5" />
                                             {{ payment.status }}
                                         </span>
                                     </td>

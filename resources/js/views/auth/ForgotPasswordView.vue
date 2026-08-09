@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue';
+import { KeyIcon } from '@heroicons/vue/24/outline';
 import AuthLayout from '@/components/layout/AuthLayout.vue';
 import { useAuthStore } from '@/stores/auth.js';
 
@@ -20,7 +21,9 @@ async function handleSubmit() {
 
 <template>
     <AuthLayout>
-        <h1 class="mb-3 text-xl font-semibold text-gray-900">Reset your password</h1>
+        <h1 class="mb-3 flex items-center gap-2 text-xl font-semibold text-gray-900">
+            <KeyIcon class="h-6 w-6 text-gray-400" /> Reset your password
+        </h1>
         <p class="mb-6 text-sm text-gray-500">Enter your email and we'll send you a reset link if the account exists.</p>
 
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">

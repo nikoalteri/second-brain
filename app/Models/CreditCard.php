@@ -97,6 +97,33 @@ class CreditCard extends Model
         });
     }
 
+    /**
+     * `type`/`brand`/`status`/`interest_calculation_method` are cast to backed enums for app-side
+     * logic, but graphql-php's String scalar can't serialize an enum object directly (it only
+     * accepts scalars/__toString) — these give the GraphQL schema (see graphql/schema.graphql,
+     * @method directive) a plain string to resolve instead of failing the whole query when the
+     * field is requested (e.g. the credit card edit form).
+     */
+    public function graphqlType(): string
+    {
+        return $this->type->value;
+    }
+
+    public function graphqlBrand(): ?string
+    {
+        return $this->brand?->value;
+    }
+
+    public function graphqlStatus(): string
+    {
+        return $this->status->value;
+    }
+
+    public function graphqlInterestCalculationMethod(): ?string
+    {
+        return $this->interest_calculation_method?->value;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

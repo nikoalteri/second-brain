@@ -9,6 +9,7 @@ import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import { categoryIcon, transactionTypeIcons } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
@@ -176,6 +177,11 @@ const selectedTransactionTypeName = computed(() =>
     (typesResult.value?.transactionTypes ?? []).find((type) => type.id === form.value.transaction_type_id)?.name ?? ''
 );
 const showsDestinationAccount = computed(() => selectedTransactionTypeName.value.toLowerCase().includes('transfer'));
+const selectedCategoryName = computed(() =>
+    (categoriesResult.value?.transactionCategories ?? []).find((category) => category.id === form.value.transaction_category_id)?.name ?? null
+);
+const selectedTransactionTypeIcon = computed(() => transactionTypeIcons[selectedTransactionTypeName.value] ?? null);
+const selectedCategoryIcon = computed(() => categoryIcon(selectedCategoryName.value));
 const destinationAccountOptions = computed(() =>
     accountOptions.value.filter((account) => account.value !== form.value.account_id)
 );
@@ -331,23 +337,31 @@ async function handleDelete() {
                             :helper="accountHelperText"
                             :disabled="!accountOptions.length"
                         />
-                        <FormSelect
-                            label="Type *"
-                            v-model="form.transaction_type_id"
-                            :options="typeOptions"
-                            placeholder="Select type"
-                            :error="errors.transaction_type_id"
-                        />
+                        <div class="flex items-end gap-2">
+                            <FormSelect
+                                label="Type *"
+                                v-model="form.transaction_type_id"
+                                :options="typeOptions"
+                                placeholder="Select type"
+                                :error="errors.transaction_type_id"
+                                class="flex-1"
+                            />
+                            <component :is="selectedTransactionTypeIcon" v-if="selectedTransactionTypeIcon" class="mb-2 h-5 w-5 shrink-0 text-gray-400" />
+                        </div>
                     </div>
                 </div>
 
                 <div class="grid gap-4 md:grid-cols-2">
-                    <FormSelect
-                        label="Category"
-                        v-model="form.transaction_category_id"
-                        :options="categoryOptions"
-                        placeholder="No category"
-                    />
+                    <div class="flex items-end gap-2">
+                        <FormSelect
+                            label="Category"
+                            v-model="form.transaction_category_id"
+                            :options="categoryOptions"
+                            placeholder="No category"
+                            class="flex-1"
+                        />
+                        <component :is="selectedCategoryIcon" v-if="form.transaction_category_id" class="mb-2 h-5 w-5 shrink-0 text-gray-400" />
+                    </div>
                     <FormSelect
                         v-if="showsDestinationAccount"
                         label="Destination account *"

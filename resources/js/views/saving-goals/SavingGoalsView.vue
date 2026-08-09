@@ -6,6 +6,7 @@ import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { savingGoalStatusIcons } from '@/icons/domainIcons.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
@@ -97,7 +98,8 @@ onMounted(() => {
             >
                 <div class="mb-3 flex items-start justify-between">
                     <h3 class="truncate text-base font-normal text-gray-900">{{ goal.name }}</h3>
-                    <span :class="statusBadgeClass(goal.status)" class="shrink-0 rounded px-2 py-0.5 text-sm capitalize">
+                    <span :class="statusBadgeClass(goal.status)" class="inline-flex shrink-0 items-center gap-1 rounded px-2 py-0.5 text-sm capitalize">
+                        <component :is="savingGoalStatusIcons[goal.status]" class="h-3.5 w-3.5" />
                         {{ goal.status }}
                     </span>
                 </div>

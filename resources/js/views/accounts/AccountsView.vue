@@ -9,6 +9,7 @@ import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { accountTypeIcons } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
@@ -228,7 +229,10 @@ async function submitTransfer() {
                     <div class="mb-3 flex items-start justify-between">
                         <div>
                             <h3 class="text-base font-normal text-gray-900">{{ account.name }}</h3>
-                            <span class="text-sm text-gray-500">{{ translateAccountType(account.type) }}</span>
+                            <span class="inline-flex items-center gap-1 text-sm text-gray-500">
+                                <component :is="accountTypeIcons[account.type]" class="h-4 w-4" />
+                                {{ translateAccountType(account.type) }}
+                            </span>
                         </div>
                         <span
                             class="rounded px-2 py-0.5 text-sm"

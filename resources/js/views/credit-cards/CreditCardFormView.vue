@@ -4,10 +4,12 @@ import { useMutation, useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import BrandLogo from '@/components/ui/BrandLogo.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import { creditCardBillingTypeIcons } from '@/icons/domainIcons.js';
 import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
 
@@ -271,16 +273,24 @@ onMounted(() => {
                             :options="accountOptions"
                             placeholder="Select account"
                         />
-                        <FormSelect
-                            label="Type *"
-                            v-model="form.type"
-                            :options="typeOptions"
-                        />
-                        <FormSelect
-                            label="Brand *"
-                            v-model="form.brand"
-                            :options="brandOptions"
-                        />
+                        <div class="flex items-end gap-2">
+                            <FormSelect
+                                label="Type *"
+                                v-model="form.type"
+                                :options="typeOptions"
+                                class="flex-1"
+                            />
+                            <component :is="creditCardBillingTypeIcons[form.type]" class="mb-2 h-5 w-5 shrink-0 text-gray-400" />
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <FormSelect
+                                label="Brand *"
+                                v-model="form.brand"
+                                :options="brandOptions"
+                                class="flex-1"
+                            />
+                            <BrandLogo :brand="form.brand" />
+                        </div>
                         <FormSelect
                             label="Status *"
                             v-model="form.status"

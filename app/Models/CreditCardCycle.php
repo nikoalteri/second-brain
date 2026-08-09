@@ -40,6 +40,12 @@ class CreditCardCycle extends Model
         'status' => CreditCardCycleStatus::class,
     ];
 
+    /** See Loan::graphqlStatus() — same enum-serialization workaround for GraphQL. */
+    public function graphqlStatus(): string
+    {
+        return $this->status->value;
+    }
+
     public function creditCard(): BelongsTo
     {
         return $this->belongsTo(CreditCard::class);

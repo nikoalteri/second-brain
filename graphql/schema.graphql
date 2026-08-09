@@ -80,7 +80,7 @@ type Loan {
     paid_installments: Int!
     withdrawal_day: Int!
     skip_weekends: Boolean!
-    status: String!
+    status: String! @method(name: "graphqlStatus")
     start_date: Date
     end_date: Date
     "Scheduled payment installments."
@@ -97,7 +97,7 @@ type LoanPayment {
     actual_date: Date
     amount: Float!
     interest_rate: Float
-    status: String!
+    status: String! @method(name: "graphqlStatus")
     notes: String
 }
 
@@ -107,9 +107,9 @@ type CreditCard {
     account_id: ID!
     name: String!
     "Card type: revolving or charge."
-    type: String!
+    type: String! @method(name: "graphqlType")
     "Card network: visa, mastercard or amex."
-    brand: String!
+    brand: String! @method(name: "graphqlBrand")
     credit_limit: Float
     fixed_payment: Float!
     interest_rate: Float!
@@ -119,9 +119,9 @@ type CreditCard {
     skip_weekends: Boolean!
     current_balance: Float!
     available_credit: Float
-    status: String!
+    status: String! @method(name: "graphqlStatus")
     start_date: Date
-    interest_calculation_method: String
+    interest_calculation_method: String @method(name: "graphqlInterestCalculationMethod")
     "Billing cycles for this card."
     cycles: [CreditCardCycle!]! @hasMany
     created_at: DateTime!
@@ -140,7 +140,7 @@ type CreditCardCycle {
     total_due: Float!
     interest_amount: Float!
     principal_amount: Float!
-    status: String!
+    status: String! @method(name: "graphqlStatus")
     expenses: [CreditCardExpense!]! @hasMany
 }
 
@@ -169,7 +169,7 @@ type ServiceSubscription {
     day_of_month: Int!
     next_renewal_date: Date
     auto_create_transaction: Boolean!
-    status: String!
+    status: String! @method(name: "graphqlStatus")
     notes: String
     created_at: DateTime!
     updated_at: DateTime!

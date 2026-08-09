@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { budgetAlertStatusIcons } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 
 const props = defineProps({
@@ -88,7 +89,8 @@ function usageLabel(alert) {
                             {{ translateOptionalCategory(alert.parent_name) }}
                         </p>
                     </div>
-                    <span class="rounded-full border px-2.5 py-1 text-xs font-semibold capitalize">
+                    <span class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold capitalize">
+                        <component :is="budgetAlertStatusIcons[alert.alert_status]" class="h-3.5 w-3.5" />
                         {{ alert.alert_status }}
                     </span>
                 </div>

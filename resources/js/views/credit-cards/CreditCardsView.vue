@@ -3,9 +3,11 @@ import { computed, onMounted, ref } from 'vue';
 import { CreditCardIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import BrandLogo from '@/components/ui/BrandLogo.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { creditCardBillingTypeIcons, creditCardStatusIcons } from '@/icons/domainIcons.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
@@ -102,11 +104,18 @@ onMounted(() => {
                     <div class="mb-3 flex items-start justify-between">
                         <div>
                             <h3 class="text-base font-normal text-gray-900">{{ card.name }}</h3>
-                            <p class="mt-0.5 text-sm capitalize text-gray-500">{{ card.type }}</p>
+                            <p class="mt-0.5 flex items-center gap-1 text-sm capitalize text-gray-500">
+                                <component :is="creditCardBillingTypeIcons[card.type]" class="h-4 w-4" />
+                                {{ card.type }}
+                            </p>
                         </div>
-                        <span :class="statusBadgeClass(card.status)" class="rounded px-2 py-0.5 text-sm capitalize">
-                            {{ card.status }}
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <BrandLogo :brand="card.brand" />
+                            <span :class="statusBadgeClass(card.status)" class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm capitalize">
+                                <component :is="creditCardStatusIcons[card.status]" class="h-3.5 w-3.5" />
+                                {{ card.status }}
+                            </span>
+                        </div>
                     </div>
 
                     <div class="mb-1 h-2 w-full rounded-full bg-gray-100">

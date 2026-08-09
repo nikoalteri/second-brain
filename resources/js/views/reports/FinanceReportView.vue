@@ -6,11 +6,13 @@ import {
     Legend,
     Tooltip,
 } from 'chart.js';
+import { ChartPieIcon, ClipboardDocumentListIcon, PresentationChartLineIcon } from '@heroicons/vue/24/outline';
 import { Doughnut } from 'vue-chartjs';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { categoryIcon } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
@@ -555,7 +557,9 @@ onMounted(async () => {
                 <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
-                            <h2 class="text-base font-semibold text-gray-900">Monthly budgets</h2>
+                            <h2 class="flex items-center gap-2 text-base font-semibold text-gray-900">
+                                <ClipboardDocumentListIcon class="h-5 w-5 text-gray-400" /> Monthly budgets
+                            </h2>
                         </div>
 
                         <label class="flex items-center gap-2 text-sm font-medium text-gray-600">
@@ -810,7 +814,9 @@ onMounted(async () => {
                     </div>
 
                     <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <h2 class="text-base font-semibold text-gray-900">Distribution {{ selectedYear }}</h2>
+                        <h2 class="flex items-center gap-2 text-base font-semibold text-gray-900">
+                            <ChartPieIcon class="h-5 w-5 text-gray-400" /> Distribution {{ selectedYear }}
+                        </h2>
 
                         <div v-if="pie.length" class="mt-4 h-72">
                             <Doughnut :data="pieData" :options="pieOptions" />
@@ -835,7 +841,9 @@ onMounted(async () => {
             </div>
 
             <div v-if="table.length" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                <h2 class="text-base font-semibold text-gray-900">Monthly summary</h2>
+                <h2 class="flex items-center gap-2 text-base font-semibold text-gray-900">
+                    <PresentationChartLineIcon class="h-5 w-5 text-gray-400" /> Monthly summary
+                </h2>
                 <div class="mt-4 overflow-x-auto">
                     <table class="min-w-full border-collapse text-sm">
                         <thead class="bg-gray-50">
@@ -878,7 +886,10 @@ onMounted(async () => {
                 <div class="relative z-10 flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
                     <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900">{{ detailState.categoryLabel }}</h2>
+                            <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                <component :is="categoryIcon(detailState.categoryKey)" class="h-5 w-5 text-gray-400" />
+                                {{ detailState.categoryLabel }}
+                            </h2>
                             <p class="text-sm text-gray-500">{{ getMonthLabel(detailState.month) }}</p>
                         </div>
                         <button

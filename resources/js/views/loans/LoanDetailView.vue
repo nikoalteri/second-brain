@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { loanStatusIcons, paymentStatusIcons } from '@/icons/domainIcons.js';
 import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
 
@@ -103,7 +104,10 @@ onMounted(() => {
             <div class="mb-6 flex items-center justify-between">
                 <div>
                     <h1 class="text-xl font-semibold text-gray-900">{{ loan.name }}</h1>
-                    <p class="mt-1 text-sm text-gray-500">{{ loan.status }} · {{ loan.interest_rate }}% interest</p>
+                    <p class="mt-1 flex items-center gap-1 text-sm text-gray-500">
+                        <component :is="loanStatusIcons[loan.status]" class="h-4 w-4" />
+                        {{ loan.status }} · {{ loan.interest_rate }}% interest
+                    </p>
                 </div>
                 <div class="flex items-center gap-3">
                     <button
@@ -175,7 +179,8 @@ onMounted(() => {
                             <td class="py-3 pr-4 text-sm text-gray-500">{{ payment.actual_date ?? '—' }}</td>
                             <td class="py-3 pr-4 text-right font-mono text-sm text-amber-400">{{ formatCurrency(payment.amount) }}</td>
                             <td class="py-3">
-                                <span :class="paymentStatusClass(payment.status)" class="rounded px-2 py-0.5 text-sm capitalize">
+                                <span :class="paymentStatusClass(payment.status)" class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm capitalize">
+                                    <component :is="paymentStatusIcons[payment.status]" class="h-3.5 w-3.5" />
                                     {{ payment.status }}
                                 </span>
                             </td>
@@ -197,7 +202,8 @@ onMounted(() => {
                         </div>
                         <div class="text-right">
                             <p class="font-mono text-sm text-amber-400">{{ formatCurrency(payment.amount) }}</p>
-                            <span :class="paymentStatusClass(payment.status)" class="mt-1 inline-block rounded px-2 py-0.5 text-sm capitalize">
+                            <span :class="paymentStatusClass(payment.status)" class="mt-1 inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm capitalize">
+                                <component :is="paymentStatusIcons[payment.status]" class="h-3.5 w-3.5" />
                                 {{ payment.status }}
                             </span>
                         </div>

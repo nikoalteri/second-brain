@@ -2,12 +2,14 @@
 import { computed, onMounted, ref } from 'vue';
 import { BanknotesIcon, CreditCardIcon, LockClosedIcon, LockOpenIcon, WalletIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import BrandLogo from '@/components/ui/BrandLogo.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import SensitiveVaultPanel from '@/components/vault/SensitiveVaultPanel.vue';
 import VaultPanel from '@/components/vault/VaultPanel.vue';
+import { vaultCardTypeIcons } from '@/icons/domainIcons.js';
 import { useToast } from '@/composables/useToast.js';
 import { useAuthStore } from '@/stores/auth.js';
 import { useVaultStore } from '@/stores/vault.js';
@@ -277,6 +279,9 @@ onMounted(() => {
                 <EmptyState v-if="!creditCards.length" title="Nessuna carta di credito" message="Non hai ancora nessuna carta di credito." />
                 <div v-else class="space-y-4">
                     <div v-for="card in creditCards" :key="`credit-card-${card.id}`" class="rounded-xl border border-gray-200 bg-white p-6">
+                        <div class="mb-2 flex justify-end">
+                            <BrandLogo :brand="card.brand" />
+                        </div>
                         <VaultPanel
                             :title="card.name"
                             :fetch-url="`/api/v1/credit-cards/${card.id}/vault`"
@@ -313,8 +318,14 @@ onMounted(() => {
                 <div v-if="showAddForm" class="mb-4 rounded-xl border border-gray-200 bg-white p-6">
                     <div class="grid gap-4 md:grid-cols-2">
                         <FormInput label="Nome *" v-model="cardForm.name" placeholder="es. Postepay" />
-                        <FormSelect label="Tipo *" v-model="cardForm.type" :options="typeOptions" />
-                        <FormSelect label="Brand *" v-model="cardForm.brand" :options="brandOptions" />
+                        <div class="flex items-end gap-2">
+                            <FormSelect label="Tipo *" v-model="cardForm.type" :options="typeOptions" class="flex-1" />
+                            <component :is="vaultCardTypeIcons[cardForm.type]" class="mb-2 h-5 w-5 shrink-0 text-gray-400" />
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <FormSelect label="Brand *" v-model="cardForm.brand" :options="brandOptions" class="flex-1" />
+                            <BrandLogo :brand="cardForm.brand" />
+                        </div>
                         <FormSelect
                             label="Conto collegato"
                             v-model="cardForm.account_id"
@@ -355,8 +366,12 @@ onMounted(() => {
                     <div v-for="card in vaultCards" :key="`vault-card-${card.id}`" class="rounded-xl border border-gray-200 bg-white p-6">
                         <div class="mb-2 flex items-center justify-between">
                             <div>
-                                <h3 class="text-base font-semibold text-gray-900">{{ card.name }}</h3>
-                                <p class="text-sm text-gray-500">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-base font-semibold text-gray-900">{{ card.name }}</h3>
+                                    <BrandLogo :brand="card.brand" />
+                                </div>
+                                <p class="mt-0.5 flex items-center gap-1 text-sm text-gray-500">
+                                    <component :is="vaultCardTypeIcons[card.type]" class="h-4 w-4" />
                                     {{ typeOptions.find((option) => option.value === card.type)?.label }}
                                     · {{ brandOptions.find((option) => option.value === card.brand)?.label }}
                                     <span v-if="accountName(card.account_id)"> · {{ accountName(card.account_id) }}</span>

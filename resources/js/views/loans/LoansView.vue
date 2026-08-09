@@ -1,11 +1,12 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { DocumentTextIcon } from '@heroicons/vue/24/outline';
+import { ScaleIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { loanStatusIcons } from '@/icons/domainIcons.js';
 import { useAuthStore } from '@/stores/auth.js';
 
 const router = useRouter();
@@ -83,7 +84,7 @@ onMounted(() => {
             v-else-if="!loans.length"
             title="No loans tracked"
             message="Add a loan to monitor repayment progress."
-            :icon="DocumentTextIcon"
+            :icon="ScaleIcon"
             action-label="Add loan"
             action-to="/loans/new"
         />
@@ -103,7 +104,8 @@ onMounted(() => {
                                 {{ formatCurrency(loan.monthly_payment) }}/mo · ends {{ loan.end_date ?? 'N/A' }}
                             </p>
                         </div>
-                        <span :class="statusBadgeClass(loan.status)" class="rounded px-2 py-0.5 text-sm capitalize">
+                        <span :class="statusBadgeClass(loan.status)" class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm capitalize">
+                            <component :is="loanStatusIcons[loan.status]" class="h-3.5 w-3.5" />
                             {{ loan.status }}
                         </span>
                     </div>

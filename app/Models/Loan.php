@@ -43,6 +43,17 @@ class Loan extends Model
         'status' => LoanStatus::class,
     ];
 
+    /**
+     * `status` is cast to a backed enum for app-side logic, but graphql-php's String scalar can't
+     * serialize an enum object directly — this gives the GraphQL schema (see graphql/schema.graphql,
+     * @method directive) a plain string to resolve instead of failing the whole query (e.g. the
+     * loan edit form).
+     */
+    public function graphqlStatus(): string
+    {
+        return $this->status->value;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

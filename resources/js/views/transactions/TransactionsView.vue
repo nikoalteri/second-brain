@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import DataTable from '@/components/ui/DataTable.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { categoryIcon } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useAuthStore } from '@/stores/auth.js';
 
@@ -69,6 +70,9 @@ const accountNameById = computed(() =>
 );
 const categoryNameById = computed(() =>
     Object.fromEntries(categories.value.map((category) => [String(category.id), translateCategoryName(category.name)]))
+);
+const categoryIconById = computed(() =>
+    Object.fromEntries(categories.value.map((category) => [String(category.id), categoryIcon(category.name)]))
 );
 const transactions = computed(() => result.value?.transactions?.data ?? []);
 const filteredTransactions = computed(() =>
@@ -186,7 +190,11 @@ onMounted(() => {
                     <td class="w-28 py-3 pr-4 text-sm text-gray-500">{{ transaction.date }}</td>
                     <td class="py-3 pr-4 text-sm text-gray-900">{{ transaction.description }}</td>
                     <td class="hidden py-3 pr-4 text-sm text-gray-500 lg:table-cell">
-                        {{ categoryNameById[String(transaction.transaction_category_id)] ?? '—' }}
+                        <span v-if="categoryNameById[String(transaction.transaction_category_id)]" class="inline-flex items-center gap-1">
+                            <component :is="categoryIconById[String(transaction.transaction_category_id)]" class="h-4 w-4" />
+                            {{ categoryNameById[String(transaction.transaction_category_id)] }}
+                        </span>
+                        <template v-else>—</template>
                     </td>
                     <td class="hidden py-3 pr-4 text-sm text-gray-500 md:table-cell">
                         {{ accountNameById[String(transaction.account_id)] ?? '—' }}

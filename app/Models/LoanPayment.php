@@ -47,6 +47,12 @@ class LoanPayment extends Model
         });
     }
 
+    /** See Loan::graphqlStatus() — same enum-serialization workaround for GraphQL. */
+    public function graphqlStatus(): string
+    {
+        return $this->status->value;
+    }
+
     public function loan(): BelongsTo
     {
         return $this->belongsTo(Loan::class);

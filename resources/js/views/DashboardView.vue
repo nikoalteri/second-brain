@@ -13,12 +13,27 @@ import {
     Title,
     Tooltip,
 } from 'chart.js';
+import {
+    ArrowsRightLeftIcon,
+    ArrowTrendingDownIcon,
+    ArrowTrendingUpIcon,
+    BanknotesIcon,
+    BoltIcon,
+    CalendarDaysIcon,
+    ChartBarIcon,
+    ChartPieIcon,
+    ClockIcon,
+    HeartIcon,
+    PresentationChartLineIcon,
+    ScaleIcon,
+} from '@heroicons/vue/24/outline';
 import { Bar, Doughnut, Line } from 'vue-chartjs';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
 import KpiCard from '@/components/ui/KpiCard.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
+import { categoryIcon } from '@/icons/domainIcons.js';
 import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
@@ -523,10 +538,14 @@ onMounted(() => {
                     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <p class="text-sm font-semibold uppercase tracking-wide text-gray-500">{{ monthLabel }} pulse</p>
-                            <h2 class="mt-2 text-2xl font-semibold text-gray-900">Financial overview</h2>
+                            <h2 class="mt-2 flex items-center gap-2 text-2xl font-semibold text-gray-900">
+                                <ChartPieIcon class="h-6 w-6 text-gray-400" /> Financial overview
+                            </h2>
                         </div>
                         <div class="rounded-2xl bg-gray-50 px-4 py-3 text-right">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Net cashflow</p>
+                            <p class="flex items-center justify-end gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                <ScaleIcon class="h-3.5 w-3.5" /> Net cashflow
+                            </p>
                             <p class="mt-1 font-mono text-3xl font-semibold" :class="netCashflowTone()">{{ formatCurrency(netCashflow) }}</p>
                             <p class="mt-1 text-sm text-gray-500">
                                 Savings rate: <span class="font-medium text-gray-700">{{ formatPercent(savingsRate) }}</span>
@@ -536,17 +555,23 @@ onMounted(() => {
 
                     <div class="mt-6 grid gap-4 sm:grid-cols-3">
                         <div class="rounded-xl border border-gray-200 bg-slate-50 p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total balance</p>
+                            <p class="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                <BanknotesIcon class="h-3.5 w-3.5" /> Total balance
+                            </p>
                             <p class="mt-2 font-mono text-2xl font-semibold text-blue-500">{{ formatCurrency(totalBalance) }}</p>
                             <p class="mt-1 text-sm text-gray-500">{{ accountCount }} tracked account{{ accountCount === 1 ? '' : 's' }}</p>
                         </div>
                         <div class="rounded-xl border border-gray-200 bg-slate-50 p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Income this month</p>
+                            <p class="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                <ArrowTrendingUpIcon class="h-3.5 w-3.5" /> Income this month
+                            </p>
                             <p class="mt-2 font-mono text-2xl font-semibold text-emerald-500">{{ formatCurrency(totalIncome) }}</p>
                             <p class="mt-1 text-sm text-gray-500">Current month inflows</p>
                         </div>
                         <div class="rounded-xl border border-gray-200 bg-slate-50 p-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Expenses this month</p>
+                            <p class="flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                <ArrowTrendingDownIcon class="h-3.5 w-3.5" /> Expenses this month
+                            </p>
                             <p class="mt-2 font-mono text-2xl font-semibold text-red-500">{{ formatCurrency(totalOutflow) }}</p>
                             <p class="mt-1 text-sm text-gray-500">Includes spending and payment outflows this month</p>
                         </div>
@@ -557,7 +582,9 @@ onMounted(() => {
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <p class="text-sm font-semibold uppercase tracking-wide text-amber-700">Attention needed</p>
-                            <h2 class="mt-2 text-xl font-semibold text-gray-900">Next 3 days</h2>
+                            <h2 class="mt-2 flex items-center gap-2 text-xl font-semibold text-gray-900">
+                                <ClockIcon class="h-5 w-5 text-amber-600" /> Next 3 days
+                            </h2>
                         </div>
                         <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-700 shadow-sm">
                             {{ upcomingCount }} item{{ upcomingCount === 1 ? '' : 's' }}
@@ -630,7 +657,9 @@ onMounted(() => {
                 <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900">Upcoming payments</h2>
+                            <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                <CalendarDaysIcon class="h-5 w-5 text-gray-400" /> Upcoming payments
+                            </h2>
                         </div>
                         <div class="grid shrink-0 grid-cols-3 gap-2 text-center text-sm">
                             <div class="rounded-xl bg-gray-50 px-3 py-2">
@@ -684,7 +713,9 @@ onMounted(() => {
 
                 <section class="grid gap-6">
                     <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 class="text-lg font-semibold text-gray-900">Automation snapshot</h2>
+                        <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                            <BoltIcon class="h-5 w-5 text-gray-400" /> Automation snapshot
+                        </h2>
 
                         <div class="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
                             <div class="rounded-xl bg-emerald-50 p-4">
@@ -703,7 +734,9 @@ onMounted(() => {
                     </div>
 
                     <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-                        <h2 class="text-lg font-semibold text-gray-900">Spending highlights</h2>
+                        <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                            <ChartBarIcon class="h-5 w-5 text-gray-400" /> Spending highlights
+                        </h2>
 
                         <div class="mt-4 space-y-4">
                             <div v-if="categorizedSpending.length" class="h-64 rounded-xl bg-gray-50 p-4">
@@ -732,7 +765,10 @@ onMounted(() => {
                             <div v-if="topCategory" class="rounded-xl bg-gray-50 p-4">
                                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Largest category</p>
                                 <div class="mt-2 flex items-end justify-between gap-3">
-                                    <p class="text-base font-semibold text-gray-900">{{ translateCategoryName(topCategory.category) }}</p>
+                                    <p class="flex items-center gap-1 text-base font-semibold text-gray-900">
+                                        <component :is="categoryIcon(topCategory.category)" class="h-4 w-4 text-gray-400" />
+                                        {{ translateCategoryName(topCategory.category) }}
+                                    </p>
                                     <p class="font-mono text-lg font-semibold text-red-500">{{ formatCurrency(topCategory.total) }}</p>
                                 </div>
                                 <p class="mt-1 text-sm text-gray-500">{{ formatPercent(topCategoryShare) }} of this month's total expenses</p>
@@ -758,7 +794,9 @@ onMounted(() => {
                 <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900">Cashflow comparison</h2>
+                            <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                <ArrowsRightLeftIcon class="h-5 w-5 text-gray-400" /> Cashflow comparison
+                            </h2>
                         </div>
                         <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                             {{ monthLabel }}
@@ -773,7 +811,9 @@ onMounted(() => {
                 <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <h2 class="text-lg font-semibold text-gray-900">Net worth trend</h2>
+                            <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                                <PresentationChartLineIcon class="h-5 w-5 text-gray-400" /> Net worth trend
+                            </h2>
                         </div>
                         <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                             12 months
@@ -789,7 +829,9 @@ onMounted(() => {
             <section class="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <h2 class="text-lg font-semibold text-gray-900">Quick health checks</h2>
+                        <h2 class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                            <HeartIcon class="h-5 w-5 text-gray-400" /> Quick health checks
+                        </h2>
                     </div>
                     <div class="rounded-xl bg-gray-50 px-3 py-2 text-right">
                         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Payments this month</p>

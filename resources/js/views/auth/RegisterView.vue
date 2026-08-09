@@ -1,5 +1,6 @@
 <script setup>
 import { reactive } from 'vue';
+import { UserPlusIcon } from '@heroicons/vue/24/outline';
 import { useRoute, useRouter } from 'vue-router';
 import AuthLayout from '@/components/layout/AuthLayout.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
@@ -34,7 +35,9 @@ async function handleSubmit() {
 
 <template>
     <AuthLayout width-class="max-w-3xl">
-        <h1 class="mb-6 text-xl font-semibold text-gray-900">Create your Fluxa account</h1>
+        <h1 class="mb-6 flex items-center gap-2 text-xl font-semibold text-gray-900">
+            <UserPlusIcon class="h-6 w-6 text-gray-400" /> Create your Fluxa account
+        </h1>
         <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
             <div class="grid gap-4 sm:grid-cols-2">
                 <div class="flex flex-col gap-1">

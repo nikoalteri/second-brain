@@ -39,6 +39,12 @@ class Subscription extends Model
         'day_of_month' => 'integer',
     ];
 
+    /** See Loan::graphqlStatus() — same enum-serialization workaround for GraphQL. */
+    public function graphqlStatus(): string
+    {
+        return $this->status->value;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
