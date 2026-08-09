@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CardBrand;
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
 use App\Enums\InterestCalculationMethod;
@@ -21,6 +22,7 @@ class CreditCardFactory extends Factory
             'account_id' => Account::factory(),
             'name' => $this->faker->word(),
             'type' => CreditCardType::REVOLVING,
+            'brand' => CardBrand::VISA,
             'credit_limit' => 5000.00,
             'fixed_payment' => 250.00,
             'interest_rate' => 12.00,
@@ -54,5 +56,20 @@ class CreditCardFactory extends Factory
                 'credit_limit' => null,
             ];
         });
+    }
+
+    public function visa(): static
+    {
+        return $this->state(['brand' => CardBrand::VISA]);
+    }
+
+    public function mastercard(): static
+    {
+        return $this->state(['brand' => CardBrand::MASTERCARD]);
+    }
+
+    public function amex(): static
+    {
+        return $this->state(['brand' => CardBrand::AMEX]);
     }
 }

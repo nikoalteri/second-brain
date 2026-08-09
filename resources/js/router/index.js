@@ -121,6 +121,12 @@ export const routes = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/vault',
+        name: 'vault',
+        component: () => import('@/views/vault/VaultView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/credit-cards/new',
         name: 'credit-cards.create',
         component: () => import('@/views/credit-cards/CreditCardFormView.vue'),

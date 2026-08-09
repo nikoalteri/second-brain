@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CardBrand;
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
 use App\Enums\InterestCalculationMethod;
@@ -26,6 +27,7 @@ class CreditCard extends Model
         'account_id',
         'name',
         'type',
+        'brand',
         'credit_limit',
         'fixed_payment',
         'interest_rate',
@@ -38,10 +40,34 @@ class CreditCard extends Model
         'status',
         'start_date',
         'interest_calculation_method',
+        'card_number',
+        'expiry_month',
+        'expiry_year',
+        'cvv',
+        'pin',
+        'security_code',
+    ];
+
+    /**
+     * Never leak via toArray()/JSON serialization by default — the vault fields are only ever
+     * exposed through CreditCardVaultResource, which the vault-unlock middleware gates. This is
+     * defense in depth: API resources already whitelist fields explicitly, but this ensures a
+     * stray `$creditCard->toArray()` elsewhere in the app can't accidentally surface them.
+     */
+    protected $hidden = [
+        'card_number',
+        'cvv',
+        'pin',
+        'security_code',
     ];
 
     protected $casts = [
+        'card_number' => 'encrypted',
+        'cvv' => 'encrypted',
+        'pin' => 'encrypted',
+        'security_code' => 'encrypted',
         'type' => CreditCardType::class,
+        'brand' => CardBrand::class,
         'credit_limit' => 'decimal:2',
         'fixed_payment' => 'decimal:2',
         'interest_rate' => 'decimal:4',

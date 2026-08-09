@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Enums\CardBrand;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,6 +25,7 @@ class UpdateCreditCardRequest extends FormRequest
                 }),
             ],
             'type'                        => ['sometimes', 'required', Rule::in(['charge', 'revolving'])],
+            'brand'                       => ['sometimes', 'required', Rule::enum(CardBrand::class)],
             'credit_limit'                => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'fixed_payment'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'interest_rate'               => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],

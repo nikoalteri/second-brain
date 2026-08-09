@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CreditCards\Schemas;
 
+use App\Enums\CardBrand;
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
 use Filament\Forms\Components\DatePicker;
@@ -52,6 +53,10 @@ class CreditCardForm
                                     $set('interest_rate', null);
                                 }
                             }),
+                        Select::make('brand')
+                            ->label('Brand')
+                            ->options(CardBrand::class)
+                            ->required(),
                         Select::make('status')
                             ->label('Status')
                             ->options(CreditCardStatus::class)

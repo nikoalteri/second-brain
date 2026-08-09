@@ -16,6 +16,7 @@ import {
     DocumentTextIcon,
     FlagIcon,
     HomeIcon,
+    LockClosedIcon,
     UserCircleIcon,
     XMarkIcon,
 } from '@heroicons/vue/24/outline';
@@ -74,6 +75,7 @@ const navLinks = computed(() => [
     { name: t('shell.nav.reports'), to: '/reports/finance', icon: ChartPieIcon },
     { name: t('shell.nav.loans'), to: '/loans', icon: DocumentTextIcon },
     { name: t('shell.nav.creditCards'), to: '/credit-cards', icon: CreditCardIcon },
+    { name: t('shell.nav.vault'), to: '/vault', icon: LockClosedIcon },
     { name: t('shell.nav.subscriptions'), to: '/subscriptions', icon: CalendarDaysIcon },
     { name: t('shell.nav.savingGoals'), to: '/saving-goals', icon: FlagIcon },
 ]);

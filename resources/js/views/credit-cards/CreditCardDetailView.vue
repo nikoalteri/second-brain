@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { ChevronDownIcon, ChevronUpIcon, PencilIcon } from '@heroicons/vue/24/outline';
+import { ChevronDownIcon, ChevronUpIcon, LockClosedIcon, PencilIcon } from '@heroicons/vue/24/outline';
 import { useRoute } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
@@ -482,6 +482,13 @@ onMounted(() => {
                     <span>Statement day {{ card.statement_day }} · Due day {{ card.due_day }}</span>
                 </div>
             </div>
+
+            <router-link
+                to="/vault"
+                class="mb-6 flex items-center gap-2 text-sm font-medium text-amber-700 hover:text-amber-800"
+            >
+                <LockClosedIcon class="h-4 w-4" /> Vedi nel Vault →
+            </router-link>
 
             <div class="mb-4 flex items-center justify-between gap-4">
                 <div>

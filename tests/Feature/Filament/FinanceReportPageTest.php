@@ -11,6 +11,7 @@ use App\Models\TransactionCategory;
 use App\Models\TransactionType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -20,6 +21,8 @@ class FinanceReportPageTest extends TestCase
 
     public function test_admin_finance_report_renders_budget_month_context_alerts_and_export_labels(): void
     {
+        $this->travelTo(Carbon::create(2026, 4, 15));
+
         $user = $this->createAdminUser();
         $account = Account::factory()->create(['user_id' => $user->id]);
         $expenseType = TransactionType::query()->firstOrCreate(
@@ -79,7 +82,7 @@ class FinanceReportPageTest extends TestCase
             'date' => '2026-04-07',
         ]);
 
-        $response = $this->actingAs($user)->get('/admin/finance-report');
+        $response = $this->actingAs($user)->get('/hub/finance-report');
 
         $response->assertOk()
             ->assertSee('Budget Month')
@@ -96,7 +99,7 @@ class FinanceReportPageTest extends TestCase
     {
         $user = $this->createAdminUser();
 
-        $response = $this->actingAs($user)->get('/admin');
+        $response = $this->actingAs($user)->get('/hub');
 
         $response->assertOk()
             ->assertDontSee('Budget Alerts');

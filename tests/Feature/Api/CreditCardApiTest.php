@@ -194,6 +194,7 @@ class CreditCardApiTest extends TestCase
             'name' => 'Charge Card',
             'account_id' => $account->id,
             'type' => 'charge',
+            'brand' => 'visa',
             'credit_limit' => 5000,
             'fixed_payment' => 250,
             'interest_rate' => 17.5,

@@ -14,6 +14,7 @@ use App\Models\Transaction;
 use App\Models\TransactionCategory;
 use App\Models\TransactionType;
 use App\Models\User;
+use App\Models\VaultCard;
 use App\Policies\AccountPolicy;
 use App\Policies\CreditCardCyclePolicy;
 use App\Policies\CreditCardPaymentPolicy;
@@ -26,6 +27,7 @@ use App\Policies\TransactionCategoryPolicy;
 use App\Policies\TransactionPolicy;
 use App\Policies\TransactionTypePolicy;
 use App\Policies\UserPolicy;
+use App\Policies\VaultCardPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -47,6 +49,7 @@ class AuthServiceProvider extends ServiceProvider
         Transaction::class => TransactionPolicy::class,
         TransactionCategory::class => TransactionCategoryPolicy::class,
         TransactionType::class => TransactionTypePolicy::class,
+        VaultCard::class => VaultCardPolicy::class,
     ];
 
     /**

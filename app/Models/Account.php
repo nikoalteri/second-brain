@@ -21,12 +21,19 @@ class Account extends Model
         'opening_balance',
         'currency',
         'is_active',
+        'iban',
+    ];
+
+    /** @see CreditCard::$hidden for why — same vault-gating rationale applies to iban. */
+    protected $hidden = [
+        'iban',
     ];
 
     protected $casts = [
         'opening_balance' => 'float',
         'balance'         => 'float',
         'is_active'       => 'boolean',
+        'iban'            => 'encrypted',
     ];
 
     protected static function boot()

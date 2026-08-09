@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
-import { ArrowsRightLeftIcon, PencilIcon } from '@heroicons/vue/24/outline';
+import { ArrowsRightLeftIcon, LockClosedIcon, PencilIcon } from '@heroicons/vue/24/outline';
 import { useRoute } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import DataTable from '@/components/ui/DataTable.vue';
@@ -68,6 +68,13 @@ const transactions = computed(() => account.value?.transactions ?? []);
                     {{ formatCurrency(account.balance, account.currency) }}
                 </p>
             </div>
+
+            <router-link
+                to="/vault"
+                class="mb-6 flex items-center gap-2 text-sm font-medium text-amber-700 hover:text-amber-800"
+            >
+                <LockClosedIcon class="h-4 w-4" /> Vedi nel Vault →
+            </router-link>
 
             <h2 class="mb-4 text-xl font-semibold text-gray-900">Recent Transactions</h2>
             <DataTable

@@ -7,6 +7,7 @@ export default {
             reports: 'Reports',
             loans: 'Loans',
             creditCards: 'Credit Cards',
+            vault: 'Vault',
             subscriptions: 'Subscriptions',
             savingGoals: 'Saving Goals',
         },

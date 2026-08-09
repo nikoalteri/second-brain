@@ -108,6 +108,8 @@ type CreditCard {
     name: String!
     "Card type: revolving or charge."
     type: String!
+    "Card network: visa, mastercard or amex."
+    brand: String!
     credit_limit: Float
     fixed_payment: Float!
     interest_rate: Float!
@@ -344,6 +346,7 @@ input CreateCreditCardInput {
     account_id: ID!
     name: String!
     type: String!
+    brand: String!
     credit_limit: Float
     fixed_payment: Float
     interest_rate: Float
@@ -361,6 +364,7 @@ input UpdateCreditCardInput {
     account_id: ID
     name: String
     type: String
+    brand: String
     credit_limit: Float
     fixed_payment: Float
     interest_rate: Float

@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'module' => \App\Http\Middleware\CheckModuleEnabled::class,
+            'vault.unlocked' => \App\Http\Middleware\EnsureVaultUnlocked::class,
         ]);
 
         //

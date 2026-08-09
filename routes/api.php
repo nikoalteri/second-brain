@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccountController;
+use App\Http\Controllers\Api\V1\AccountVaultController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BudgetController;
 use App\Http\Controllers\Api\V1\ChatbotController;
@@ -8,6 +9,8 @@ use App\Http\Controllers\Api\V1\CreditCardController;
 use App\Http\Controllers\Api\V1\CreditCardCycleController;
 use App\Http\Controllers\Api\V1\CreditCardExpenseController;
 use App\Http\Controllers\Api\V1\CreditCardPaymentController;
+use App\Http\Controllers\Api\V1\CreditCardSensitiveVaultController;
+use App\Http\Controllers\Api\V1\CreditCardVaultController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\LoanController;
@@ -18,6 +21,10 @@ use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Controllers\Api\V1\TransferController;
 use App\Http\Controllers\Api\V1\TwoFactorAuthController;
 use App\Http\Controllers\Api\V1\UserSettingsController;
+use App\Http\Controllers\Api\V1\VaultCardController;
+use App\Http\Controllers\Api\V1\VaultCardSensitiveController;
+use App\Http\Controllers\Api\V1\VaultController;
+use App\Http\Controllers\Api\V1\VaultPinController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -31,6 +38,11 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:10,1');
 
     Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/vault/unlock', [VaultController::class, 'unlock'])
+            ->middleware('throttle:10,1,vault-unlock');
+        Route::get('/vault/pin', [VaultPinController::class, 'show']);
+        Route::post('/vault/pin', [VaultPinController::class, 'store'])
+            ->middleware('throttle:5,1,vault-pin');
         Route::get('/auth/me', [AuthController::class, 'me']);
         Route::post('/auth/refresh', [AuthController::class, 'refresh']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -119,5 +131,26 @@ Route::prefix('v1')->group(function () {
 
         Route::put('budgets/monthly/{transactionCategory}', [BudgetController::class, 'upsert']);
         Route::delete('budgets/monthly/{transactionCategory}', [BudgetController::class, 'destroy']);
+    });
+
+    // ─── Vault — MFA-gated, requires a valid X-Vault-Token from /vault/unlock ──
+    Route::middleware(['auth:sanctum', 'vault.unlocked'])->group(function () {
+        Route::get('credit-cards/{creditCard}/vault', [CreditCardVaultController::class, 'show']);
+        Route::put('credit-cards/{creditCard}/vault', [CreditCardVaultController::class, 'update']);
+        Route::post('credit-cards/{creditCard}/vault/sensitive/reveal', [CreditCardSensitiveVaultController::class, 'reveal'])
+            ->middleware('throttle:5,1,credit-card-sensitive');
+        Route::put('credit-cards/{creditCard}/vault/sensitive', [CreditCardSensitiveVaultController::class, 'update'])
+            ->middleware('throttle:5,1,credit-card-sensitive');
+        Route::get('accounts/{account}/vault', [AccountVaultController::class, 'show']);
+        Route::put('accounts/{account}/vault', [AccountVaultController::class, 'update']);
+
+        Route::get('vault-cards', [VaultCardController::class, 'index']);
+        Route::post('vault-cards', [VaultCardController::class, 'store']);
+        Route::put('vault-cards/{vaultCard}', [VaultCardController::class, 'update']);
+        Route::delete('vault-cards/{vaultCard}', [VaultCardController::class, 'destroy']);
+        Route::post('vault-cards/{vaultCard}/sensitive/reveal', [VaultCardSensitiveController::class, 'reveal'])
+            ->middleware('throttle:5,1,vault-card-sensitive');
+        Route::put('vault-cards/{vaultCard}/sensitive', [VaultCardSensitiveController::class, 'update'])
+            ->middleware('throttle:5,1,vault-card-sensitive');
     });
 });

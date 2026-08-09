@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Enums\CardBrand;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,6 +24,7 @@ class StoreCreditCardRequest extends FormRequest
                 }),
             ],
             'type'                        => ['required', Rule::in(['charge', 'revolving'])],
+            'brand'                       => ['required', Rule::enum(CardBrand::class)],
             'credit_limit'                => ['nullable', 'numeric', 'min:0'],
             'fixed_payment'               => ['nullable', 'numeric', 'min:0'],
             'interest_rate'               => ['nullable', 'numeric', 'min:0', 'max:100'],

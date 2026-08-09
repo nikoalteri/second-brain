@@ -24,6 +24,7 @@ const form = ref({
     account_id: '',
     name: '',
     type: 'charge',
+    brand: 'visa',
     credit_limit: '',
     fixed_payment: '',
     interest_rate: '',
@@ -44,6 +45,7 @@ const CARD_QUERY = gql`
             account_id
             name
             type
+            brand
             credit_limit
             fixed_payment
             interest_rate
@@ -88,6 +90,11 @@ const typeOptions = [
     { value: 'charge', label: 'Charge' },
     { value: 'revolving', label: 'Revolving' },
 ];
+const brandOptions = [
+    { value: 'visa', label: 'Visa' },
+    { value: 'mastercard', label: 'Mastercard' },
+    { value: 'amex', label: 'American Express' },
+];
 const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'suspended', label: 'Suspended' },
@@ -108,6 +115,7 @@ watch(
                 account_id: card.account_id ?? '',
                 name: card.name,
                 type: card.type,
+                brand: card.brand,
                 credit_limit: card.credit_limit,
                 fixed_payment: card.fixed_payment,
                 interest_rate: card.interest_rate,
@@ -176,6 +184,7 @@ async function handleSubmit() {
         account_id: form.value.account_id,
         name: form.value.name,
         type: form.value.type,
+        brand: form.value.brand,
         credit_limit: parseOptionalFloat(form.value.credit_limit),
         fixed_payment: parseOptionalFloat(form.value.fixed_payment),
         interest_rate: parseOptionalFloat(form.value.interest_rate),
@@ -266,6 +275,11 @@ onMounted(() => {
                             label="Type *"
                             v-model="form.type"
                             :options="typeOptions"
+                        />
+                        <FormSelect
+                            label="Brand *"
+                            v-model="form.brand"
+                            :options="brandOptions"
                         />
                         <FormSelect
                             label="Status *"

@@ -46,6 +46,7 @@ class User extends Authenticatable implements FilamentUser
         'remember_token',
         'two_factor_secret',
         'two_factor_recovery_codes',
+        'vault_pin',
     ];
 
     /**
@@ -63,12 +64,18 @@ class User extends Authenticatable implements FilamentUser
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            'vault_pin' => 'hashed',
         ];
     }
 
     public function hasTwoFactorEnabled(): bool
     {
         return $this->two_factor_confirmed_at !== null;
+    }
+
+    public function hasVaultPin(): bool
+    {
+        return $this->vault_pin !== null;
     }
 
     protected static function booted(): void

@@ -16,6 +16,7 @@ class CreditCardResource extends JsonResource
             'name'                        => $this->name,
             'account_id'                  => $this->account_id,
             'type'                        => $this->type instanceof \BackedEnum ? $this->type->value : $this->type,
+            'brand'                       => $this->brand instanceof \BackedEnum ? $this->brand->value : $this->brand,
             'credit_limit'                => $this->credit_limit !== null ? (float) $this->credit_limit : null,
             'available_credit'            => $this->available_credit,
             'fixed_payment'               => ! $isChargeCard && $this->fixed_payment !== null ? (float) $this->fixed_payment : null,

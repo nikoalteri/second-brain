@@ -24,6 +24,9 @@ class CreditCardsTable
                 TextColumn::make('type')
                     ->label('Type')
                     ->badge(),
+                TextColumn::make('brand')
+                    ->label('Brand')
+                    ->badge(),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),
