@@ -1,0 +1,6 @@
+.scribe/
+tmp/pdfs/
+public/vendor/scribe/
+public/js/filament/
+.planning/*.pdf
+.planning/Screenshot*.png
