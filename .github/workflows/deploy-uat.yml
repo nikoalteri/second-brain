@@ -42,7 +42,12 @@ jobs:
           cd /var/www/fluxa
           git fetch origin uat
           git reset --hard origin/uat
-          composer install --no-dev --optimize-autoloader
+          # No --no-dev: config/scribe.php (published by the require-dev knuckleswtf/scribe
+          # package) references Scribe classes unconditionally, so removing dev packages
+          # breaks Laravel's config loading entirely (confirmed live: this took the site down
+          # with a 500 on the first real deploy run). Fixing that coupling is a separate,
+          # deliberate app-level change — not something to rush into under deploy pressure.
+          composer install --optimize-autoloader
           npm ci
           npm run build
           php artisan migrate --force
