@@ -6,6 +6,8 @@ Personal finance tracker built with Laravel, a Vue SPA, and a Filament admin pan
 
 **Snapshot: 2026-09-17 — implementation complete through Phase 21.** The latest work corrects credit-card balance recomputation, including opening debt, payment deletion, creation defaults, and immediate recomputation after opening-balance edits.
 
+The public `/cookie-policy` page documents cookies and browser storage, with links from the frontend and administration panel. Set `LEGAL_OPERATOR_NAME` and `LEGAL_CONTACT_EMAIL` for the instance before publication. Session cookie name and lifetime reflect Laravel configuration. Recheck the policy against the deployed site, including proxy-added cookies, when changing authentication, remember-me duration or adding external services. The current application includes no analytics or advertising trackers; optional tracking would require reviewing consent before activation.
+
 The latest local backend verification passed **333 tests and 1,274 assertions**, including the previously failing credit-card credit-line and KPI tests, which remain unchanged. This verifies the current working tree; it does not establish that these changes have been deployed.
 
 The project uses an evidence-first approach. Backend tests cover authentication/settings, ownership boundaries, account operations, reports/exports, chatbot intents, credit-card workflows and calculations, 2FA, vault access, transfers, and savings goals. Broader SPA behavior, GraphQL finance operations, and all combinations of financial workflows still require targeted validation; a passing backend suite is not full end-to-end UI coverage.

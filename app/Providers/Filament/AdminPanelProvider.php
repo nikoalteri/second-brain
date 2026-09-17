@@ -32,6 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('hub')
             ->brandName('Fluxa')
+            ->renderHook(\Filament\View\PanelsRenderHook::FOOTER, fn () => view('legal.footer'))
             ->login()
             ->darkMode(true, false)
             ->defaultThemeMode(ThemeMode::Light)
