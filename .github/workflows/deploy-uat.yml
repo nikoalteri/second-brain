@@ -17,15 +17,24 @@ jobs:
       # Credentials are read from the server's own .env at runtime — never stored in this
       # workflow or in GitHub secrets — and passed to mysqldump via MYSQL_PWD (an env var),
       # not a -p flag, so the password never appears in a process list.
+      #
+      # .env is a dotenv file, not a valid bash script (unquoted values with special
+      # characters, ${VAR} interpolation that may reference undefined names, etc.), so it's
+      # extracted key-by-key with grep instead of `source`d directly.
       - name: Backup database
         run: |
           set -euo pipefail
           cd /var/www/fluxa
-          set -a; source .env; set +a
+          env_value() { grep -m1 "^$1=" .env | cut -d= -f2- | sed -e 's/^"//' -e 's/"$//'; }
+          DB_HOST=$(env_value DB_HOST)
+          DB_PORT=$(env_value DB_PORT)
+          DB_DATABASE=$(env_value DB_DATABASE)
+          DB_USERNAME=$(env_value DB_USERNAME)
+          DB_PASSWORD=$(env_value DB_PASSWORD)
           mkdir -p ~/db-backups
           BACKUP_FILE=~/db-backups/uat-$(date +%Y%m%d-%H%M%S).sql.gz
           echo "BACKUP_FILE=$BACKUP_FILE" >> "$GITHUB_ENV"
-          MYSQL_PWD="$DB_PASSWORD" mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" | gzip > "$BACKUP_FILE"
+          MYSQL_PWD="$DB_PASSWORD" mysqldump --no-tablespaces -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" | gzip > "$BACKUP_FILE"
 
       - name: Deploy to /var/www/fluxa
         run: |
