@@ -222,8 +222,36 @@ Delivered:
 - [x] Full suite green (327 tests, 0 failures)
 - [x] `php artisan credit-cards:balance-audit` available for manual post-deploy reconciliation of real cards (not scheduled)
 
+### Phase 22: Proactive notifications — wire the existing (unused) Notification model to real financial triggers
+
+**Goal:** The `Notification` model and table exist but nothing in the codebase writes to them (`grep -rn "Notification::create" app/` returns zero matches). This phase wires real triggers — budget-threshold alerts (`BudgetAlertService` already computes `alert_status` but never surfaces it proactively), credit card due-date/limit warnings, loan installment due dates, subscription renewal reminders — into actual `Notification` rows, delivered in-app only via a daily digest command.
+**Requirements**: D-01 through D-09 (from 22-CONTEXT.md)
+**Depends on:** Phase 21
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 22`
+
+### Phase 23: Subscription price-hike detection
+
+**Goal:** Detect when a subscription's renewal amount increases relative to its prior charge and surface it through the notification channel built in Phase 22, instead of the increase only being visible by manually comparing past transactions.
+**Requirements**: D-01 through D-05 (from 23-CONTEXT.md)
+**Depends on:** Phase 22 (reuses its notification delivery)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 23`
+
+### Phase 24: Cash-flow forecast ("safe to spend")
+
+**Goal:** Aggregate already-tracked upcoming commitments (subscription renewals, loan installments, credit card cycle due payments) against current account balances into a forward-looking projection, instead of the user having to mentally net these out from separate pages. Reuses the existing `UpcomingPaymentsService` (Phase 17) rather than building new aggregation logic.
+**Requirements**: D-01 through D-04 (from 24-CONTEXT.md)
+**Depends on:** Phase 21
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 24`
+
+### Phase 25: Bank statement import & reconciliation
+
+**Goal:** Import transactions from exported bank statement files (CSV/Excel, via a user-configurable column mapping — not one hardcoded bank format) into a reviewable draft state, then reconcile/dedup them against existing `Transaction`/`CreditCardExpense` records before confirming, reducing manual entry. File-based import only — this does **not** reopen the existing "no bank-feed/Open Banking expansion" boundary (see Deferred Longer-Term Product Ideas above), since there is no live external API integration involved, only parsing of files the user exports themselves. PDF statement parsing is explicitly deferred out of this phase.
+**Requirements**: D-01 through D-05 (from 25-CONTEXT.md)
+**Depends on:** Phase 21
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 25`
+
 ---
 
 ## Direct Next Command
 
-Milestone v5.1 has no further committed phases. Phase 21 resolved the two test failures discovered during Phase 19 execution (`CreditCardCreditLineSyncTest::payments_reintegrate_only_principal_on_status_changes`, `CreditCardKpiServiceTest::it_returns_expected_credit_card_kpis_for_user`). Run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any `CHECK`-flagged real cards against real statements. Otherwise pick the next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns, then scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
+Phases 22-25 are newly added (2026-09-17), scoped from a product-enhancement brainstorm. All four have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md written) but none have been researched, planned, or executed yet. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it), then 23, 24, 25 — then execute progressively. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements.
