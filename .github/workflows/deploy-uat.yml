@@ -1,0 +1,48 @@
+name: Deploy to UAT
+
+on:
+  push:
+    branches: [uat]
+
+# Prevents two deploys from racing if pushes land close together.
+concurrency:
+  group: deploy-uat
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, fluxa-uat]
+    steps:
+      # Runs before any code/schema change, so a bad migration can be recovered from.
+      # Credentials are read from the server's own .env at runtime — never stored in this
+      # workflow or in GitHub secrets — and passed to mysqldump via MYSQL_PWD (an env var),
+      # not a -p flag, so the password never appears in a process list.
+      - name: Backup database
+        run: |
+          set -euo pipefail
+          cd /var/www/fluxa
+          set -a; source .env; set +a
+          mkdir -p ~/db-backups
+          BACKUP_FILE=~/db-backups/uat-$(date +%Y%m%d-%H%M%S).sql.gz
+          echo "BACKUP_FILE=$BACKUP_FILE" >> "$GITHUB_ENV"
+          MYSQL_PWD="$DB_PASSWORD" mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" "$DB_DATABASE" | gzip > "$BACKUP_FILE"
+
+      - name: Deploy to /var/www/fluxa
+        run: |
+          set -e
+          cd /var/www/fluxa
+          git fetch origin uat
+          git reset --hard origin/uat
+          composer install --no-dev --optimize-autoloader
+          npm ci
+          npm run build
+          php artisan migrate --force
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+
+      # Only runs if every step above succeeded — if the deploy failed partway, the backup
+      # is deliberately left in place (~/db-backups) for manual recovery.
+      - name: Remove backup (deploy succeeded)
+        if: success()
+        run: rm -f "$BACKUP_FILE"

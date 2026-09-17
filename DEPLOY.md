@@ -27,35 +27,48 @@ Not yet set up as a separate environment. When it exists, it should run on its o
 with its own database — production must never share a database with UAT, especially given this
 project handles real personal financial data. Deploys from the `main` branch once established.
 
-## Manual deploy steps (until automated)
+## Automated deploy pipeline (UAT)
 
-On the `fluxa-uat` VM, from `/var/www/fluxa`:
+Every push to `uat` deploys automatically via `.github/workflows/deploy-uat.yml`, run by a
+**self-hosted GitHub Actions runner installed on the `fluxa-uat` VM itself** (registered as
+`fluxa-uat-runner`, systemd service `actions.runner.nikoalteri-second-brain.fluxa-uat-runner`,
+started automatically on boot). It runs entirely inside the homelab LAN — a GitHub-hosted
+runner can't reach `192.168.0.20` directly, so this is the only viable approach without exposing
+SSH to the internet.
+
+The workflow: a `mysqldump` backup of the UAT database (gzipped, saved to `~/db-backups` on the
+VM) runs first, then `git fetch` + `git reset --hard origin/uat` in `/var/www/fluxa`,
+`composer install --no-dev`, `npm ci && npm run build`, `php artisan migrate --force`, and
+`config:cache`/`route:cache`/`view:cache`. The backup is deleted automatically only if every
+step succeeds — if the deploy fails partway (e.g., a bad migration), the backup is left in
+`~/db-backups` on the VM for manual recovery. No PHP-FPM reload is needed —
+`opcache.enable=On` with `opcache.validate_timestamps=On` (revalidate every 2s) already picks
+up changed files without a restart.
+
+**Monitoring:** every run's status, logs, and history are on GitHub —
+https://github.com/nikoalteri/second-brain/actions — and GitHub emails the repo owner
+automatically on a failed run.
+
+**Not yet automated / known gaps:**
+- The scheduler (`loans:sync-installments`, `subscriptions:sync-renewals`,
+  `credit-cards:generate-cycles --issue-ready`) has no cron entry calling
+  `php artisan schedule:run` yet on the VM — see `routes/console.php` for the full list.
+- No queue worker service is running on the VM (`QUEUE_CONNECTION=database`) — only relevant if
+  something starts dispatching queued jobs.
+- No `main`/production deploy workflow yet — production isn't set up as its own environment
+  (see above). Once it exists, the same self-hosted-runner pattern applies: a second runner on
+  the prod host, labeled e.g. `fluxa-prod`, with a `deploy-prod.yml` watching `main`.
+
+## Manual deploy (fallback, if the pipeline is down)
+
+On the `fluxa-uat` VM, from `/var/www/fluxa`, the same steps the workflow runs:
 
 ```bash
 git pull origin uat
 composer install --optimize-autoloader --no-dev
-npm install && npm run build
+npm ci && npm run build
 php artisan migrate --force
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-sudo systemctl reload php8.4-fpm
 ```
-
-If the scheduler (`loans:sync-installments`, `subscriptions:sync-renewals`,
-`credit-cards:generate-cycles --issue-ready`) isn't already wired into a system cron entry
-calling `php artisan schedule:run` every minute, that needs setting up separately — see
-`routes/console.php` for the full list of scheduled commands.
-
-## Planned: automated deploy pipeline
-
-Not yet implemented. Since the UAT VM is only reachable on the LAN (`192.168.0.20`, not exposed
-to the internet for SSH), a GitHub-hosted Actions runner cannot reach it directly. The
-likely approach is a **self-hosted GitHub Actions runner** installed on the homelab network
-(e.g., on the `fluxa-uat` VM itself), with two workflows:
-
-- `uat` branch push → self-hosted runner pulls, runs the steps above
-- `main` branch push → deploys to production once a production environment exists
-
-This needs to be scoped and built as its own piece of work — see the project's `.planning/`
-GSD workflow for how new work gets discussed/planned here.
