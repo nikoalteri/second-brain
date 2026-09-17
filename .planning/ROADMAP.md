@@ -206,6 +206,16 @@ Delivered:
 - [x] Regression test (`CreditCardCurrencyDisplayTest`) rendering the live Filament page under both currencies
 - [x] Full suite green (282 tests, only the 2 pre-existing unrelated failures)
 
+### Phase 21: Credit card balance recompute correctness — fix syncCardBalance dropping opening balance on payment create/update
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 20
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 21 to break down)
+
 ---
 
 ## Direct Next Command
