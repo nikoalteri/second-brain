@@ -123,6 +123,14 @@ class CreditCardForm
                             ->step(0.01)
                             ->default(0)
                             ->required(),
+                        TextInput::make('opening_balance')
+                            ->label('Opening balance')
+                            ->helperText('Starting debt not yet tied to a tracked expense. This — not "Current balance" — is what the app actually uses as the base for the computed balance; edit this field to correct a card\'s real-world debt.')
+                            ->numeric()
+                            ->prefix('€')
+                            ->step(0.01)
+                            ->default(0)
+                            ->required(),
                     ])
                     ->columns(2),
             ]);

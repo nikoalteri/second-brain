@@ -27,6 +27,7 @@ class CreditCardResource extends JsonResource
             'due_day'                     => $this->due_day,
             'skip_weekends'               => (bool) $this->skip_weekends,
             'current_balance'             => (float) $this->current_balance,
+            'opening_balance'             => (float) $this->opening_balance,
             'status'                      => $this->status instanceof \BackedEnum ? $this->status->value : $this->status,
             'start_date'                  => $this->start_date?->toDateString(),
             'interest_calculation_method' => ! $isChargeCard && $this->interest_calculation_method instanceof \BackedEnum

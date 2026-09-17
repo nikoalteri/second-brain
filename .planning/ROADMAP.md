@@ -206,18 +206,24 @@ Delivered:
 - [x] Regression test (`CreditCardCurrencyDisplayTest`) rendering the live Filament page under both currencies
 - [x] Full suite green (282 tests, only the 2 pre-existing unrelated failures)
 
-### Phase 21: Credit card balance recompute correctness — fix syncCardBalance dropping opening balance on payment create/update
+### Phase 21: Credit card balance recompute correctness — fix syncCardBalance dropping opening balance on payment create/update ✅
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** `CreditCardCycleService::syncCardBalance()` computes `current_balance` as `opening_balance + expenses − paid principal` instead of dropping any balance not backed by a tracked expense; the fix and its data-integrity fallout (backfill safety, at-risk-card reporting) ship without reintroducing the Phase 18 payment-status race condition.
+**Requirements**: D-01 through D-10 (from 21-CONTEXT.md; no ROADMAP requirement IDs assigned)
 **Depends on:** Phase 20
-**Plans:** 0 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 21 to break down)
+- [x] 21-01-PLAN.md — `opening_balance` column, model backward-compat bridge, corrected `syncCardBalance()` formula, `handleDeletedPayment()` alignment, additive Filament/API field, regression test
+- [x] 21-02-PLAN.md — `credit-cards:balance-audit` manual command listing active cards and flagging pre-fix ones for real-statement reconciliation
+
+Delivered:
+- [x] Both pre-existing failing tests (`CreditCardCreditLineSyncTest`, `CreditCardKpiServiceTest`, deferred since Phase 19) now pass with zero test-file edits
+- [x] Full suite green (327 tests, 0 failures)
+- [x] `php artisan credit-cards:balance-audit` available for manual post-deploy reconciliation of real cards (not scheduled)
 
 ---
 
 ## Direct Next Command
 
-Milestone v5.1 has no further committed phases. Two real, substantive test failures were discovered during Phase 19 execution (`CreditCardCreditLineSyncTest::payments_reintegrate_only_principal_on_status_changes`, `CreditCardKpiServiceTest::it_returns_expected_credit_card_kpis_for_user`, both involving `CreditCardPayment` status-change balance reconciliation) — worth a dedicated proof-first phase. Otherwise pick the next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns, then scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
+Milestone v5.1 has no further committed phases. Phase 21 resolved the two test failures discovered during Phase 19 execution (`CreditCardCreditLineSyncTest::payments_reintegrate_only_principal_on_status_changes`, `CreditCardKpiServiceTest::it_returns_expected_credit_card_kpis_for_user`). Run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any `CHECK`-flagged real cards against real statements. Otherwise pick the next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns, then scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
