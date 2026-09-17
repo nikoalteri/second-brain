@@ -71,3 +71,7 @@
 
 - Parsing PDF degli estratti conto
 - Integrazione Open Banking/bank-feed live — resta esplicitamente fuori scope (ROADMAP.md, Deferred Longer-Term Product Ideas)
+
+## Addendum (2026-09-17, durante il discuss-phase della Fase 27)
+
+Durante lo scoping della riconciliazione automatica (Fase 27) è emerso che serve un dato di confronto esterno reale, non solo le transazioni importate stesse. Aggiunta D-06: campo opzionale "saldo finale estratto conto" per batch di import, inserito manualmente dall'utente leggendolo dal proprio estratto reale.

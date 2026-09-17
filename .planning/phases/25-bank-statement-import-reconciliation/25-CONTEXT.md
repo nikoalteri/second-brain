@@ -34,6 +34,9 @@ Import transactions from user-exported CSV/Excel files (not PDF, not live Open B
 - UI flow details for the mapping/preview/review screens (Filament vs SPA vs both — not decided, research should check which surface fits better given `maatwebsite/excel` is typically wired through Filament import actions in this ecosystem)
 - Whether a mapping can be edited/re-applied later if it turns out wrong
 
+### Addendum — added 2026-09-17, during Phase 27 (automated reconciliation) discuss-phase
+- **D-06:** An import batch (one file upload session, covering one account/card over some period) must optionally capture a **statement ending balance** — a single number the user types in from their real bank statement's declared ending balance for that period. This is what makes Phase 27's reconciliation a true external-truth comparison instead of a purely internal consistency check. Optional because not every import will have this figure at hand, but Phase 27's reconciliation can only run for import batches where it was provided. Store it on whatever "import batch" concept the staging data model ends up using (see Discretion above) — a single field, not per-row.
+
 </decisions>
 
 <canonical_refs>

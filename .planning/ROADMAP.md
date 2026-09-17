@@ -245,8 +245,8 @@ Delivered:
 
 ### Phase 25: Bank statement import & reconciliation
 
-**Goal:** Import transactions from exported bank statement files (CSV/Excel, via a user-configurable column mapping — not one hardcoded bank format) into a reviewable draft state, then reconcile/dedup them against existing `Transaction`/`CreditCardExpense` records before confirming, reducing manual entry. File-based import only — this does **not** reopen the existing "no bank-feed/Open Banking expansion" boundary (see Deferred Longer-Term Product Ideas above), since there is no live external API integration involved, only parsing of files the user exports themselves. PDF statement parsing is explicitly deferred out of this phase.
-**Requirements**: D-01 through D-05 (from 25-CONTEXT.md)
+**Goal:** Import transactions from exported bank statement files (CSV/Excel, via a user-configurable column mapping — not one hardcoded bank format) into a reviewable draft state, then reconcile/dedup them against existing `Transaction`/`CreditCardExpense` records before confirming, reducing manual entry. File-based import only — this does **not** reopen the existing "no bank-feed/Open Banking expansion" boundary (see Deferred Longer-Term Product Ideas above), since there is no live external API integration involved, only parsing of files the user exports themselves. PDF statement parsing is explicitly deferred out of this phase. Each import batch can optionally capture the statement's declared ending balance, feeding Phase 27's reconciliation.
+**Requirements**: D-01 through D-06 (from 25-CONTEXT.md; D-06 added retroactively during Phase 27's discuss-phase)
 **Depends on:** Phase 21
 **Plans:** not started — context gathered, ready for `/gsd-plan-phase 25`
 
@@ -257,8 +257,26 @@ Delivered:
 **Depends on:** Phase 17 (chatbot/IntentRouter), Phase 24 (should be planned/executed with awareness of it — both add Dashboard aggregate figures)
 **Plans:** not started — context gathered, ready for `/gsd-plan-phase 26`
 
+### Phase 27: Automated statement reconciliation
+
+**Goal:** Evolve the manual `credit-cards:balance-audit` command (Phase 21) into an automatic check — when a Phase 25 import batch has a declared statement ending balance, compare it against Fluxa's own computed balance for the same period and notify (Phase 22) on any mismatch. A true external-truth reconciliation, not just an internal consistency check.
+**Requirements**: D-01 through D-05 (from 27-CONTEXT.md)
+**Depends on:** Phase 25 (import batches + the D-06 ending-balance field), Phase 22 (notification delivery), Phase 21 (balance formula reused)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 27` (cannot be planned in full detail until Phase 25's own planning settles its staging data model)
+
+### Phase 28: Automatic transaction categorization
+
+**Goal:** Suggest/assign a transaction's category automatically — explicit user-defined rules first, then a match against the user's own categorization history as fallback. Silently assigned for manually-created transactions; shown as an overridable suggestion in Phase 25's import draft review. Applies going forward only, no retroactive backfill.
+**Requirements**: D-01 through D-06 (from 28-CONTEXT.md)
+**Depends on:** Phase 25 (shares its import draft review flow for the suggest-not-assign path)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 28`
+
+### Report annuale/fiscale — resolved without a new phase
+
+During this brainstorm the user asked for a simpler, non-monthly per-category annual summary alongside the existing detailed pivot. Investigation found this **already ships** today: `GET /api/v1/reports/finance/export?year=&format=csv|xlsx|pdf` (`FinanceReportController`/`FinanceReportSnapshotService`/`FinanceReportExportService`) already includes a "Distribution" section — a per-category yearly total with no month breakdown — in every export format (its own XLSX sheet, its own PDF/CSV section), alongside the existing "Category Pivot" (monthly detail) and "Cashflow Summary" sections. The SPA already has an export trigger (`resources/js/views/reports/FinanceReportView.vue`). No new phase needed; not added to the roadmap.
+
 ---
 
 ## Direct Next Command
 
-Phases 22-26 are newly added (2026-09-17), scoped from a product-enhancement brainstorm. All five have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md written) but none have been researched, planned, or executed yet. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it; Phase 26 should follow Phase 24 given their shared Dashboard surface) — then execute progressively. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements. A separate, already-shipped ad-hoc fix (`feat/hub-dark-mode` branch, not yet merged): re-enabled the dark-mode toggle in the Filament admin panel.
+Phases 22-28 are newly added (2026-09-17), scoped from a product-enhancement brainstorm. All have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md written) but none have been researched, planned, or executed yet. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it), then 25 (Phases 27 and 28 both depend on its staging data model), then 24/26 together, then 27/28. Execute progressively as each is planned. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements. A separate, already-shipped ad-hoc fix (`feat/hub-dark-mode` branch, not yet merged): re-enabled the dark-mode toggle in the Filament admin panel.
