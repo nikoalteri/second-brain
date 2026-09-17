@@ -17,6 +17,7 @@ use App\Models\Subscription;
 use App\Models\Transaction;
 use App\Observers\CreditCardCycleObserver;
 use App\Observers\CreditCardExpenseObserver;
+use App\Observers\CreditCardObserver;
 use App\Observers\CreditCardPaymentObserver;
 use App\Observers\LoanPaymentObserver;
 use App\Observers\SubscriptionObserver;
@@ -61,6 +62,7 @@ class AppServiceProvider extends ServiceProvider
 
         Transaction::observe(TransactionObserver::class);
         LoanPayment::observe(LoanPaymentObserver::class);
+        CreditCard::observe(CreditCardObserver::class);
         CreditCardCycle::observe(CreditCardCycleObserver::class);
         CreditCardPayment::observe(CreditCardPaymentObserver::class);
         CreditCardExpense::observe(CreditCardExpenseObserver::class);

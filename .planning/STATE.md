@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
-stopped_at: Phase 19 context gathered
-last_updated: "2026-08-06T23:38:01.760Z"
-last_activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-period generalization, stamp-duty flag, synthetic test data)
+stopped_at: Phase 21 complete
+last_updated: "2026-09-17T00:00:00.000Z"
+last_activity: 2026-09-17 -- Phase 21 (credit card balance recompute correctness) planned and executed end-to-end: opening_balance column, corrected syncCardBalance() formula, handleDeletedPayment() alignment, and the credit-cards:balance-audit command. Full suite green (327 tests). Note: this file was not kept current through Phase 20 or the several ad-hoc features shipped after it (saving goals, transfers, TOTP, Vault, domain icons) — only this phase's status is refreshed here.
 progress:
   total_phases: 7
   completed_phases: 6
@@ -18,8 +18,8 @@ progress:
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 18 complete. Phase 19 context gathered — ready for research/planning
-**Updated:** 2026-08-06
+**Status:** Phase 21 complete — both plans executed, full suite green
+**Updated:** 2026-09-17
 
 ---
 
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Phase 19 — revolving-credit-card-interest-engine-correctness-align-cycl
+**Current focus:** None committed — Phase 21 was the last committed phase; pick next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns
 
 ## Current Position
 
-Phase: 19 — CONTEXT GATHERED
-Plan: 0 of ? (not yet planned)
-Status: Ready for `/gsd-plan-phase 19`
-Last activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-period generalization, stamp-duty flag, synthetic test data)
+Phase: 21 — COMPLETE
+Plan: 2 of 2 complete
+Status: No further committed phases. Run `php artisan credit-cards:balance-audit` and manually reconcile any flagged real cards.
+Last activity: 2026-09-17 -- Phase 21 discuss → research → plan → execute completed in one session
 
 ## Session Resume
 
-**Stopped at:** Phase 19 context gathered
-**Resume file:** .planning/phases/19-revolving-credit-card-interest-engine-correctness-align-cycl/19-CONTEXT.md
+**Stopped at:** Phase 21 complete
+**Resume file:** .planning/phases/21-credit-card-balance-recompute-correctness-fix-synccardbalance-dropping-opening-balance-on-payment-create-update/21-02-SUMMARY.md
 
 ## Accumulated Context
 
@@ -81,7 +81,7 @@ Last activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-pe
 
 ## Issues / Blockers
 
-- None blocking. Phase 17 (chatbot) and Phase 18 (hardening & security proof) are complete. Phase 19 (revolving credit card interest engine correctness) has captured context — next step is `/gsd-plan-phase 19`.
+- None blocking. Phases 17-21 are complete (chatbot, hardening & security proof, revolving interest engine correctness, multi-currency display, credit-card balance recompute correctness). No committed phase remains — next step is `/gsd-discuss-phase` on a new focus or `/gsd-new-milestone`.
 
 ## Performance Metrics
 
