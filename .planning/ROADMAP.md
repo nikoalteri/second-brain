@@ -250,8 +250,15 @@ Delivered:
 **Depends on:** Phase 21
 **Plans:** not started — context gathered, ready for `/gsd-plan-phase 25`
 
+### Phase 26: Debt & subscription totals (chatbot + dashboard)
+
+**Goal:** Four new aggregate figures — total monthly-equivalent cost of active subscriptions, total remaining loan principal, total credit-card debt, and their combined "total debts" — exposed on both the chatbot (5 new `ChatIntent`s: 4 single-topic + 1 combined `debt_overview`) and the SPA Dashboard, composing existing services (`SubscriptionService`, `IntentRouter`) rather than new aggregation logic.
+**Requirements**: D-01 through D-05 (from 26-CONTEXT.md)
+**Depends on:** Phase 17 (chatbot/IntentRouter), Phase 24 (should be planned/executed with awareness of it — both add Dashboard aggregate figures)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 26`
+
 ---
 
 ## Direct Next Command
 
-Phases 22-25 are newly added (2026-09-17), scoped from a product-enhancement brainstorm. All four have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md written) but none have been researched, planned, or executed yet. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it), then 23, 24, 25 — then execute progressively. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements.
+Phases 22-26 are newly added (2026-09-17), scoped from a product-enhancement brainstorm. All five have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md written) but none have been researched, planned, or executed yet. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it; Phase 26 should follow Phase 24 given their shared Dashboard surface) — then execute progressively. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements. A separate, already-shipped ad-hoc fix (`feat/hub-dark-mode` branch, not yet merged): re-enabled the dark-mode toggle in the Filament admin panel.
