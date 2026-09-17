@@ -1,5 +1,13 @@
 <?php
 
+// knuckleswtf/scribe is a require-dev-only package (API doc generation, not needed at
+// request-time). Laravel loads every config/*.php file on every boot regardless of
+// environment, so this file must not hard-crash when the package isn't installed — e.g. after
+// a production/UAT `composer install` without dev dependencies.
+if (! class_exists(\Knuckles\Scribe\Config\Defaults::class)) {
+    return [];
+}
+
 use Knuckles\Scribe\Config\AuthIn;
 use Knuckles\Scribe\Config\Defaults;
 use Knuckles\Scribe\Extracting\Strategies;
