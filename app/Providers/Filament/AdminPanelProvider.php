@@ -33,7 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('hub')
             ->brandName('Fluxa')
             ->login()
-            ->darkMode(false, true)
+            ->darkMode(true, false)
             ->defaultThemeMode(ThemeMode::Light)
             ->topNavigation()
             ->colors([
