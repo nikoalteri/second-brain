@@ -38,12 +38,12 @@ SSH to the internet.
 
 The workflow: a `mysqldump` backup of the UAT database (gzipped, saved to `~/db-backups` on the
 VM) runs first, then `git fetch` + `git reset --hard origin/uat` in `/var/www/fluxa`,
-`composer install --no-dev`, `npm ci && npm run build`, `php artisan migrate --force`, and
-`config:cache`/`route:cache`/`view:cache`. The backup is deleted automatically only if every
-step succeeds — if the deploy fails partway (e.g., a bad migration), the backup is left in
-`~/db-backups` on the VM for manual recovery. No PHP-FPM reload is needed —
-`opcache.enable=On` with `opcache.validate_timestamps=On` (revalidate every 2s) already picks
-up changed files without a restart.
+`composer install` (see note below on why **not** `--no-dev`), `npm ci && npm run build`,
+`php artisan migrate --force`, and `config:cache`/`route:cache`/`view:cache`. The backup is
+deleted automatically only if every step succeeds — if the deploy fails partway (e.g., a bad
+migration), the backup is left in `~/db-backups` on the VM for manual recovery. No PHP-FPM
+reload is needed — `opcache.enable=On` with `opcache.validate_timestamps=On` (revalidate every
+2s) already picks up changed files without a restart.
 
 **Monitoring:** every run's status, logs, and history are on GitHub —
 https://github.com/nikoalteri/second-brain/actions — and GitHub emails the repo owner
@@ -58,6 +58,13 @@ automatically on a failed run.
 - No `main`/production deploy workflow yet — production isn't set up as its own environment
   (see above). Once it exists, the same self-hosted-runner pattern applies: a second runner on
   the prod host, labeled e.g. `fluxa-prod`, with a `deploy-prod.yml` watching `main`.
+- **`composer install --no-dev` currently breaks the app.** `config/scribe.php` (published by
+  the `require-dev`-only `knuckleswtf/scribe` package) references Scribe's classes
+  unconditionally; removing dev packages leaves those classes undefined, which crashes
+  Laravel's config loading on every request (confirmed live on 2026-09-17: the first real
+  pipeline run took UAT down with a 500 until `composer install` — full deps — was re-run
+  manually). Until `config/scribe.php` is made to tolerate the package being absent (or scribe
+  is moved out of `require-dev`), deploys install full dependencies, dev tools included.
 
 ## Manual deploy (fallback, if the pipeline is down)
 
@@ -65,7 +72,7 @@ On the `fluxa-uat` VM, from `/var/www/fluxa`, the same steps the workflow runs:
 
 ```bash
 git pull origin uat
-composer install --optimize-autoloader --no-dev
+composer install --optimize-autoloader
 npm ci && npm run build
 php artisan migrate --force
 php artisan config:cache
