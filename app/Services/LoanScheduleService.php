@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LoanStatus;
 use App\Models\Loan;
 use App\Models\LoanPayment;
 use Carbon\Carbon;
@@ -63,9 +64,10 @@ class LoanScheduleService
         $paidInstallments = $loan->payments()->where('status', 'paid')->count();
         $remainingAmount  = $this->calcOutstandingPrincipal($loan, $paidInstallments);
 
+        // `status` is cast to LoanStatus: compare against the enum, never a raw string.
         $status = $remainingAmount <= 0
-            ? 'completed'
-            : ($loan->status === 'defaulted' ? 'defaulted' : 'active');
+            ? LoanStatus::COMPLETED
+            : ($loan->status === LoanStatus::DEFAULTED ? LoanStatus::DEFAULTED : LoanStatus::ACTIVE);
 
         $loan->update([
             'paid_installments' => $paidInstallments,
