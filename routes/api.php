@@ -30,10 +30,14 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
 
     // ─── Authentication (no auth guard required) ───────────────────────────
-    Route::post('/auth/login', [AuthController::class, 'login']);
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
-    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    Route::post('/auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:auth-login');
+    Route::post('/auth/register', [AuthController::class, 'register'])
+        ->middleware('throttle:auth-register');
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:auth-password');
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:auth-password');
     Route::post('/auth/two-factor/login', [AuthController::class, 'twoFactorLogin'])
         ->middleware('throttle:10,1');
 

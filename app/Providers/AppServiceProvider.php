@@ -54,6 +54,23 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Guest auth endpoints. The per-account key stops guessing against one account; the
+        // per-IP cap stays generous because behind an untrusted proxy every client shares one IP.
+        foreach (['auth-login', 'auth-password'] as $name) {
+            RateLimiter::for($name, function (Request $request) use ($name) {
+                $account = mb_strtolower((string) $request->input('email'));
+
+                return [
+                    Limit::perMinute(5)->by($name.'|'.$account.'|'.$request->ip()),
+                    Limit::perMinute(60)->by($name.'-ip|'.$request->ip()),
+                ];
+            });
+        }
+
+        RateLimiter::for('auth-register', function (Request $request) {
+            return Limit::perMinute(5)->by('auth-register|'.$request->ip());
+        });
+
         ResetPassword::createUrlUsing(function (object $user, string $token): string {
             return rtrim((string) config('app.url'), '/').'/reset-password?token='.$token.'&email='.urlencode($user->getEmailForPasswordReset());
         });
