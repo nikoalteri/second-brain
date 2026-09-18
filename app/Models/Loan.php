@@ -43,6 +43,15 @@ class Loan extends Model
         'status' => LoanStatus::class,
     ];
 
+    protected static function booted(): void
+    {
+        // The column is NOT NULL but the API accepts it as optional: a loan with no repayments
+        // yet still owes the full amount. Same default as LoanRepository and the Filament form.
+        static::creating(function (self $loan): void {
+            $loan->remaining_amount ??= $loan->total_amount ?? 0;
+        });
+    }
+
     /**
      * `status` is cast to a backed enum for app-side logic, but graphql-php's String scalar can't
      * serialize an enum object directly — this gives the GraphQL schema (see graphql/schema.graphql,
