@@ -9,6 +9,6 @@ class OwnedAccount extends OwnedByAuthenticatedUser
 {
     public function __construct()
     {
-        parent::__construct('accounts');
+        parent::__construct('accounts', softDeletes: true);
     }
 }

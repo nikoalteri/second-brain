@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  */
 class OwnedByAuthenticatedUser implements ValidationRule
 {
-    public function __construct(private readonly string $table) {}
+    public function __construct(private readonly string $table, private readonly bool $softDeletes = false) {}
 
     public static function accounts(): self
     {
@@ -38,6 +38,10 @@ class OwnedByAuthenticatedUser implements ValidationRule
         }
 
         $query = DB::table($this->table)->where('id', $value);
+
+        if ($this->softDeletes) {
+            $query->whereNull('deleted_at');
+        }
 
         if (! auth()->user()?->hasRole('superadmin')) {
             $query->where('user_id', auth()->id());

@@ -9,6 +9,6 @@ class OwnedCreditCard extends OwnedByAuthenticatedUser
 {
     public function __construct()
     {
-        parent::__construct('credit_cards');
+        parent::__construct('credit_cards', softDeletes: true);
     }
 }
