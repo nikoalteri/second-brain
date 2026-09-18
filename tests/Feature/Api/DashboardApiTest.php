@@ -229,7 +229,7 @@ class DashboardApiTest extends TestCase
             ->assertJsonPath('data.net_worth_trend.11.value', 910);
     }
 
-    public function test_dashboard_charts_keeps_shared_category_names_for_pie_data(): void
+    public function test_dashboard_charts_does_not_expose_other_users_category_names(): void
     {
         $this->travelTo(Carbon::parse('2026-04-23'));
 
@@ -249,7 +249,7 @@ class DashboardApiTest extends TestCase
         );
         $sharedCategory = TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $owner->id,
-            'name' => 'Shared groceries',
+            'name' => 'Private groceries',
         ]);
 
         Transaction::factory()->create([
@@ -270,8 +270,10 @@ class DashboardApiTest extends TestCase
         ));
 
         $response->assertOk()
-            ->assertJsonPath('data.expense_categories.0.category', 'Shared groceries')
+            ->assertJsonPath('data.expense_categories.0.category', 'Uncategorised')
             ->assertJsonPath('data.expense_categories.0.total', 125);
+
+        $this->assertStringNotContainsString('Private groceries', $response->getContent());
     }
 
     public function test_dashboard_charts_does_not_include_other_users_expenses(): void
