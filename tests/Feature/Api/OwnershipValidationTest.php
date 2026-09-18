@@ -188,4 +188,27 @@ class OwnershipValidationTest extends TestCase
         $this->assertEmpty($response->json('errors'));
         $this->assertSame($newAccount->id, $loan->fresh()->account_id);
     }
+
+    public function test_graphql_create_transaction_rejects_foreign_account_and_category(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id, 'balance' => 50]);
+        $foreignAccount = Account::factory()->create(['user_id' => $other->id, 'balance' => 100]);
+        $foreignCategory = TransactionCategory::create(['user_id' => $other->id, 'name' => 'Private', 'is_active' => true]);
+        $type = $this->expenseType();
+
+        Sanctum::actingAs($user);
+
+        $mutation = 'mutation ($account: ID!, $category: ID) { createTransaction(input: {account_id: $account, transaction_type_id: '.$type->id.', transaction_category_id: $category, amount: 10, date: "2026-01-10", description: "X"}) { id } }';
+
+        $response = $this->postJson('/graphql', ['query' => $mutation, 'variables' => ['account' => $foreignAccount->id, 'category' => null]]);
+        $this->assertArrayHasKey('input.account_id', $response->json('errors.0.extensions.validation') ?? []);
+
+        $response = $this->postJson('/graphql', ['query' => $mutation, 'variables' => ['account' => $account->id, 'category' => $foreignCategory->id]]);
+        $this->assertArrayHasKey('input.transaction_category_id', $response->json('errors.0.extensions.validation') ?? []);
+
+        $this->assertSame(0, Transaction::withoutGlobalScopes()->count());
+        $this->assertEquals(100, $foreignAccount->fresh()->balance);
+    }
 }
