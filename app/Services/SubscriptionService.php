@@ -12,7 +12,6 @@ use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class SubscriptionService
@@ -44,10 +43,8 @@ class SubscriptionService
     /**
      * Get total monthly cost for active subscriptions
      */
-    public function getMonthlyTotal(?int $userId = null): float
+    public function getMonthlyTotal(int $userId): float
     {
-        $userId ??= Auth::id();
-        
         return Subscription::where('user_id', $userId)
             ->where('status', SubscriptionStatus::ACTIVE)
             ->get()
@@ -58,11 +55,9 @@ class SubscriptionService
      * Get upcoming renewals within N days
      */
     public function getUpcomingRenewals(
-        int $days = 7,
-        ?int $userId = null
+        int $days,
+        int $userId
     ): Collection {
-        $userId ??= Auth::id();
-        
         return Subscription::where('user_id', $userId)
             ->active()
             ->forRenewal($days)
