@@ -8,6 +8,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Auth\MultiFactor\App\AppAuthentication;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -34,6 +35,12 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('Fluxa')
             ->renderHook(\Filament\View\PanelsRenderHook::FOOTER, fn () => view('legal.footer'))
             ->login()
+            // Required second factor for everyone who can open the panel, on the same TOTP secret
+            // the API uses. The profile page is where the setup (and its recovery codes) lives.
+            ->profile()
+            ->multiFactorAuthentication([
+                AppAuthentication::make()->recoverable()->brandName('Fluxa'),
+            ], isRequired: true)
             ->darkMode(true, false)
             ->defaultThemeMode(ThemeMode::Light)
             ->topNavigation()

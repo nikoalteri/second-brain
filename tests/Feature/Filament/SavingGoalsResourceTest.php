@@ -22,7 +22,7 @@ class SavingGoalsResourceTest extends TestCase
         $user->assignRole('superadmin');
         SavingGoal::factory()->create(['user_id' => $user->id, 'name' => 'Emergency fund']);
 
-        $response = $this->actingAs($user)->get('/hub/saving-goals');
+        $response = $this->actingAs($this->withPanelMfa($user))->get('/hub/saving-goals');
 
         $response->assertOk()->assertSee('Emergency fund');
     }
@@ -37,7 +37,7 @@ class SavingGoalsResourceTest extends TestCase
         $ownGoal = SavingGoal::factory()->create(['user_id' => $userA->id]);
         $foreignGoal = SavingGoal::factory()->create(['user_id' => $userB->id]);
 
-        $this->actingAs($userA)->get("/hub/saving-goals/{$ownGoal->id}/edit")->assertOk();
-        $this->actingAs($userA)->get("/hub/saving-goals/{$foreignGoal->id}/edit")->assertNotFound();
+        $this->actingAs($this->withPanelMfa($userA))->get("/hub/saving-goals/{$ownGoal->id}/edit")->assertOk();
+        $this->actingAs($this->withPanelMfa($userA))->get("/hub/saving-goals/{$foreignGoal->id}/edit")->assertNotFound();
     }
 }
