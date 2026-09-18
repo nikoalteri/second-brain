@@ -24,7 +24,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'vault.unlocked' => \App\Http\Middleware\EnsureVaultUnlocked::class,
         ]);
 
-        //
+        $middleware->appendToGroup('api', \App\Http\Middleware\EnforceTokenType::class);
+        $middleware->appendToGroup('api', \App\Http\Middleware\EnsureUserIsActive::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (ValidationException $e, \Illuminate\Http\Request $request) {
