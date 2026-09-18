@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth.js';
 export const useVaultStore = defineStore('vault', () => {
     const token = ref(null);
     const expiresAt = ref(null);
+    let expiryTimer = null;
 
     const isUnlocked = computed(() => !!token.value && !!expiresAt.value && Date.now() < expiresAt.value);
 
@@ -31,6 +32,11 @@ export const useVaultStore = defineStore('vault', () => {
             token.value = data.vault_token;
             expiresAt.value = Date.now() + data.expires_in * 1000;
 
+            // A computed on Date.now() never re-evaluates by itself: lock through a timer so the
+            // UI (and anything watching isUnlocked) reacts the moment the unlock expires.
+            clearTimeout(expiryTimer);
+            expiryTimer = setTimeout(lock, data.expires_in * 1000);
+
             return { ok: true };
         } catch {
             return { ok: false, message: 'Network error. Please try again.' };
@@ -38,6 +44,8 @@ export const useVaultStore = defineStore('vault', () => {
     }
 
     function lock() {
+        clearTimeout(expiryTimer);
+        expiryTimer = null;
         token.value = null;
         expiresAt.value = null;
     }
