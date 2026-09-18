@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ConfirmTwoFactorRequest;
 use App\Http\Requests\Api\DisableTwoFactorRequest;
+use App\Http\Requests\Api\EnableTwoFactorRequest;
 use App\Http\Requests\Api\RegenerateRecoveryCodesRequest;
 use App\Models\User;
 use App\Services\TwoFactorAuthService;
@@ -27,10 +28,16 @@ class TwoFactorAuthController extends Controller
      * @group Two-Factor Authentication
      * @authenticated
      */
-    public function enable(Request $request): JsonResponse
+    public function enable(EnableTwoFactorRequest $request): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
+
+        // Starting an enrollment replaces the account's second factor: a stolen access token
+        // alone must not be enough, so the password is required, as for disabling 2FA.
+        if (! Hash::check($request->validated('password'), $user->password)) {
+            return response()->json(['message' => 'Incorrect password.'], 422);
+        }
 
         if ($user->hasTwoFactorEnabled()) {
             return response()->json(['message' => 'Two-factor authentication is already enabled.'], 422);

@@ -16,7 +16,7 @@ const saveMessage = ref('');
 const settingsForm = ref({ ...settings.value });
 
 const twoFactorEnabled = ref(!!auth.user?.two_factor_enabled);
-const twoFactorStage = ref('idle'); // idle | enrolling | recovery-codes | disabling | regenerating
+const twoFactorStage = ref('idle'); // idle | enabling | enrolling | recovery-codes | disabling | regenerating
 const twoFactorPending = ref(false);
 const twoFactorSecret = ref('');
 const twoFactorOtpAuthUrl = ref('');
@@ -38,8 +38,14 @@ async function startEnableTwoFactor() {
     try {
         const response = await fetch('/api/v1/auth/two-factor/enable', {
             method: 'POST',
-            headers: authHeaders(),
+            headers: authHeaders(true),
+            body: JSON.stringify({ password: twoFactorPassword.value }),
         });
+
+        if (response.status === 422) {
+            addToast('Incorrect password.', 'error');
+            return;
+        }
 
         if (!response.ok) {
             throw new Error('Failed to start enrollment');
@@ -52,6 +58,7 @@ async function startEnableTwoFactor() {
     } catch {
         addToast('Could not start two-factor setup. Please try again.', 'error');
     } finally {
+        twoFactorPassword.value = '';
         twoFactorPending.value = false;
     }
 }
@@ -299,10 +306,39 @@ async function saveSettings() {
                             type="button"
                             class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
                             :disabled="twoFactorPending"
-                            @click="startEnableTwoFactor"
+                            @click="twoFactorStage = 'enabling'"
                         >
                             Enable two-factor authentication
                         </button>
+                    </div>
+
+                    <!-- Enable: password confirmation -->
+                    <div v-else-if="twoFactorStage === 'enabling'" class="space-y-4">
+                        <label class="block max-w-xs">
+                            <span class="text-sm font-medium text-gray-700">Confirm your password to enable</span>
+                            <input
+                                v-model="twoFactorPassword"
+                                type="password"
+                                class="mt-1 block w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200"
+                            >
+                        </label>
+                        <div class="flex gap-3">
+                            <button
+                                type="button"
+                                class="rounded-xl bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:bg-amber-300"
+                                :disabled="twoFactorPending || !twoFactorPassword"
+                                @click="startEnableTwoFactor"
+                            >
+                                Continue
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                @click="cancelTwoFactorFlow"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Steady state: enabled -->
