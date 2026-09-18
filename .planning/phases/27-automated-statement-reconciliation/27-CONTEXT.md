@@ -81,6 +81,15 @@ None — no pending todo backlog was cross-referenced for this ad-hoc phase.
 
 </deferred>
 
+## Audit-derived requirements (added 2026-09-18)
+
+Source: the 2026-09-17 project audit (kept locally under `.planning/audits/2026-09-17/`, not tracked). These are **proposed requirements to settle during `/gsd-plan-phase`**, not decisions already taken; the discuss-phase decisions above stay authoritative unless the maintainer changes them. Foundations already delivered by the audit hardening are listed in ROADMAP.md ("Audit hardening").
+
+- The formula `opening_balance + expenses - paid principal` is a current/principal balance. The issuer's ending balance may include interest and fees and is not necessarily the same quantity: identify which balance type the external figure is and which components it includes.
+- Compute as of a date, using a dated opening balance, posted vs spent, and actual payments. `RevolvingCreditCalculator::calculateDailyBalances()` now derives the cycle opening balance from the ledger (PR #16); `calculatePaymentBreakdown()` still uses the current balance, which is a decision to take here.
+- Use the statement's dates, not the calendar month or today's balance. Store the comparison, the difference, a status and a version, and recompute after relevant corrections.
+- A tolerance must not mask systematic bugs.
+
 ---
 
 *Phase: 27-automated-statement-reconciliation*

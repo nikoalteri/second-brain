@@ -84,6 +84,15 @@ None — no pending todo backlog was cross-referenced for this ad-hoc phase.
 
 </deferred>
 
+## Audit-derived requirements (added 2026-09-18)
+
+Source: the 2026-09-17 project audit (kept locally under `.planning/audits/2026-09-17/`, not tracked). These are **proposed requirements to settle during `/gsd-plan-phase`**, not decisions already taken; the discuss-phase decisions above stay authoritative unless the maintainer changes them. Foundations already delivered by the audit hardening are listed in ROADMAP.md ("Audit hardening").
+
+- `UpcomingPaymentsService` alone is not enough as a base. Verified in code: it only looks at `[today, today + N days]`, so overdue items are excluded, and it uses only a subscription's next renewal date, so recurrences inside the window are not simulated. Also to be handled: it has no notion of card-financed spending versus cash outflow, and a plain sum could subtract instalments that are already posted (only subscriptions expose a `transaction_posted` flag).
+- Model each obligation with an identity, a status and its source account/card; cover the card cycle; project recurrences over the whole window; count only the remainder not already reflected in the balance.
+- Show the known commitments together with the data coverage. Never present a spendable figure as certain when overdue items or unreconciled imports are ignored.
+- Depends on the currency decision in ROADMAP.md (totals per currency rather than a silent sum).
+
 ---
 
 *Phase: 24-cash-flow-forecast-safe-to-spend*

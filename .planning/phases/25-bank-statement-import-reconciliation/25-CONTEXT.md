@@ -92,6 +92,17 @@ None — no pending todo backlog was cross-referenced for this ad-hoc phase.
 
 </deferred>
 
+## Audit-derived requirements (added 2026-09-18)
+
+Source: the 2026-09-17 project audit (kept locally under `.planning/audits/2026-09-17/`, not tracked). These are **proposed requirements to settle during `/gsd-plan-phase`**, not decisions already taken; the discuss-phase decisions above stay authoritative unless the maintainer changes them. Foundations already delivered by the audit hardening are listed in ROADMAP.md ("Audit hardening").
+
+- This phase adds the most new attack surface: private files, parsers with published advisories, ambiguous numbers/dates and concurrent double confirmation.
+- Model an `ImportBatch` plus draft rows kept separate from the ledger. Record owner, target, currency, statement end date, optional ending balance, status, mapping hash/version and the origin of each row.
+- Files: private storage that is encrypted at rest, with a retention period; limits on size, row count and decompressed size; no formulas, macros or external links executed; an explicit reader restricted to CSV/XLSX; server-controlled local uploads only (never caller-supplied paths or URLs); deterministic locale and date parsing.
+- Confirmation is atomic, or chunked with a defined state and retry, and each promotion has a unique identity so a double confirmation cannot post twice.
+- Distinguish own-account transfers, already-posted card refunds, already-generated renewals and genuinely new spending. Similarity of date/amount/description is a proposal to review, not a bank-reliable unique key. A card charge imported both as an expense and as an account payment must not duplicate the outflow or the debt.
+- Use the ownership rules and transactional writes already in place (see ROADMAP.md); import owner IDs must be explicit in background work.
+
 ---
 
 *Phase: 25-bank-statement-import-reconciliation*

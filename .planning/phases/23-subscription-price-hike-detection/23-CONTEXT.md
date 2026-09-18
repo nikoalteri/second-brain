@@ -81,6 +81,15 @@ None — no pending todo backlog was cross-referenced for this ad-hoc phase.
 
 </deferred>
 
+## Audit-derived requirements (added 2026-09-18)
+
+Source: the 2026-09-17 project audit (kept locally under `.planning/audits/2026-09-17/`, not tracked). These are **proposed requirements to settle during `/gsd-plan-phase`**, not decisions already taken; the discuss-phase decisions above stay authoritative unless the maintainer changes them. Foundations already delivered by the audit hardening are listed in ROADMAP.md ("Audit hardening").
+
+- **Do not over-promise what the data knows.** `SubscriptionService` generates the charge from the configured price and never receives the vendor's price, so a configured change is not an independently discovered hike, and the amount is not "actually charged" until a bank/import row confirms it.
+- Distinguish three levels: expected (configured), recorded (generated charge) and confirmed (matched to an imported/bank row).
+- Compare like with like: same frequency, currency and source. Keep one history across an account -> card change, and make retries neither double a comparison nor a notification.
+- A configured price change may be flagged, but not presented as a bank-confirmed increase.
+
 ---
 
 *Phase: 23-subscription-price-hike-detection*

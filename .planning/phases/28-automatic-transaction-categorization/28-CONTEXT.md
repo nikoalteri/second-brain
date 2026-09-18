@@ -80,6 +80,16 @@ None — no pending todo backlog was cross-referenced for this ad-hoc phase.
 
 </deferred>
 
+## Audit-derived requirements (added 2026-09-18)
+
+Source: the 2026-09-17 project audit (kept locally under `.planning/audits/2026-09-17/`, not tracked). These are **proposed requirements to settle during `/gsd-plan-phase`**, not decisions already taken; the discuss-phase decisions above stay authoritative unless the maintainer changes them. Foundations already delivered by the audit hardening are listed in ROADMAP.md ("Audit hardening").
+
+- An explicit user category always wins over a suggestion.
+- Learn only from the same owner's history and only from confirmed rows, never from duplicate or unconfirmed imported rows.
+- Record provenance (rule / history / confidence) and keep every assignment correctable.
+- Keep category similarity separate from payment identity: two identical purchases are not automatically duplicates.
+- Limit rule patterns to simple ones; no arbitrary user regex without protection against pathological cost.
+
 ---
 
 *Phase: 28-automatic-transaction-categorization*
