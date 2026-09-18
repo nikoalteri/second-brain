@@ -96,6 +96,8 @@ class CreditCardCycleService
         }
 
         return DB::transaction(function () use ($cycle) {
+            $this->lockCard((int) $cycle->credit_card_id);
+
             $card = $cycle->creditCard;
 
             if ($card->type === CreditCardType::CHARGE) {
@@ -143,6 +145,8 @@ class CreditCardCycleService
     public function confirmRealInterest(CreditCardPayment $payment, float $statementInterest): CreditCardPayment
     {
         return DB::transaction(function () use ($payment, $statementInterest) {
+            $this->lockCard((int) $payment->credit_card_id);
+
             $statementInterest = round($statementInterest, 2);
             $stampDuty = (float) $payment->stamp_duty_amount;
             $totalAmount = (float) $payment->total_amount;
@@ -174,6 +178,8 @@ class CreditCardCycleService
         }
 
         DB::transaction(function () use ($cycle) {
+            $this->lockCard((int) $cycle->credit_card_id);
+
             $breakdown = $cycle->creditCard->type === CreditCardType::CHARGE
                 ? $this->calculator->calculateChargePaymentBreakdown($cycle)
                 : $this->calculator->calculatePaymentBreakdown($cycle);
@@ -292,6 +298,8 @@ class CreditCardCycleService
         }
 
         DB::transaction(function () use ($payment, $previousStatus, $currentStatus) {
+            $this->lockCard((int) $payment->credit_card_id);
+
             if ($payment->cycle) {
                 $paidAmount = (float) $payment->cycle->payments()
                     ->where('status', CreditCardPaymentStatus::PAID)
@@ -341,6 +349,8 @@ class CreditCardCycleService
         }
 
         DB::transaction(function () use ($payment, $card) {
+            $this->lockCard((int) $payment->credit_card_id);
+
             if ($payment->credit_card_cycle_id) {
                 $cycle = CreditCardCycle::query()->find($payment->credit_card_cycle_id);
 
@@ -411,13 +421,33 @@ class CreditCardCycleService
      */
     public function syncCardBalance(CreditCard $card): void
     {
-        $totalExpenses = (float) $card->expenses()->sum('amount');
-        $totalPrincipalPaid = (float) $card->payments()
-            ->where('status', CreditCardPaymentStatus::PAID)
-            ->sum('principal_amount');
+        DB::transaction(function () use ($card) {
+            // Lock before reading: a concurrent expense or payment that is still committing would
+            // otherwise be missed by the sums and then overwritten by this stale result.
+            $this->lockCard((int) $card->getKey());
 
-        $balance = round(max(0.0, (float) $card->opening_balance + $totalExpenses - $totalPrincipalPaid), 2);
+            $totalExpenses = (float) $card->expenses()->sum('amount');
+            $totalPrincipalPaid = (float) $card->payments()
+                ->where('status', CreditCardPaymentStatus::PAID)
+                ->sum('principal_amount');
 
-        $card->update(['current_balance' => $balance]);
+            $balance = round(max(0.0, (float) $card->opening_balance + $totalExpenses - $totalPrincipalPaid), 2);
+
+            $card->update(['current_balance' => $balance]);
+        });
+    }
+
+    /**
+     * Every write that touches a card, its cycles or its payments takes the card row FIRST and
+     * only then the cycle and payment rows. Expense writes already lock the card before
+     * inserting; if payment and issuing paths locked a cycle first, a payment and an expense
+     * on the same card could each hold what the other needs. Locking the same row again inside
+     * the same transaction is a no-op.
+     */
+    private function lockCard(int $cardId): void
+    {
+        if ($cardId > 0) {
+            CreditCard::withoutGlobalScopes()->whereKey($cardId)->lockForUpdate()->first();
+        }
     }
 }
