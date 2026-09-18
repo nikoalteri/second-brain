@@ -285,31 +285,31 @@ input UpdateAccountInput {
 }
 
 input CreateTransactionInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     transaction_type_id: ID!
-    transaction_category_id: ID
+    transaction_category_id: ID @rules(apply: ["App\\Rules\\OwnedCategory"])
     amount: Float!
     date: Date!
     description: String!
     notes: String
     is_transfer: Boolean
-    to_account_id: ID
+    to_account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
 }
 
 input UpdateTransactionInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     transaction_type_id: ID
-    transaction_category_id: ID
+    transaction_category_id: ID @rules(apply: ["App\\Rules\\OwnedCategory"])
     amount: Float
     date: Date
     description: String
     notes: String
     is_transfer: Boolean
-    to_account_id: ID
+    to_account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
 }
 
 input CreateLoanInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String!
     total_amount: Float!
     monthly_payment: Float!
@@ -326,7 +326,7 @@ input CreateLoanInput {
 }
 
 input UpdateLoanInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String
     total_amount: Float
     monthly_payment: Float

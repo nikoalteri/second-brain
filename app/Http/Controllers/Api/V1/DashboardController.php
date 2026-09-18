@@ -92,10 +92,7 @@ class DashboardController extends Controller
     private function getExpenseCategoriesChartData(Request $request, Carbon $referenceDate): array
     {
         return Transaction::withoutGlobalScopes()
-            ->with([
-                'category' => fn ($query) => $query->withoutUserScope(),
-                'type',
-            ])
+            ->with(['category', 'type'])
             ->when(
                 ! $request->user()->hasRole('superadmin'),
                 fn ($query) => $query->where('transactions.user_id', $request->user()->id)
