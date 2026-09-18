@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\CreditCardPayment;
 use App\Models\LoanPayment;
+use App\Traits\Auditable;
 use App\Traits\HasUserScoping;
 use Carbon\Carbon;
 
 class Transaction extends Model
 {
-    use HasFactory, SoftDeletes, HasUserScoping;
+    use Auditable, HasFactory, SoftDeletes, HasUserScoping;
 
     protected $fillable = [
         'user_id',

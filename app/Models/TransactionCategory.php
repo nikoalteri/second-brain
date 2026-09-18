@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\Auditable;
 use App\Traits\HasUserScoping;
 
  class TransactionCategory extends Model
  {
-     use HasUserScoping;
+     use Auditable, HasUserScoping;
 
     protected $fillable = [
         'user_id',
