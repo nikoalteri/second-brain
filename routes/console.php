@@ -128,8 +128,8 @@ Artisan::command('subscriptions:sync-renewals {--date=}', function () {
     $this->info("Subscriptions checked and synced through {$throughDate->toDateString()}: {$synced} renewal(s) processed.");
 })->purpose('Post due subscription renewals to transactions or credit card expenses');
 
-Schedule::command('loans:sync-installments')->dailyAt('01:50');
-Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55');
-Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00');
+Schedule::command('loans:sync-installments')->dailyAt('01:50')->withoutOverlapping();
+Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55')->withoutOverlapping();
+Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00')->withoutOverlapping();
 // Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
 Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');
