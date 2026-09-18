@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { clearApolloCache } from '@/apollo/client.js';
+import { useVaultStore } from '@/stores/vault.js';
 
 export const useAuthStore = defineStore('auth', () => {
     const accessToken = ref(localStorage.getItem('fluxa_access_token'));
@@ -42,6 +43,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     function clearTokens() {
+        // Drop the local vault unlock together with the session it belonged to.
+        useVaultStore().lock();
         accessToken.value = null;
         refreshToken.value = null;
         setUser(null);
