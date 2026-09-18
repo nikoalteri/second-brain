@@ -29,7 +29,8 @@ class CreditCardExpenseService
                 $this->ensureCycleIsMutable($originalCycle);
             }
 
-            $currentCard = CreditCard::query()->lockForUpdate()->find((int) $expense->credit_card_id);
+            $lockedCards = $this->lockCards((int) $expense->credit_card_id, $originalCardId);
+            $currentCard = $lockedCards[(int) $expense->credit_card_id] ?? null;
 
             if (! $currentCard) {
                 throw ValidationException::withMessages([
@@ -87,7 +88,8 @@ class CreditCardExpenseService
         ?float $originalAmount = null
     ): void {
         DB::transaction(function () use ($expense, $originalCardId, $originalCycleId, $originalAmount) {
-            $currentCard = CreditCard::query()->lockForUpdate()->find($expense->credit_card_id);
+            $lockedCards = $this->lockCards((int) $expense->credit_card_id, $originalCardId);
+            $currentCard = $lockedCards[(int) $expense->credit_card_id] ?? null;
 
             if (! $currentCard) {
                 return;
@@ -98,7 +100,7 @@ class CreditCardExpenseService
 
             if ($originalCardId && $originalCardId !== (int) $currentCard->id) {
                 // Moved to different card
-                $oldCard = CreditCard::query()->lockForUpdate()->find($originalCardId);
+                $oldCard = $lockedCards[$originalCardId] ?? null;
                 if ($oldCard) {
                     $this->balanceService->removeExpense($oldCard, $oldAmount);
                 }
@@ -151,6 +153,20 @@ class CreditCardExpenseService
                 }
             }
         });
+    }
+
+    /**
+     * Locks every card an expense change involves, always in ascending id order. Moving an
+     * expense between two cards touches both; if two moves in opposite directions each locked
+     * their target first, they would wait for each other forever.
+     *
+     * @return array<int, CreditCard|null> keyed by card id
+     */
+    private function lockCards(?int ...$cardIds): array
+    {
+        $ids = collect($cardIds)->filter()->unique()->sort()->values();
+
+        return $ids->mapWithKeys(fn (int $id) => [$id => CreditCard::query()->lockForUpdate()->find($id)])->all();
     }
 
     private function resolveCycle(CreditCard $card, Carbon|string $spentAt): CreditCardCycle
