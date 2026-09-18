@@ -167,10 +167,14 @@ class AuthApiTest extends TestCase
             'password' => 'secret1234',
         ]);
         $loginResponse->assertOk();
-        $accessToken = $loginResponse->json('access_token');
+        $refreshToken = $loginResponse->json('refresh_token');
 
-        // Refresh using the access token (any valid token)
-        $refreshResponse = $this->withToken($accessToken)
+        // Separate HTTP requests do not share auth state; drop what the login left in this process.
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
+
+        // Only the refresh token is accepted by the refresh endpoint
+        $refreshResponse = $this->withToken($refreshToken)
             ->postJson('/api/v1/auth/refresh');
 
         $refreshResponse->assertOk()

@@ -40,6 +40,9 @@ return [
             // middleware, this delegates auth and permission checks to the field level.
             Nuwave\Lighthouse\Http\Middleware\AttemptAuthentication::class,
 
+            // Rejects refresh tokens: they are only valid on the refresh endpoint.
+            App\Http\Middleware\EnforceTokenType::class,
+
             // Logs every incoming GraphQL query.
             // Nuwave\Lighthouse\Http\Middleware\LogGraphQLQueries::class,
         ],
