@@ -343,7 +343,7 @@ input UpdateLoanInput {
 }
 
 input CreateCreditCardInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String!
     type: String!
     brand: String!
@@ -361,7 +361,7 @@ input CreateCreditCardInput {
 }
 
 input UpdateCreditCardInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String
     type: String
     brand: String
