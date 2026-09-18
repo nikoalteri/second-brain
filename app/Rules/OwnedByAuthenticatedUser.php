@@ -21,6 +21,11 @@ class OwnedByAuthenticatedUser implements ValidationRule
         return new OwnedAccount;
     }
 
+    public static function creditCards(): self
+    {
+        return new OwnedCreditCard;
+    }
+
     public static function categories(): self
     {
         return new OwnedCategory;
