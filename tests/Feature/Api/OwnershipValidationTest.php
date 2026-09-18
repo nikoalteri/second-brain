@@ -105,4 +105,87 @@ class OwnershipValidationTest extends TestCase
             'description' => 'Legit',
         ])->assertCreated();
     }
+
+    private function loanPayload(int $accountId): array
+    {
+        return [
+            'name' => 'Car loan',
+            'account_id' => $accountId,
+            'total_amount' => 1200,
+            'monthly_payment' => 100,
+            'withdrawal_day' => 5,
+            'start_date' => '2026-01-05',
+            'total_installments' => 12,
+            'paid_installments' => 0,
+            'status' => 'active',
+        ];
+    }
+
+    public function test_store_loan_rejects_account_of_another_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $foreignAccount = Account::factory()->create(['user_id' => $other->id]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/loans', $this->loanPayload($foreignAccount->id))
+            ->assertUnprocessable()->assertJsonValidationErrors('account_id');
+
+        $this->assertSame(0, Loan::withoutGlobalScopes()->count());
+    }
+
+    public function test_graphql_update_loan_rejects_account_of_another_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $foreignAccount = Account::factory()->create(['user_id' => $other->id]);
+        $loan = Loan::factory()->create(['user_id' => $user->id, 'account_id' => $account->id]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/graphql', [
+            'query' => 'mutation ($id: ID!, $accountId: ID) { updateLoan(id: $id, input: {account_id: $accountId}) { id } }',
+            'variables' => ['id' => $loan->id, 'accountId' => $foreignAccount->id],
+        ]);
+
+        $this->assertArrayHasKey('input.account_id', $response->json('errors.0.extensions.validation') ?? []);
+        $this->assertSame($account->id, $loan->fresh()->account_id);
+    }
+
+    public function test_graphql_create_loan_rejects_account_of_another_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $foreignAccount = Account::factory()->create(['user_id' => $other->id]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/graphql', [
+            'query' => 'mutation ($accountId: ID!) { createLoan(input: {account_id: $accountId, name: "X", total_amount: 100, monthly_payment: 10, withdrawal_day: 5, start_date: "2026-01-05", total_installments: 10, paid_installments: 0, remaining_amount: 100, status: "active"}) { id } }',
+            'variables' => ['accountId' => $foreignAccount->id],
+        ]);
+
+        $this->assertArrayHasKey('input.account_id', $response->json('errors.0.extensions.validation') ?? []);
+        $this->assertSame(0, Loan::withoutGlobalScopes()->count());
+    }
+
+    public function test_graphql_update_loan_accepts_own_account(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $newAccount = Account::factory()->create(['user_id' => $user->id]);
+        $loan = Loan::factory()->create(['user_id' => $user->id, 'account_id' => $account->id]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/graphql', [
+            'query' => 'mutation ($id: ID!, $accountId: ID) { updateLoan(id: $id, input: {account_id: $accountId}) { id } }',
+            'variables' => ['id' => $loan->id, 'accountId' => $newAccount->id],
+        ]);
+
+        $this->assertEmpty($response->json('errors'));
+        $this->assertSame($newAccount->id, $loan->fresh()->account_id);
+    }
 }

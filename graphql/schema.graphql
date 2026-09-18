@@ -309,7 +309,7 @@ input UpdateTransactionInput {
 }
 
 input CreateLoanInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String!
     total_amount: Float!
     monthly_payment: Float!
@@ -326,7 +326,7 @@ input CreateLoanInput {
 }
 
 input UpdateLoanInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String
     total_amount: Float
     monthly_payment: Float

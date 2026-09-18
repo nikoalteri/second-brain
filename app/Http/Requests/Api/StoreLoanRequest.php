@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
+use App\Rules\OwnedByAuthenticatedUser;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +14,7 @@ class StoreLoanRequest extends FormRequest
     {
         return [
             'name'               => ['required', 'string', 'max:255'],
-            'account_id'         => ['required', 'integer', 'exists:accounts,id'],
+            'account_id'         => ['required', 'integer', OwnedByAuthenticatedUser::accounts()],
             'total_amount'       => ['required', 'numeric', 'min:0.01'],
             'monthly_payment'    => ['required', 'numeric', 'min:0.01'],
             'interest_rate'      => ['nullable', 'numeric', 'min:0', 'max:100'],
