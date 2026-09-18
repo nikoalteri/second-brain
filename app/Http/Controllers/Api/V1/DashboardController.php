@@ -157,10 +157,8 @@ class DashboardController extends Controller
 
     private function getNetWorthTrendChartData(Request $request, Carbon $referenceDate): array
     {
-        $referenceMonthEnd = $referenceDate->copy()->endOfMonth();
-
         return collect(range(11, 0))
-            ->map(function (int $monthsAgo) use ($request, $referenceDate, $referenceMonthEnd) {
+            ->map(function (int $monthsAgo) use ($request, $referenceDate) {
                 $monthStart = $referenceDate->copy()->subMonths($monthsAgo)->startOfMonth();
                 $monthEnd = $monthStart->copy()->endOfMonth();
 
@@ -173,6 +171,11 @@ class DashboardController extends Controller
                     ->where('created_at', '<=', $monthEnd)
                     ->get(['id', 'balance']);
 
+                // Balance as of the end of the month: the current balance minus EVERY movement
+                // dated after that month. Capping the subtraction at the selected month would
+                // leave later movements inside the earlier points. Starting from the balance
+                // (not opening_balance) keeps accounts whose opening balance was never recorded
+                // correct.
                 $netWorth = (float) $accounts->sum('balance');
                 $accountIds = $accounts->pluck('id');
 
@@ -184,7 +187,6 @@ class DashboardController extends Controller
                         )
                         ->whereIn('account_id', $accountIds)
                         ->whereDate('date', '>', $monthEnd->toDateString())
-                        ->whereDate('date', '<=', $referenceMonthEnd->toDateString())
                         ->sum('amount');
                 }
 
