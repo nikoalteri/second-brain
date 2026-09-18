@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -53,11 +54,16 @@ class LoanController extends Controller
     {
         $this->authorize('create', Loan::class);
 
-        $loan = Loan::create(array_merge($request->validated(), [
-            'user_id' => $request->user()->id,
-        ]));
+        // Loan and schedule are written together: a failed schedule must not leave a bare loan.
+        $loan = DB::transaction(function () use ($request, $loanScheduleService) {
+            $loan = Loan::create(array_merge($request->validated(), [
+                'user_id' => $request->user()->id,
+            ]));
 
-        $loanScheduleService->generate($loan, onlyMissing: true);
+            $loanScheduleService->generate($loan, onlyMissing: true);
+
+            return $loan;
+        });
 
         return (new LoanResource($loan))->response()->setStatusCode(201);
     }
@@ -81,8 +87,10 @@ class LoanController extends Controller
     {
         $this->authorize('update', $loan);
 
-        $loan->update($request->validated());
-        $loanScheduleService->generate($loan, onlyMissing: true);
+        DB::transaction(function () use ($request, $loan, $loanScheduleService) {
+            $loan->update($request->validated());
+            $loanScheduleService->generate($loan, onlyMissing: true);
+        });
 
         return new LoanResource($loan);
     }

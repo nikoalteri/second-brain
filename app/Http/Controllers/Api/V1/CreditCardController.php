@@ -11,6 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -49,9 +50,9 @@ class CreditCardController extends Controller
     {
         $this->authorize('create', CreditCard::class);
 
-        $creditCard = CreditCard::create(array_merge($request->validated(), [
+        $creditCard = DB::transaction(fn () => CreditCard::create(array_merge($request->validated(), [
             'user_id' => $request->user()->id,
-        ]));
+        ])));
 
         return (new CreditCardResource($creditCard))->response()->setStatusCode(201);
     }
@@ -81,7 +82,7 @@ class CreditCardController extends Controller
     {
         $this->authorize('update', $creditCard);
 
-        $creditCard->update($request->validated());
+        DB::transaction(fn () => $creditCard->update($request->validated()));
 
         return new CreditCardResource($creditCard);
     }
@@ -91,7 +92,7 @@ class CreditCardController extends Controller
     {
         $this->authorize('delete', $creditCard);
 
-        $creditCard->delete();
+        DB::transaction(fn () => $creditCard->delete());
 
         return response()->noContent();
     }
