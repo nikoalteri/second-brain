@@ -67,6 +67,16 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
+        // The user is resolved through the sanctum guard because this runs before the
+        // GraphQL authentication middleware; guests share a per-IP budget.
+        RateLimiter::for('graphql', function (Request $request) {
+            $user = $request->user('sanctum');
+
+            return $user
+                ? Limit::perMinute((int) config('lighthouse.request_limits.per_minute_authenticated'))->by('graphql-user|'.$user->id)
+                : Limit::perMinute((int) config('lighthouse.request_limits.per_minute_guest'))->by('graphql-ip|'.$request->ip());
+        });
+
         RateLimiter::for('auth-register', function (Request $request) {
             return Limit::perMinute(5)->by('auth-register|'.$request->ip());
         });

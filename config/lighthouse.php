@@ -33,6 +33,12 @@ return [
             // Ensures the request is not vulnerable to cross-site request forgery.
             // Nuwave\Lighthouse\Http\Middleware\EnsureXHR::class,
 
+            // Throttle per user (per IP when unauthenticated) before any parsing happens.
+            'throttle:graphql',
+
+            // Reject oversized and batched requests before they are parsed.
+            App\Http\Middleware\LimitGraphQLRequest::class,
+
             // Always set the `Accept: application/json` header.
             Nuwave\Lighthouse\Http\Middleware\AcceptJson::class,
 
@@ -230,6 +236,23 @@ return [
     | Read more at https://webonyx.github.io/graphql-php/security/
     |
     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Request limits (application-specific)
+    |--------------------------------------------------------------------------
+    |
+    | Applied by the `throttle:graphql` limiter and App\Http\Middleware\LimitGraphQLRequest,
+    | which run before the query is parsed. Depth and complexity limits (below) only take
+    | effect after parsing.
+    |
+    */
+
+    'request_limits' => [
+        'max_bytes' => (int) env('GRAPHQL_MAX_REQUEST_BYTES', 65536),
+        'per_minute_authenticated' => (int) env('GRAPHQL_RATE_LIMIT_AUTHENTICATED', 120),
+        'per_minute_guest' => (int) env('GRAPHQL_RATE_LIMIT_GUEST', 20),
+    ],
 
     'security' => [
         // The SPA query surface exceeds the stock cap once paginated finance lists
