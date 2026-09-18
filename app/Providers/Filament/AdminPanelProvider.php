@@ -37,6 +37,9 @@ class AdminPanelProvider extends PanelProvider
             ->darkMode(true, false)
             ->defaultThemeMode(ThemeMode::Light)
             ->topNavigation()
+            // Balance observers and paired transfer legs write after the main INSERT/UPDATE:
+            // run every resource page in one transaction.
+            ->databaseTransactions()
             ->colors([
                 'primary' => Color::Amber,
             ])
