@@ -52,6 +52,14 @@ jobs:
           php artisan route:cache
           php artisan view:cache
 
+      # A deploy whose commands all exited 0 can still leave a broken app (a missing extension, an
+      # unwritable directory, a schema that no longer builds). Failing here keeps the backup below.
+      - name: Smoke test (deploy verification)
+        run: |
+          set -e
+          cd /var/www/fluxa
+          php artisan app:smoke
+
       # Only runs if every step above succeeded — if the deploy failed partway, the backup
       # is deliberately left in place (~/db-backups) for manual recovery.
       - name: Remove backup (deploy succeeded)
