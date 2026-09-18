@@ -11,6 +11,7 @@ use App\Models\TransactionType;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -216,6 +217,10 @@ class SubscriptionService
         }
 
         return DB::transaction(function () use ($subscription, $renewalDate) {
+            // Serialise overlapping runs for the same subscription: the second one waits here and
+            // then finds the renewal already posted instead of racing the lookup below.
+            Subscription::withoutGlobalScopes()->whereKey($subscription->getKey())->lockForUpdate()->first();
+
             if ($subscription->credit_card_id) {
                 $this->upsertCreditCardExpense($subscription, $renewalDate);
             } elseif ($subscription->account_id) {
@@ -271,7 +276,21 @@ class SubscriptionService
             return;
         }
 
-        Transaction::create($payload);
+        try {
+            Transaction::create($payload);
+        } catch (UniqueConstraintViolationException) {
+            // The unique index caught a concurrent run that posted this renewal after our lookup.
+            $existing = Transaction::withTrashed()
+                ->where('subscription_id', $subscription->id)
+                ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
+                ->firstOrFail();
+
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+
+            $existing->fill($payload)->save();
+        }
     }
 
     private function upsertCreditCardExpense(Subscription $subscription, CarbonInterface $renewalDate): void
@@ -298,6 +317,16 @@ class SubscriptionService
             return;
         }
 
-        CreditCardExpense::create($payload);
+        try {
+            CreditCardExpense::create($payload);
+        } catch (UniqueConstraintViolationException) {
+            // See upsertTransaction(): a concurrent run posted this renewal after our lookup.
+            CreditCardExpense::query()
+                ->where('subscription_id', $subscription->id)
+                ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
+                ->firstOrFail()
+                ->fill($payload)
+                ->save();
+        }
     }
 }
