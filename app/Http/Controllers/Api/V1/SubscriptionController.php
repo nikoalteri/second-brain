@@ -47,7 +47,7 @@ class SubscriptionController extends Controller
             )
             ->allowedSorts('next_renewal_date', 'monthly_cost', 'annual_cost', 'created_at')
             ->defaultSort('next_renewal_date')
-            ->cursorPaginate($request->integer('per_page', 20));
+            ->cursorPaginate($this->perPage($request));
 
         return SubscriptionResource::collection($subscriptions);
     }

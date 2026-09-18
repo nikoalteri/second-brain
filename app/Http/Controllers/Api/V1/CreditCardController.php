@@ -40,7 +40,7 @@ class CreditCardController extends Controller
             )
             ->allowedSorts('name', 'credit_limit', 'current_balance', 'due_day', 'created_at')
             ->defaultSort('-created_at')
-            ->cursorPaginate($request->integer('per_page', 20));
+            ->cursorPaginate($this->perPage($request));
 
         return CreditCardResource::collection($creditCards);
     }
@@ -57,24 +57,60 @@ class CreditCardController extends Controller
         return (new CreditCardResource($creditCard))->response()->setStatusCode(201);
     }
 
-    /** @group Credit Cards @authenticated */
+    /**
+     * The card with its history. The history is bounded so a card with years of data does not
+     * load every cycle, payment and expense: the most recent rows are returned, and `history`
+     * reports how many exist so a client can tell when something was left out.
+     *
+     * @group Credit Cards
+     * @authenticated
+     * @queryParam cycles_limit Most recent cycles to include (default 36, max 120).
+     * @queryParam payments_limit Most recent payments to include (default 200, max 500).
+     * @queryParam expenses_limit Most recent expenses to include (default 500, max 1000).
+     */
     public function show(Request $request, CreditCard $creditCard): CreditCardResource
     {
         $this->authorize('view', $creditCard);
 
-        $creditCard->load([
-            'cycles' => fn ($query) => $query
-                ->with(['expenses' => fn ($expenseQuery) => $expenseQuery->orderByDesc('spent_at')])
-                ->orderByDesc('statement_date'),
-            'payments' => fn ($query) => $query
-                ->with('postingTransaction')
-                ->orderBy('due_date'),
-            'expenses' => fn ($query) => $query
-                ->with('cycle')
-                ->orderByDesc('spent_at'),
-        ]);
+        $cyclesLimit = $this->historyLimit($request, 'cycles_limit', 36, 120);
+        $paymentsLimit = $this->historyLimit($request, 'payments_limit', 200, 500);
+        $expensesLimit = $this->historyLimit($request, 'expenses_limit', 500, 1000);
 
-        return new CreditCardResource($creditCard);
+        $cycles = $creditCard->cycles()
+            ->with(['expenses' => fn ($expenseQuery) => $expenseQuery->orderByDesc('spent_at')])
+            ->orderByDesc('statement_date')
+            ->limit($cyclesLimit)
+            ->get();
+
+        // Newest payments are the ones kept, but the list stays in due-date order as before.
+        $payments = $creditCard->payments()
+            ->with('postingTransaction')
+            ->orderByDesc('due_date')
+            ->limit($paymentsLimit)
+            ->get()
+            ->sortBy('due_date')
+            ->values();
+
+        $expenses = $creditCard->expenses()
+            ->with('cycle')
+            ->orderByDesc('spent_at')
+            ->limit($expensesLimit)
+            ->get();
+
+        $creditCard->setRelation('cycles', $cycles)
+            ->setRelation('payments', $payments)
+            ->setRelation('expenses', $expenses);
+
+        return (new CreditCardResource($creditCard))->additional(['history' => [
+            'cycles' => ['limit' => $cyclesLimit, 'returned' => $cycles->count(), 'total' => $creditCard->cycles()->count()],
+            'payments' => ['limit' => $paymentsLimit, 'returned' => $payments->count(), 'total' => $creditCard->payments()->count()],
+            'expenses' => ['limit' => $expensesLimit, 'returned' => $expenses->count(), 'total' => $creditCard->expenses()->count()],
+        ]]);
+    }
+
+    private function historyLimit(Request $request, string $key, int $default, int $max): int
+    {
+        return max(1, min($max, $request->integer($key, $default)));
     }
 
     /** @group Credit Cards @authenticated */

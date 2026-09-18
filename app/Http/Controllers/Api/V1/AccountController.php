@@ -47,7 +47,7 @@ class AccountController extends Controller
             )
             ->allowedSorts('name', 'balance', 'opening_balance', 'created_at')
             ->defaultSort('-created_at')
-            ->cursorPaginate($request->integer('per_page', 20));
+            ->cursorPaginate($this->perPage($request));
 
         return AccountResource::collection($accounts);
     }

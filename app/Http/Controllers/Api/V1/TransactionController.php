@@ -45,7 +45,7 @@ class TransactionController extends Controller
             )
             ->allowedSorts('date', 'amount', 'created_at', 'description')
             ->defaultSort('-date')
-            ->cursorPaginate($request->integer('per_page', 20));
+            ->cursorPaginate($this->perPage($request));
 
         return TransactionResource::collection($transactions);
     }
