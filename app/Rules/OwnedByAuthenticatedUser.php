@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Rules;
+
+use Closure;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Validates that a foreign key points to a row owned by the authenticated user.
+ *
+ * Plain `exists:table,id` bypasses Eloquent global scopes, so it accepts IDs
+ * that belong to other users. Superadmins may reference any row.
+ */
+class OwnedByAuthenticatedUser implements ValidationRule
+{
+    public function __construct(private readonly string $table) {}
+
+    public static function accounts(): self
+    {
+        return new self('accounts');
+    }
+
+    public static function categories(): self
+    {
+        return new self('transaction_categories');
+    }
+
+    public function validate(string $attribute, mixed $value, Closure $fail): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+
+        $query = DB::table($this->table)->where('id', $value);
+
+        if (! auth()->user()?->hasRole('superadmin')) {
+            $query->where('user_id', auth()->id());
+        }
+
+        if (! $query->exists()) {
+            $fail('The selected :attribute is invalid.');
+        }
+    }
+}
