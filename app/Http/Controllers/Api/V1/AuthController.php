@@ -56,6 +56,12 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        if ($user->is_active === false) {
+            Auth::logout();
+
+            return response()->json(['message' => 'This account is disabled.'], 403);
+        }
+
         if ($user->hasTwoFactorEnabled()) {
             $challenge = (string) Str::uuid();
             Cache::put(self::TWO_FACTOR_CACHE_PREFIX . $challenge, $user->id, now()->addMinutes(5));
@@ -89,6 +95,13 @@ class AuthController extends Controller
         }
 
         $user = User::findOrFail($userId);
+
+        if ($user->is_active === false) {
+            Cache::forget($cacheKey);
+
+            return response()->json(['message' => 'This account is disabled.'], 403);
+        }
+
         $code = $request->validated('code');
 
         $verified = $this->twoFactor->verifyCode($user, $code) || $this->twoFactor->useRecoveryCode($user, $code);

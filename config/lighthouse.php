@@ -43,6 +43,9 @@ return [
             // Rejects refresh tokens: they are only valid on the refresh endpoint.
             App\Http\Middleware\EnforceTokenType::class,
 
+            // Rejects deactivated users and drops their tokens.
+            App\Http\Middleware\EnsureUserIsActive::class,
+
             // Logs every incoming GraphQL query.
             // Nuwave\Lighthouse\Http\Middleware\LogGraphQLQueries::class,
         ],

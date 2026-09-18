@@ -85,6 +85,13 @@ class User extends Authenticatable implements FilamentUser
                 $user->name = $user->full_name;
             }
         });
+
+        // A deactivated user must not keep working sessions.
+        static::updated(function (self $user): void {
+            if ($user->wasChanged('is_active') && ! $user->is_active) {
+                $user->tokens()->delete();
+            }
+        });
     }
 
     protected function fullName(): Attribute
