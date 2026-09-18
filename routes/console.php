@@ -54,6 +54,9 @@ Artisan::command('credit-cards:generate-cycles {--month=} {--issue-ready}', func
     $this->info("Cycles ensured: {$cards->count()} cards, {$created} created, {$issued} issued.");
 })->purpose('Create monthly credit card cycles and optionally issue ready cycles');
 
+// Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
+Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');
+
 Artisan::command('credit-cards:balance-audit', function () {
     // No date-based threshold: a migration's filename timestamp only says when the file was
     // authored, not when it actually ran in this environment. If deploy happens later than
@@ -127,9 +130,6 @@ Artisan::command('subscriptions:sync-renewals {--date=}', function () {
 
     $this->info("Subscriptions checked and synced through {$throughDate->toDateString()}: {$synced} renewal(s) processed.");
 })->purpose('Post due subscription renewals to transactions or credit card expenses');
-
-// Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
-Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');
 
 Schedule::command('loans:sync-installments')->dailyAt('01:50');
 Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55');
