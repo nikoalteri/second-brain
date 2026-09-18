@@ -2,6 +2,7 @@
 
 **Analysis Date:** 2024-12-19
 **Partially re-verified:** 2026-08-06 (Phase 18 — Security Considerations and Known Bugs sections only; Tech Debt entries were NOT re-verified and may still be stale)
+**Updated 2026-09-18 (audit hardening, PRs #11-#20):** entries that changed carry a `Status 2026-09-18` line. Capacity figures that were never measured have been removed. Line numbers elsewhere are still from 2024-12-19.
 
 ## Tech Debt
 
@@ -43,6 +44,7 @@
 - Workaround: Recursion is prevented by checking `transfer_direction !== 'in'` but if paired transaction delete fails silently, they become orphaned
 - Risk: Report queries will show transfer pairs as separate transactions if pair deletion fails
 - **Status 2026-08-06 (Phase 18):** CORRECTED location — the paired-delete block is now at `app/Observers/TransactionObserver.php:47-58` (not 49-58). OPEN — not fixed in Phase 18; no test in this phase reproduced an actual orphaned pair. Cross-referenced in `.planning/phases/18-hardening-security-proof-close-the-auth-scoping-superadmin-b/deferred-items.md`.
+- **Status 2026-09-18 (audit hardening):** CLOSED — the observer now cascades delete and restore from either leg and mirrors amount, date and account changes onto the paired leg (PR #15); REST and Filament writes run in database transactions (PR #13), so a failing second leg rolls back the first. Covered by `tests/Feature/Api/TransferPairIntegrityTest.php`. `php artisan data:audit` found no unbalanced, single-leg or unpaired transfers on UAT (2026-09-18).
 
 **Missing Validation on CreditCardExpense Move:**
 - Symptoms: Can move expense between cards without verifying target card exists or target cycle exists
@@ -75,6 +77,7 @@
 - **Status 2026-08-06 (Phase 18):** CORRECTED — the site inventory is **13** call sites in `app/` (`grep -rn "withoutGlobalScopes" app/` matches 14 lines, but one is a comment at `app/GraphQL/Queries/TotalByCategory.php:17`; CONTEXT.md's count of 14 counted that comment line). Of the 7 Filament resources, all 7 pass `withoutGlobalScopes([SoftDeletingScope::class])` inside `getRecordRouteBindingEloquentQuery()` — this only bypasses the soft-delete scope, not the `user` global scope, so cross-user record binding is still blocked for 6 of them by default; only `AccountsResource` additionally overrides `getEloquentQuery()` to intentionally show all users' accounts to superadmins. Cross-user record binding across all 7 resources is now asserted by `tests/Feature/Filament/AdminPanelScopingTest.php`.
 - **Status 2026-08-06 (Phase 18):** CLOSED — `app/GraphQL/Queries/TransactionCategories.php` (line 13) previously had zero user/role gating on this bypass (a confirmed cross-user data disclosure, not merely a documented-mitigation risk as this entry implied). Fixed in 18-01 by adding an owner-scoped gate to both the root query and the eager-loaded `parent` relation; covered by `tests/Feature/Api/GraphQLApiTest.php::test_graphql_transaction_categories_query_returns_only_own_categories`.
 - **Status 2026-08-06 (Phase 18):** CLOSED — the generic tenant boundary across all `HasUserScoping` models, plus the `DashboardController.php`/`FinanceReportService.php` `withoutGlobalScopes()` bypass sites, is now covered by `tests/Feature/ScopingSecurityTest.php` (11-model sweep) and targeted regression tests in `tests/Feature/Api/DashboardApiTest.php` and `tests/Feature/Api/FinanceReportApiTest.php`. No leaks were found in any of these sites during Phase 18's proof sweep.
+- **Status 2026-09-18 (audit hardening):** CORRECTED — the sweep did not cover references *written* by a user. REST and GraphQL accepted another user's account, category or card ID, and the dashboard expense chart loaded categories with `withoutUserScope()`, exposing other users' category names. Closed by PRs #11 and #12 (`App\Rules\OwnedByAuthenticatedUser` on transactions, loans, subscriptions and credit cards; scope bypass removed from the chart). Covered by `OwnershipValidationTest`, `SubscriptionOwnershipTest`, `CreditCardGraphQLOwnershipTest` and `SoftDeletedReferenceTest`. `php artisan data:audit` found no cross-user references on UAT (2026-09-18).
 
 **User Scoping Dependency on Auth Context:**
 - Risk: `HasUserScoping` trait in `bootHasUserScoping()` calls `auth()->check()` which can fail in non-HTTP contexts (jobs, commands, API tokens)
@@ -121,6 +124,7 @@
 - Cause: Loop over 12 months × 2-3 queries per month = 24-36 queries for one chart
 - Improvement path: Batch fetch all transaction data upfront, group/aggregate in memory
 - Impact: 24+ queries for single API call; significantly impacts mobile app responsiveness
+- **Status 2026-09-18:** the 12-iteration loop is still there (now in `getNetWorthTrendChartData()`; line numbers above are stale) and the query volume has not been measured. The chart's values were corrected in PR #17 (each point is the balance as of that month). Measure before optimising.
 
 **Missing Indexes on Frequently Filtered Columns:**
 - Problem: Queries filter by `user_id`, `credit_card_id`, `credit_card_cycle_id`, `status` but indexes not verified
@@ -128,6 +132,7 @@
 - Cause: Database migrations may not include all necessary indexes
 - Improvement path: Add explicit `->index()` in migrations for all foreign keys + status/state fields
 - Impact: Full table scans on large datasets (millions of transactions); hundreds of ms latency
+- **Status 2026-09-18:** the premise is partly stale — several composite indexes already exist in the migrations (for example `user_id`, `parent_id`, `is_active` on categories), and the latency/scale figures above were never measured. Do not apply the generic "index every foreign key" recommendation: read the current indexes and the MySQL query plans first, then add targeted composite indexes.
 
 ## Fragile Areas
 
@@ -169,7 +174,7 @@
 ## Scaling Limits
 
 **Database Locks in Credit Card Operations:**
-- Current capacity: ~1000 concurrent credit card updates per minute (rough estimate)
+- Current capacity: not measured (a rough estimate that was here has been removed)
 - Limit: Explicit `lockForUpdate()` on CreditCard in `CreditCardExpenseService` will block concurrent UPDATEs
 - Scaling path: 
   1. Use optimistic locking (version field) instead of row locks
@@ -177,16 +182,16 @@
   3. Denormalize balance into separate summary table to avoid frequent updates
 
 **Dashboard Chart Query Volume:**
-- Current capacity: ~100 concurrent requests on dashboard charts
-- Limit: 24-36 queries per chart; at 100 RPS × 30 queries = 3000 DB queries/sec
+- Current capacity: not measured (a rough estimate that was here has been removed)
+- Limit: 24-36 queries per chart (see the Dashboard entry above); the resulting load has not been measured
 - Scaling path:
   1. Materialize monthly summaries into `finance_snapshots` table
   2. Cache dashboard data for 5 minutes
   3. Use read-only database replicas for analytics queries
 
 **Transaction Query N+1 in Reports:**
-- Current capacity: Reports work for ~10k transactions
-- Limit: Above 100k transactions, lazy-loading relationships in `FinanceReportService` causes hundreds of queries
+- Current capacity: not measured (the transaction-count thresholds that were here were estimates and have been removed)
+- Limit: `FinanceReportService` loads rows and rebuilds several aggregations in memory; where this becomes a problem has not been measured
 - Scaling path:
   1. Replace `DB::table()` raw queries with aggressive eager loading
   2. Use database views for complex aggregations
@@ -199,6 +204,7 @@
 - Files: `composer.json`, `composer.lock`
 - Impact: Security updates may not be available; future versions may break compatibility
 - Migration plan: Monitor Filament and Lighthouse releases; test major versions before production upgrades
+- **Status 2026-09-18:** CORRECTED — the stack is Laravel 12 (12.69), Filament 4.13 and Livewire 3.8, not Laravel 11. `composer audit` and `npm audit` report no advisories after PR #20. Audits only know published advisories: re-run them regularly.
 
 **Spatie Permissions Package Dependency:**
 - Risk: All authorization via `auth()->user()?->hasRole()` depends on Spatie's permission system; if package is abandoned, fixing security issues becomes difficult
@@ -212,11 +218,13 @@
 - Problem: Users can delete transactions, cycles, and payments but no recovery option exists
 - Blocks: Cannot restore user data after accidental deletion
 - Implementation gap: No soft-delete recovery UI; no export/import for user data
+- **Status 2026-09-18:** OPEN — the UAT deploy takes a `mysqldump` before deploying and deletes it when the deploy succeeds; there is no scheduled, encrypted, off-host backup and no tested restore. Not addressed by the audit hardening.
 
 **No API Rate Limiting:**
 - Problem: GraphQL and REST endpoints have no rate limiting
 - Blocks: Vulnerable to abuse; no protection for multi-user deployments
 - Implementation gap: Missing Laravel rate limiter configuration
+- **Status 2026-09-18:** PARTLY CLOSED — the premise was already stale: authenticated REST routes use the `api-read` and `api-write` limiters. Login, registration, forgot-password and reset-password are now limited too (PR #14). Still open: the GraphQL route has no route-level throttle (only depth/complexity limits), and no trusted proxies are configured, so per-IP limits are shared by every client behind a proxy.
 
 **No Webhook Support for External Integrations:**
 - Problem: System is completely isolated; cannot push data to external services (Slack, Zapier, webhooks)
@@ -227,6 +235,7 @@
 - Problem: `AuditLog` table exists but is not populated for critical operations
 - Blocks: Cannot trace who changed what financial data and when
 - Implementation gap: Missing observer hooks or middleware to log mutations
+- **Status 2026-09-18:** OPEN — re-checked: nothing in `app/` writes `AuditLog` rows (only the `User::auditLogs()` relation and the admin resource exist).
 
 ## Test Coverage Gaps
 
@@ -259,6 +268,7 @@
 - Files: `app/Http/Controllers/Api/V1/`
 - Risk: Security bypass where user A can access user B's data
 - Priority: CRITICAL — security vulnerability
+- **Status 2026-09-18:** PARTLY CLOSED — cross-user reference rejection is now tested for the transaction, loan, subscription and credit-card write paths on REST and GraphQL, plus token types, deactivated users and guest rate limits (`OwnershipValidationTest`, `SubscriptionOwnershipTest`, `CreditCardGraphQLOwnershipTest`, `SoftDeletedReferenceTest`, `TokenTypeTest`, `InactiveUserTest`, `AuthThrottleTest`). Not every endpoint has an unauthorised-user case.
 
 ## Cleanup Opportunities
 
@@ -285,6 +295,10 @@
 - Effort: 5-6 hours
 - Benefit: Observers become thin dispatchers; business logic moves to explicit Action classes
 - Blocker: None but high risk of introducing bugs
+
+### Audit follow-ups (2026-09-18)
+
+Items raised by the 2026-09-17 audit and not yet addressed (refresh-token rotation, trusted proxies, MFA on the Filament login, encrypted backups with a tested restore, audit trail, money arithmetic in floats, spreadsheet formula injection, the current-balance input of `calculatePaymentBreakdown()`, a cron heartbeat and deploy smoke test) are listed in `.planning/ROADMAP.md` under "Audit hardening". They are recorded there, not duplicated here.
 
 ### Phase 18 verification note
 

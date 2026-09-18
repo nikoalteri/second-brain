@@ -18,6 +18,8 @@ Keep personal finance data and behavior consistent across every surface, with on
 - Preserve prior localization work only as superseded history
 - Leave a clean handoff into Phase 15 roadmap reset and concern triage
 
+**Status 2026-09-18:** Phases 13-15 are delivered; Phases 16-21 have been executed since; Phases 22-28 have context gathered but are not planned. An ad-hoc audit hardening (PRs #11-#20) added proof and fixes across the finance surfaces; see ROADMAP.md.
+
 ## Current Scope
 
 ### Validated
@@ -36,7 +38,7 @@ Keep personal finance data and behavior consistent across every surface, with on
 
 - [x] `PROJECT.md` describes the current product and milestone with evidence-backed wording
 - [x] `REQUIREMENTS.md` keeps active scope limited to documentation trust outcomes
-- [ ] `ROADMAP.md` still needs Phase 15 reset work from the new baseline
+- [x] `ROADMAP.md` was reset in Phase 15 and has been extended since (Phases 16-28 and the audit hardening)
 - [x] `STATE.md` hands off to the next planning step clearly
 
 ## Out of Scope
@@ -49,7 +51,16 @@ Keep personal finance data and behavior consistent across every surface, with on
 
 - Phase 13 is the source of truth for top-level planning confidence, especially `.planning/phases/13-current-state-audit/13-VALIDATED-CAPABILITIES.md`
 - The strict confidence split is intentional: validated claims are evidence-backed, while structural-only areas remain lower-confidence context
-- The next planning move is Phase 15, which resets the roadmap and triages deferred concerns from this baseline
+- Phase 15 reset the roadmap; the next planning move is Phase 22 (see ROADMAP.md, Direct Next Command)
+
+## Proof Added Since Phase 13
+
+The audit hardening (2026-09-17 to 2026-09-18) added automated proof that does not yet change the confidence split above. It is recorded here so a later promotion can cite it (see ROADMAP.md, Audit hardening, for the full list):
+
+- Cross-user references are rejected on REST and GraphQL for transactions, loans, subscriptions and credit cards (`tests/Feature/Api/OwnershipValidationTest.php`, `SubscriptionOwnershipTest.php`, `CreditCardGraphQLOwnershipTest.php`, `SoftDeletedReferenceTest.php`).
+- Token types, deactivated users and guest-endpoint rate limits (`TokenTypeTest.php`, `InactiveUserTest.php`, `AuthThrottleTest.php`).
+- Both legs of a transfer stay in sync (`TransferPairIntegrityTest.php`) and REST/Filament writes are atomic (`LoanWriteAtomicityTest.php`, `CreditCardWriteAtomicityTest.php`, `TransactionIntegrityTest.php`, the Filament atomicity tests).
+- `php artisan data:audit` reports no inconsistencies on UAT (2026-09-18).
 
 ## Superseded History
 
@@ -74,4 +85,4 @@ This document should change only when milestone framing or validated scope mater
 4. Update the milestone handoff when the roadmap baseline changes
 
 ---
-*Last updated: 2026-04-29 after Phase 14 documentation realignment*
+*Last updated: 2026-09-18 after the audit hardening and planning-docs realignment*

@@ -93,6 +93,15 @@ None — no pending todo backlog was cross-referenced for this ad-hoc phase.
 
 </deferred>
 
+## Audit-derived requirements (added 2026-09-18)
+
+Source: the 2026-09-17 project audit (kept locally under `.planning/audits/2026-09-17/`, not tracked). These are **proposed requirements to settle during `/gsd-plan-phase`**, not decisions already taken; the discuss-phase decisions above stay authoritative unless the maintainer changes them. Foundations already delivered by the audit hardening are listed in ROADMAP.md ("Audit hardening").
+
+- Use one shared source for the totals, computed per owner and per currency, instead of a separate query in each intent. Define what "debt" and "principal" mean and which loan statuses are included (the defaulted-status bug is fixed, so `defaulted` loans keep that state).
+- Mixed currencies must not be summed under a single label (see the currency decision in ROADMAP.md).
+- The personal dashboard and the superadmin global view must be explicit, separate modes.
+- Naming: "net worth" and "total debts" need definitions before more figures are shown next to them. The current net worth chart sums accounts and excludes debt/credit-card types without subtracting card debt or loans, so it is closer to "value of accounts" than to net worth.
+
 ---
 
 *Phase: 26-debt-and-subscription-totals-chatbot-and-dashboard*

@@ -105,6 +105,15 @@ None — no pending todo backlog was cross-referenced for this ad-hoc phase (it 
 
 </deferred>
 
+## Audit-derived requirements (added 2026-09-18)
+
+Source: the 2026-09-17 project audit (kept locally under `.planning/audits/2026-09-17/`, not tracked). These are **proposed requirements to settle during `/gsd-plan-phase`**, not decisions already taken; the discuss-phase decisions above stay authoritative unless the maintainer changes them. Foundations already delivered by the audit hardening are listed in ROADMAP.md ("Audit hardening").
+
+- **Track the condition, not the notification row.** "Read" and "condition resolved" are different states. Using unread/recent notifications as the dedup key can re-create a notification right after it was read, or after a cleanup.
+- Persist the state of each condition with a unique key per (owner, trigger, subject, period/episode). Reading a notification never reopens its condition.
+- Define escalation (warning -> critical), resolution and re-activation explicitly.
+- The daily digest must be idempotent (re-running it the same day creates nothing new), take an explicit owner ID instead of relying on ambient authentication, and honour the notification preferences that already exist.
+
 ---
 
 *Phase: 22-proactive-notifications-wire-the-existing-notification-model-to-real-financial-triggers*
