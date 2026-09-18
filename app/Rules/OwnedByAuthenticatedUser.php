@@ -18,12 +18,12 @@ class OwnedByAuthenticatedUser implements ValidationRule
 
     public static function accounts(): self
     {
-        return new OwnedAccount();
+        return new OwnedAccount;
     }
 
     public static function categories(): self
     {
-        return new OwnedCategory();
+        return new OwnedCategory;
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
