@@ -92,6 +92,15 @@ class User extends Authenticatable implements FilamentUser
                 $user->tokens()->delete();
             }
         });
+
+        // The vault unlock rests on the password, the vault PIN and the 2FA secret/activation:
+        // when any of them changes, existing unlocks must stop working. Recovery codes are left
+        // out on purpose: consuming one is how a vault gets unlocked in the first place.
+        static::updated(function (self $user): void {
+            if ($user->wasChanged(['password', 'vault_pin', 'two_factor_secret', 'two_factor_confirmed_at'])) {
+                app(\App\Services\VaultService::class)->revokeAll($user);
+            }
+        });
     }
 
     protected function fullName(): Attribute

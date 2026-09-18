@@ -36,7 +36,7 @@ class VaultService
         }
 
         $token = (string) Str::uuid();
-        Cache::put($this->cacheKey($user, $token), true, now()->addMinutes(self::SESSION_TTL_MINUTES));
+        Cache::put($this->cacheKey($user, $token), $this->epoch($user), now()->addMinutes(self::SESSION_TTL_MINUTES));
 
         $this->log($user, 'vault.unlock', $request);
 
@@ -49,7 +49,17 @@ class VaultService
             return false;
         }
 
-        return Cache::has($this->cacheKey($user, $token));
+        return Cache::get($this->cacheKey($user, $token)) === $this->epoch($user);
+    }
+
+    /**
+     * Locks every vault session of the user, whatever token created it. Called when a secret
+     * that the unlock depends on changes (password, vault PIN, 2FA secret or activation), so an
+     * unlock granted under the old secrets cannot outlive them.
+     */
+    public function revokeAll(User $user): void
+    {
+        Cache::forever($this->epochKey($user), (string) Str::uuid());
     }
 
     /**
@@ -135,8 +145,26 @@ class VaultService
         ]);
     }
 
+    /**
+     * The key is bound to the Sanctum access token that unlocked the vault: a different access
+     * token of the same user (a new login, a refresh) starts locked, and logging out deletes the
+     * access token so its unlock can never be presented again. Session-backed requests have no
+     * token id and share one 'session' binding.
+     */
     private function cacheKey(User $user, string $token): string
     {
-        return self::CACHE_PREFIX . $user->id . ':' . $token;
+        $accessTokenId = $user->currentAccessToken()?->id ?? 'session';
+
+        return self::CACHE_PREFIX . $user->id . ':' . $accessTokenId . ':' . $token;
+    }
+
+    private function epoch(User $user): string
+    {
+        return (string) Cache::get($this->epochKey($user), 'initial');
+    }
+
+    private function epochKey(User $user): string
+    {
+        return 'vault_epoch:' . $user->id;
     }
 }
