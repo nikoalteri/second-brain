@@ -11,11 +11,18 @@ use App\Services\SubscriptionService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+// Proof that the scheduler (the cron entry on the VM) is running: read by /health/scheduler so an
+// external monitor can raise an alarm when it stops.
+Schedule::call(fn () => Cache::forever('scheduler:heartbeat', now()->timestamp))
+    ->name('scheduler-heartbeat')
+    ->everyMinute();
 
 Artisan::command('credit-cards:generate-cycles {--month=} {--issue-ready}', function () {
     $service = app(CreditCardCycleService::class);
