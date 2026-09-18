@@ -60,6 +60,10 @@ class AppServiceProvider extends ServiceProvider
 
         Vite::prefetch(concurrency: 3);
 
+        // Balance observers and paired transfer legs write after the main statement:
+        // run every Filament action (including delete and bulk actions) in one transaction.
+        \Filament\Actions\Action::configureUsing(fn (\Filament\Actions\Action $action) => $action->databaseTransaction());
+
         Transaction::observe(TransactionObserver::class);
         LoanPayment::observe(LoanPaymentObserver::class);
         CreditCard::observe(CreditCardObserver::class);
