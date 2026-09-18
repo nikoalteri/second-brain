@@ -131,3 +131,5 @@ Artisan::command('subscriptions:sync-renewals {--date=}', function () {
 Schedule::command('loans:sync-installments')->dailyAt('01:50');
 Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55');
 Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00');
+// Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
+Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');

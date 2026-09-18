@@ -56,8 +56,9 @@ POST /api/v1/auth/login
 The authenticated API surface also provides:
 
 - `GET /api/v1/auth/me`
-- `POST /api/v1/auth/refresh`
 - `POST /api/v1/auth/logout`
+
+To renew a session, send the **refresh token** (not the access token) as the Bearer token to `POST /api/v1/auth/refresh`. It returns a new access token **and a new refresh token**. A refresh token is single use: presenting one that was already used ends the whole session (every token of the user is revoked), except for a 15 second window in which a simultaneous second request gets `409` and should retry with the newest tokens. Access tokens are rejected by this endpoint and refresh tokens are rejected everywhere else.
 
 ---
 
