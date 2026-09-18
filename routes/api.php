@@ -40,6 +40,10 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:auth-password');
     Route::post('/auth/two-factor/login', [AuthController::class, 'twoFactorLogin'])
         ->middleware('throttle:10,1');
+    // Outside auth:sanctum on purpose: a consumed refresh token no longer authenticates, but its
+    // reuse has to reach the controller to be detected. The controller validates the token itself.
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])
+        ->middleware('throttle:30,1');
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/vault/unlock', [VaultController::class, 'unlock'])
@@ -48,7 +52,6 @@ Route::prefix('v1')->group(function () {
         Route::post('/vault/pin', [VaultPinController::class, 'store'])
             ->middleware('throttle:5,1,vault-pin');
         Route::get('/auth/me', [AuthController::class, 'me']);
-        Route::post('/auth/refresh', [AuthController::class, 'refresh']);
         Route::post('/auth/logout', [AuthController::class, 'logout']);
         Route::put('/auth/profile', [AuthController::class, 'updateProfile']);
         Route::put('/auth/settings', [UserSettingsController::class, 'update']);
