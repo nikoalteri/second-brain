@@ -2,19 +2,16 @@
 
 namespace App\Filament\Resources\AuditLogs;
 
-use App\Filament\Resources\AuditLogs\Pages\CreateAuditLog;
-use App\Filament\Resources\AuditLogs\Pages\EditAuditLog;
 use App\Filament\Resources\AuditLogs\Pages\ListAuditLogs;
-use App\Filament\Resources\AuditLogs\Schemas\AuditLogForm;
 use App\Filament\Resources\AuditLogs\Tables\AuditLogsTable;
 use App\Models\AuditLog;
 use BackedEnum;
 use UnitEnum;
 use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class AuditLogResource extends Resource
@@ -25,9 +22,25 @@ class AuditLogResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Settings';
 
-    public static function form(Schema $schema): Schema
+    /** The audit trail is written by the application only. */
+    public static function canCreate(): bool
     {
-        return AuditLogForm::configure($schema);
+        return false;
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
     }
 
     public static function table(Table $table): Table
@@ -46,8 +59,6 @@ class AuditLogResource extends Resource
     {
         return [
             'index' => ListAuditLogs::route('/'),
-            'create' => CreateAuditLog::route('/create'),
-            'edit' => EditAuditLog::route('/{record}/edit'),
         ];
     }
 
