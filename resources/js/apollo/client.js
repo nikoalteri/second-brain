@@ -62,12 +62,29 @@ const errorLink = onError(({ networkError, operation, forward }) => {
                 },
             });
 
+            if (response.status === 409) {
+                // Another tab rotated the tokens a moment ago: it has stored the new ones, so wait
+                // for them instead of treating this as a failed session.
+                await new Promise((wait) => setTimeout(wait, 700));
+
+                if (localStorage.getItem('fluxa_refresh_token') === refreshToken) {
+                    throw new Error('Refresh failed');
+                }
+
+                resolvePendingRequests();
+                resolve(forward(operation));
+                return;
+            }
+
             if (!response.ok) {
                 throw new Error('Refresh failed');
             }
 
             const data = await response.json();
             localStorage.setItem('fluxa_access_token', data.access_token);
+            // The refresh token is single use: keep the new one or the next refresh would look
+            // like the reuse of a stolen token and end the session.
+            localStorage.setItem('fluxa_refresh_token', data.refresh_token);
             resolvePendingRequests();
             resolve(forward(operation));
         } catch {
