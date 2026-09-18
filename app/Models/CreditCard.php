@@ -6,6 +6,7 @@ use App\Enums\CardBrand;
 use App\Enums\CreditCardStatus;
 use App\Enums\CreditCardType;
 use App\Enums\InterestCalculationMethod;
+use App\Traits\Auditable;
 use App\Traits\HasUserScoping;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,12 +16,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CreditCard extends Model
 {
-    use HasFactory, SoftDeletes, HasUserScoping;
+    use Auditable, HasFactory, SoftDeletes, HasUserScoping;
 
     protected $appends = [
         'available_credit',
         'is_unlimited',
     ];
+
+    /** Maintained by the system on every posting; recording it would only add noise to the audit trail. */
+    protected array $auditIgnored = ['current_balance'];
+
+    /** Sensitive: an audit row says the column changed, never its value. */
+    protected array $auditRedacted = ['card_number', 'expiry_month', 'expiry_year', 'cvv', 'pin', 'security_code'];
 
     protected $fillable = [
         'user_id',
