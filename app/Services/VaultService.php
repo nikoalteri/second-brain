@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
@@ -104,21 +105,21 @@ class VaultService
         return false;
     }
 
+    // The failure counter goes through the RateLimiter: its hit() is a single atomic increment,
+    // where a read followed by a write lets simultaneous wrong guesses share one count.
     private function isPinLockedOut(User $user): bool
     {
-        return (int) Cache::get($this->pinAttemptsKey($user), 0) >= 5;
+        return RateLimiter::tooManyAttempts($this->pinAttemptsKey($user), 5);
     }
 
     private function registerPinFailure(User $user): void
     {
-        $key = $this->pinAttemptsKey($user);
-        $attempts = (int) Cache::get($key, 0) + 1;
-        Cache::put($key, $attempts, now()->addMinutes(15));
+        RateLimiter::hit($this->pinAttemptsKey($user), 15 * 60);
     }
 
     private function clearPinLockout(User $user): void
     {
-        Cache::forget($this->pinAttemptsKey($user));
+        RateLimiter::clear($this->pinAttemptsKey($user));
     }
 
     private function pinAttemptsKey(User $user): string

@@ -21,7 +21,7 @@ class TwoFactorAuthApiTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $enableResponse = $this->postJson('/api/v1/auth/two-factor/enable');
+        $enableResponse = $this->postJson('/api/v1/auth/two-factor/enable', ['password' => 'password']);
         $enableResponse->assertOk()->assertJsonStructure(['secret', 'otpauth_url']);
 
         $secret = $enableResponse->json('secret');
@@ -40,7 +40,7 @@ class TwoFactorAuthApiTest extends TestCase
         $user = User::factory()->create();
         Sanctum::actingAs($user);
 
-        $this->postJson('/api/v1/auth/two-factor/enable')->assertOk();
+        $this->postJson('/api/v1/auth/two-factor/enable', ['password' => 'password'])->assertOk();
 
         $this->postJson('/api/v1/auth/two-factor/confirm', ['code' => '000000'])
             ->assertStatus(422);

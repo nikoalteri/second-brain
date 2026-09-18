@@ -88,6 +88,18 @@ class AuthController extends Controller
     public function twoFactorLogin(TwoFactorLoginRequest $request): JsonResponse
     {
         $cacheKey = self::TWO_FACTOR_CACHE_PREFIX . $request->validated('two_factor_token');
+
+        // One attempt at a time per challenge: without the lock, two simultaneous requests could
+        // both find the challenge and both be issued tokens for a single successful login.
+        $response = Cache::lock($cacheKey . ':lock', 10)->get(
+            fn () => $this->completeTwoFactorLogin($request, $cacheKey)
+        );
+
+        return $response ?: response()->json(['message' => 'This login challenge is being used. Please try again.'], 429);
+    }
+
+    private function completeTwoFactorLogin(TwoFactorLoginRequest $request, string $cacheKey): JsonResponse
+    {
         $userId = Cache::get($cacheKey);
 
         if (! $userId) {
