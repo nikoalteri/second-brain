@@ -111,13 +111,18 @@ type CreditCard {
     "Card network: visa, mastercard or amex."
     brand: String! @method(name: "graphqlBrand")
     credit_limit: Float
-    fixed_payment: Float!
-    interest_rate: Float!
+    "Null for charge cards, which pay the full balance and accrue no interest."
+    fixed_payment: Float
+    interest_rate: Float
     stamp_duty_amount: Float!
+    "True when fixed_payment already contains the stamp duty."
+    fixed_payment_includes_stamp_duty: Boolean!
     statement_day: Int!
     due_day: Int!
     skip_weekends: Boolean!
     current_balance: Float!
+    "Starting debt not backed by a tracked expense; current_balance = opening_balance + expenses - repaid principal."
+    opening_balance: Float!
     available_credit: Float
     status: String! @method(name: "graphqlStatus")
     start_date: Date
@@ -351,10 +356,12 @@ input CreateCreditCardInput {
     fixed_payment: Float
     interest_rate: Float
     stamp_duty_amount: Float
+    fixed_payment_includes_stamp_duty: Boolean
     statement_day: Int!
     due_day: Int!
     skip_weekends: Boolean
     current_balance: Float
+    opening_balance: Float
     status: String!
     start_date: Date!
     interest_calculation_method: String
@@ -369,10 +376,12 @@ input UpdateCreditCardInput {
     fixed_payment: Float
     interest_rate: Float
     stamp_duty_amount: Float
+    fixed_payment_includes_stamp_duty: Boolean
     statement_day: Int
     due_day: Int
     skip_weekends: Boolean
     current_balance: Float
+    opening_balance: Float
     status: String
     start_date: Date
     interest_calculation_method: String
