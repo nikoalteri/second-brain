@@ -89,15 +89,10 @@ class RevolvingCreditCalculator
             ARRAY_FILTER_USE_BOTH
         );
 
-        // Starting balance = debt at start of cycle, before this cycle's expenses.
-        // current_balance is the CURRENT (post-payment) figure. To reconstruct the balance at the
-        // START of the cycle we undo this cycle's own mutations — subtract its expenses and add
-        // back its repaid principal — then replay both, day by day, below. Without adding the
-        // principal back the loop would subtract the same payment a second time and the walk
-        // would end below current_balance.
-        $cycleSpent = (float) ($cycle->total_spent ?? 0);
-        $cyclePaidPrincipal = array_sum($paymentsByDate);
-        $currentBalance = max(0.0, (float) $card->current_balance - $cycleSpent + $cyclePaidPrincipal);
+        // Starting balance = debt at the start of the cycle, rebuilt from the ledger as of that
+        // date. It must not be derived from the card's CURRENT balance: that figure moves with
+        // every later expense and payment, which would rewrite the history of closed cycles.
+        $currentBalance = $this->openingBalanceAt($card, $cycle);
 
         // Calculate balance for each day in the cycle
         $date = $startDate->copy();
@@ -122,6 +117,36 @@ class RevolvingCreditCalculator
         }
 
         return $dailyBalances;
+    }
+
+    /**
+     * Debt at the start of a cycle, derived from events that precede it.
+     *
+     * Mirrors CreditCardCycleService::syncCardBalance() (opening balance + expenses - repaid
+     * principal) restricted to what happened before the cycle starts:
+     *  - expenses booked to an EARLIER cycle, plus unassigned expenses dated before the start;
+     *  - PAID principal whose effective date (actual_date, else due_date) precedes the start.
+     * This cycle's own expenses and payments are replayed day by day by the caller, and
+     * anything belonging to later cycles or dated after the window is ignored.
+     */
+    private function openingBalanceAt(CreditCard $card, CreditCardCycle $cycle): float
+    {
+        $start = $cycle->period_start_date->toDateString();
+
+        $priorExpenses = (float) $card->expenses()
+            ->where(function ($query) use ($cycle, $start) {
+                $query->whereHas('cycle', fn ($cycles) => $cycles->where('statement_date', '<', $cycle->statement_date))
+                    ->orWhere(fn ($unassigned) => $unassigned->whereNull('credit_card_cycle_id')
+                        ->whereRaw('DATE(COALESCE(posted_at, spent_at)) < ?', [$start]));
+            })
+            ->sum('amount');
+
+        $priorPrincipal = (float) $card->payments()
+            ->where('status', CreditCardPaymentStatus::PAID)
+            ->whereRaw('DATE(COALESCE(actual_date, due_date)) < ?', [$start])
+            ->sum('principal_amount');
+
+        return max(0.0, (float) $card->opening_balance + $priorExpenses - $priorPrincipal);
     }
 
     /**

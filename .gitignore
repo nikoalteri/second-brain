@@ -23,6 +23,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /.planning/
+/graphify-out/
 /docs
 /.github/
 DEPLOY_RAILWAY.md

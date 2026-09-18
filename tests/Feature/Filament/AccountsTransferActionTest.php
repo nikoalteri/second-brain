@@ -22,7 +22,7 @@ class AccountsTransferActionTest extends TestCase
         $user->assignRole('superadmin');
         Account::factory()->count(2)->create(['user_id' => $user->id]);
 
-        $response = $this->actingAs($user)->get('/hub/accounts');
+        $response = $this->actingAs($this->withPanelMfa($user))->get('/hub/accounts');
 
         $response->assertOk()->assertSee('Transfer money');
     }

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { BanknotesIcon, CreditCardIcon, LockClosedIcon, LockOpenIcon, WalletIcon } from '@heroicons/vue/24/outline';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import BrandLogo from '@/components/ui/BrandLogo.vue';
@@ -213,6 +213,19 @@ async function deleteCard(card) {
         addToast('Could not delete card. Please try again.', 'error');
     }
 }
+
+// Locked or expired: nothing revealed may stay in memory or on screen.
+watch(
+    () => vault.isUnlocked,
+    (unlocked) => {
+        if (!unlocked) {
+            vaultCards.value = [];
+            cardForm.value = emptyCardForm();
+            editingCardId.value = null;
+            showAddForm.value = false;
+        }
+    }
+);
 
 onMounted(() => {
     if (vault.isUnlocked) {

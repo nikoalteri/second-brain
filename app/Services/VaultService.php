@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 /**
@@ -36,7 +37,7 @@ class VaultService
         }
 
         $token = (string) Str::uuid();
-        Cache::put($this->cacheKey($user, $token), true, now()->addMinutes(self::SESSION_TTL_MINUTES));
+        Cache::put($this->cacheKey($user, $token), $this->epoch($user), now()->addMinutes(self::SESSION_TTL_MINUTES));
 
         $this->log($user, 'vault.unlock', $request);
 
@@ -49,7 +50,17 @@ class VaultService
             return false;
         }
 
-        return Cache::has($this->cacheKey($user, $token));
+        return Cache::get($this->cacheKey($user, $token)) === $this->epoch($user);
+    }
+
+    /**
+     * Locks every vault session of the user, whatever token created it. Called when a secret
+     * that the unlock depends on changes (password, vault PIN, 2FA secret or activation), so an
+     * unlock granted under the old secrets cannot outlive them.
+     */
+    public function revokeAll(User $user): void
+    {
+        Cache::forever($this->epochKey($user), (string) Str::uuid());
     }
 
     /**
@@ -94,21 +105,21 @@ class VaultService
         return false;
     }
 
+    // The failure counter goes through the RateLimiter: its hit() is a single atomic increment,
+    // where a read followed by a write lets simultaneous wrong guesses share one count.
     private function isPinLockedOut(User $user): bool
     {
-        return (int) Cache::get($this->pinAttemptsKey($user), 0) >= 5;
+        return RateLimiter::tooManyAttempts($this->pinAttemptsKey($user), 5);
     }
 
     private function registerPinFailure(User $user): void
     {
-        $key = $this->pinAttemptsKey($user);
-        $attempts = (int) Cache::get($key, 0) + 1;
-        Cache::put($key, $attempts, now()->addMinutes(15));
+        RateLimiter::hit($this->pinAttemptsKey($user), 15 * 60);
     }
 
     private function clearPinLockout(User $user): void
     {
-        Cache::forget($this->pinAttemptsKey($user));
+        RateLimiter::clear($this->pinAttemptsKey($user));
     }
 
     private function pinAttemptsKey(User $user): string
@@ -135,8 +146,26 @@ class VaultService
         ]);
     }
 
+    /**
+     * The key is bound to the Sanctum access token that unlocked the vault: a different access
+     * token of the same user (a new login, a refresh) starts locked, and logging out deletes the
+     * access token so its unlock can never be presented again. Session-backed requests have no
+     * token id and share one 'session' binding.
+     */
     private function cacheKey(User $user, string $token): string
     {
-        return self::CACHE_PREFIX . $user->id . ':' . $token;
+        $accessTokenId = $user->currentAccessToken()?->id ?? 'session';
+
+        return self::CACHE_PREFIX . $user->id . ':' . $accessTokenId . ':' . $token;
+    }
+
+    private function epoch(User $user): string
+    {
+        return (string) Cache::get($this->epochKey($user), 'initial');
+    }
+
+    private function epochKey(User $user): string
+    {
+        return 'vault_epoch:' . $user->id;
     }
 }

@@ -35,6 +35,7 @@ class UpdateCreditCardRequest extends FormRequest
             'due_day'                     => ['sometimes', 'required', 'integer', 'min:1', 'max:31'],
             'skip_weekends'               => ['sometimes', 'boolean'],
             'current_balance'             => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'opening_balance'             => ['sometimes', 'numeric', 'min:0'],
             'status'                      => ['sometimes', 'required', Rule::in(['active', 'suspended', 'closed'])],
             'start_date'                  => ['sometimes', 'nullable', 'date'],
             'interest_calculation_method' => ['sometimes', 'nullable', Rule::in(['daily_balance', 'direct_monthly'])],

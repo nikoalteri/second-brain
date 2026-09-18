@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
-stopped_at: Phase 19 context gathered
-last_updated: "2026-08-06T23:38:01.760Z"
-last_activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-period generalization, stamp-duty flag, synthetic test data)
+stopped_at: Phases 22-28 context gathered; audit hardening delivered
+last_updated: "2026-09-18T00:00:00.000Z"
+last_activity: 2026-09-18 -- Audit hardening delivered through PRs 11-20 (see ROADMAP.md, Audit hardening) and the planning docs realigned; Phases 22-28 CONTEXT.md now carry audit-derived requirements. Earlier, 2026-09-17 -- Product-enhancement brainstorm added Phases 22-28 to ROADMAP.md (proactive notifications, subscription price-hike detection, cash-flow forecast, bank-statement import, debt/subscription totals, automated statement reconciliation, automatic transaction categorization). Discuss-phase completed for all seven before planning any of them, per user request: 22 through 28 CONTEXT.md + DISCUSSION-LOG.md all written. A "report annuale/fiscale" idea was investigated and found already fully shipped (FinanceReportController's export already has a per-category "Distribution" section in every format) — no new phase created for it. Key scouting finds that reshaped scope: Notification model exists but is never written to anywhere (Phase 22); UpcomingPaymentsService (Phase 17) reused for Phase 24; maatwebsite/excel already a dependency for Phase 25; IntentRouter pattern and SubscriptionService::calculateMonthlyCost() reused for Phase 26; Phase 27 required a retroactive addendum to Phase 25 (D-06, an optional statement-ending-balance field) since imported transactions can't independently verify the balance they contributed to. Separately shipped and since merged (PR 4): feat/hub-dark-mode re-enabled the Filament admin dark-mode toggle. Next: plan phases in dependency order (22 before 23; 25 before 27/28; 24/26 together), then execute progressively.
 progress:
   total_phases: 7
   completed_phases: 6
@@ -18,8 +18,8 @@ progress:
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 18 complete. Phase 19 context gathered — ready for research/planning
-**Updated:** 2026-08-06
+**Status:** Phase 21 complete; Phase 22 context gathered, not yet planned
+**Updated:** 2026-09-18
 
 ---
 
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Phase 19 — revolving-credit-card-interest-engine-correctness-align-cycl
+**Current focus:** None committed — Phase 21 was the last committed phase; pick next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns
 
 ## Current Position
 
-Phase: 19 — CONTEXT GATHERED
-Plan: 0 of ? (not yet planned)
-Status: Ready for `/gsd-plan-phase 19`
-Last activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-period generalization, stamp-duty flag, synthetic test data)
+Phase: 22-28 — CONTEXT GATHERED (none yet planned)
+Plan: none yet — next step is `/gsd-plan-phase 22` (plan in dependency order: 22, then 23, then 25, then 24/26 together, then 27/28)
+Status: Phase 21 remains the last fully-executed phase; its own follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding. Phases 22-28 are newly scoped from a product-enhancement brainstorm — all discussed, none planned/executed.
+Last activity: 2026-09-18 -- Audit hardening delivered (PRs #11-#20) and planning docs realigned; before that, 2026-09-17 -- Discuss-phase completed for Phases 22 through 28 in sequence (user chose to plan all before implementing any); a small unrelated ad-hoc fix (Filament admin dark-mode toggle) was also shipped and has since been merged (PR #4)
 
 ## Session Resume
 
-**Stopped at:** Phase 19 context gathered
-**Resume file:** .planning/phases/19-revolving-credit-card-interest-engine-correctness-align-cycl/19-CONTEXT.md
+**Stopped at:** Phases 22-28 context gathered
+**Resume file:** .planning/phases/22-proactive-notifications-wire-the-existing-notification-model-to-real-financial-triggers/22-CONTEXT.md (plan this one first — Phase 23 depends on it)
 
 ## Accumulated Context
 
@@ -59,6 +59,9 @@ Last activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-pe
 
 - Phase 17 added: Custom read-only finance chatbot engine — a self-built (no BotMan dependency) intent-router/state-machine conversational engine, inspired by the Leo project's conversation-flow pattern, for read-only queries over existing finance data (account balances, upcoming payments, spending summaries, credit-card usage).
 - Phase 18 added: Hardening & Security Proof — closes auth-scoping, superadmin-bypass, and credit-card lifecycle race-condition gaps flagged in the Deferred Hardening/Security/Performance Concerns bucket, with real tests, before further feature work.
+- Phase 21 added: Credit card balance recompute correctness — `CreditCardCycleService::syncCardBalance()` (introduced in Phase 18 to fix a payment-status race condition) recomputes `current_balance` purely as `sum(expenses) - sum(paid principal)`, with no opening-balance term. Every `CreditCardPayment` create/update fires this via `CreditCardPaymentObserver`, silently zeroing/dropping any card balance not backed by `CreditCardExpense` rows. Root cause of the two Phase 19 test failures (`CreditCardCreditLineSyncTest::payments_reintegrate_only_principal_on_status_changes`, `CreditCardKpiServiceTest::it_returns_expected_credit_card_kpis_for_user`), confirmed still failing on 2026-09-17 full-suite run (325 tests, 323 pass, these 2 fail).
+- Phases 22-28 added (2026-09-17, from a product-enhancement brainstorm, not `/gsd-new-milestone`): Phase 22 — proactive notifications (wire the existing unused `Notification` model to budget/credit-card/loan/subscription triggers, in-app only, daily digest); Phase 23 — subscription price-hike detection (builds on Phase 22's delivery); Phase 24 — cash-flow forecast aggregating known upcoming commitments against current balances; Phase 25 — bank statement file import/reconciliation (explicitly file-based, not Open Banking/live bank-feed — that remains out of scope per the Deferred Longer-Term Product Ideas bucket; D-06 added retroactively for Phase 27); Phase 26 — debt/subscription total figures on both the chatbot (5 new intents) and Dashboard, planned alongside Phase 24 since both touch the Dashboard; Phase 27 — automated reconciliation of computed balances against a Phase-25-imported statement's declared ending balance; Phase 28 — automatic transaction categorization (rules first, then historical match), silent for manual entry, suggested for Phase 25 import drafts. All seven now have CONTEXT.md + DISCUSSION-LOG.md; none planned yet. A "report annuale/fiscale" idea was found already fully shipped (existing FinanceReport export's "Distribution" section) — no phase created. Separately, `feat/hub-dark-mode` (merged via PR #4, not part of any phase) re-enabled the Filament admin dark-mode toggle that `->darkMode(false, true)` had fully disabled.
+- Audit hardening (2026-09-17 to 2026-09-18, ad hoc, no phase number): a project audit found cross-user references, non-atomic writes, unsynchronised transfer legs, token/deactivation gaps, a stale-balance interest input and vulnerable dependencies. All were fixed through PRs #11-#20 with tests that fail without the fix; `php artisan data:audit` ran clean on UAT. Details and what remains open are in ROADMAP.md ("Audit hardening"). Phases 22-28 CONTEXT.md gained an "Audit-derived requirements" section, and a currency decision is needed before planning Phases 24-27.
 - Phase 19 added: Revolving Credit Card Interest Engine Correctness — the user supplied 5 real Amex statements (docs/reference/credit-card-statements/) plus docs/reference/credit-card-revolving-validation.md documenting expected interest math. Orchestrator-level analysis (2026-08-06) confirmed 4 concrete discrepancies against current code, verified line-by-line: (1) CreditCardCycleService.php:201 uses startOfMonth() instead of the real day-7-to-day-6 billing period; (2) RevolvingCreditCalculator::calculateDailyBalances() never applies payments within the day loop, only expenses; (3) calculatePaymentBreakdown() doesn't subtract stamp duty from the fixed payment when computing principal (233.93 expected vs 235.93 computed — a real 2 EUR/cycle drift), and total_due wrongly adds stamp duty on top instead of treating it as included; (4) calculateInterestDirectMonthly() applies the annual rate directly as a monthly rate (would be ~12x too high), a landmine present but not the default (daily_balance is default). Two real statements (2026-04-06, 2026-05-06) were read and cross-checked against the validation doc's table — both matched exactly (14.07 EUR / 21.98 EUR interest, 1183.30 / 1909.98 EUR average principal, 31 / 30 days).
 
 ## Decisions
@@ -80,7 +83,7 @@ Last activity: 2026-08-06 -- Phase 19 discussion complete (fix breadth, cycle-pe
 
 ## Issues / Blockers
 
-- None blocking. Phase 17 (chatbot) and Phase 18 (hardening & security proof) are complete. Phase 19 (revolving credit card interest engine correctness) has captured context — next step is `/gsd-plan-phase 19`.
+- None blocking. Open items raised by the audit and not yet addressed (refresh-token rotation, trusted proxies, MFA on `/hub`, encrypted backups with a tested restore, audit trail, currency decision) are listed in ROADMAP.md under "Audit hardening". Phases 17-21 are complete (chatbot, hardening & security proof, revolving interest engine correctness, multi-currency display, credit-card balance recompute correctness). Phase 21's own manual follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding and not tracked by any further phase. Phases 22-28 each have a CONTEXT.md ready for planning — plan in dependency order starting with `/gsd-plan-phase 22`.
 
 ## Performance Metrics
 

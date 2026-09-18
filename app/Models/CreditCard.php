@@ -37,6 +37,7 @@ class CreditCard extends Model
         'due_day',
         'skip_weekends',
         'current_balance',
+        'opening_balance',
         'status',
         'start_date',
         'interest_calculation_method',
@@ -75,6 +76,7 @@ class CreditCard extends Model
         'fixed_payment_includes_stamp_duty' => 'boolean',
         'skip_weekends' => 'boolean',
         'current_balance' => 'decimal:2',
+        'opening_balance' => 'decimal:2',
         'status' => CreditCardStatus::class,
         'start_date' => 'date',
         'interest_calculation_method' => InterestCalculationMethod::class,
@@ -82,6 +84,37 @@ class CreditCard extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (CreditCard $card): void {
+            // Filament's form always submits opening_balance explicitly (it's a required
+            // field defaulting to 0), so "key absent" alone doesn't catch the common case of
+            // a user filling only "Current balance" and leaving "Opening balance" at its
+            // untouched 0 default. Treat opening_balance as "not meaningfully provided" when
+            // it is either absent or exactly 0 while current_balance carries a real value —
+            // there is no legitimate scenario where a card is created with a non-zero
+            // current_balance but a deliberately-zero opening_balance and no expenses to
+            // account for the difference.
+            $openingBalance = (float) ($card->opening_balance ?? 0);
+            $currentBalance = $card->current_balance !== null ? (float) $card->current_balance : null;
+
+            if ($openingBalance === 0.0 && $currentBalance !== null && $currentBalance !== 0.0) {
+                // Backward compat: caller only set current_balance (old API/tests/factory
+                // shape) — infer opening_balance from it, current_balance is already correct.
+                $card->opening_balance = $currentBalance;
+            } else {
+                // A brand-new record has no expenses or payments yet — it cannot exist until
+                // this row is inserted — so current_balance can only ever legitimately equal
+                // opening_balance at creation time. Force it, regardless of whatever
+                // (possibly stale or defaulted) value the caller separately submitted for
+                // current_balance, so a card created via "Opening balance" alone doesn't sit
+                // with a wrong current_balance/available_credit until the next unrelated sync.
+                // Use the already-computed $openingBalance float, not the raw opening_balance
+                // attribute — the latter is null (not 0) whenever the caller never set it at
+                // all, which would otherwise insert a NULL into the NOT NULL current_balance
+                // column for an ordinary current_balance: 0 / no-opening_balance card.
+                $card->current_balance = $openingBalance;
+            }
+        });
+
         static::saving(function (CreditCard $creditCard): void {
             $type = $creditCard->type instanceof \BackedEnum
                 ? $creditCard->type->value

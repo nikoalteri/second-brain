@@ -1,7 +1,7 @@
 # Fluxa — Roadmap
 
 **Project:** Fluxa Personal Finance Tracker  
-**Last Updated:** 2026-04-29
+**Last Updated:** 2026-09-18
 
 ---
 
@@ -206,8 +206,102 @@ Delivered:
 - [x] Regression test (`CreditCardCurrencyDisplayTest`) rendering the live Filament page under both currencies
 - [x] Full suite green (282 tests, only the 2 pre-existing unrelated failures)
 
+### Phase 21: Credit card balance recompute correctness — fix syncCardBalance dropping opening balance on payment create/update ✅
+
+**Goal:** `CreditCardCycleService::syncCardBalance()` computes `current_balance` as `opening_balance + expenses − paid principal` instead of dropping any balance not backed by a tracked expense; the fix and its data-integrity fallout (backfill safety, at-risk-card reporting) ship without reintroducing the Phase 18 payment-status race condition.
+**Requirements**: D-01 through D-10 (from 21-CONTEXT.md; no ROADMAP requirement IDs assigned)
+**Depends on:** Phase 20
+**Plans:** 2/2 plans complete
+
+Plans:
+- [x] 21-01-PLAN.md — `opening_balance` column, model backward-compat bridge, corrected `syncCardBalance()` formula, `handleDeletedPayment()` alignment, additive Filament/API field, regression test
+- [x] 21-02-PLAN.md — `credit-cards:balance-audit` manual command listing active cards and flagging pre-fix ones for real-statement reconciliation
+
+Delivered:
+- [x] Both pre-existing failing tests (`CreditCardCreditLineSyncTest`, `CreditCardKpiServiceTest`, deferred since Phase 19) now pass with zero test-file edits
+- [x] Full suite green (327 tests, 0 failures)
+- [x] `php artisan credit-cards:balance-audit` available for manual post-deploy reconciliation of real cards (not scheduled)
+
+### Audit hardening (ad-hoc, 2026-09-17 to 2026-09-18) ✅
+
+Executed directly from a project audit, outside the discuss/plan flow (like Phase 20). Delivered through PRs #11-#20, each with tests that fail without the fix:
+
+- **Ownership:** account/category/card references are validated against the authenticated user on REST and GraphQL (transactions, loans, subscriptions, credit cards) through `App\Rules\OwnedByAuthenticatedUser`; soft-deleted accounts/cards are rejected; the dashboard no longer exposes other users' category names.
+- **Atomic writes:** REST transaction, loan (with its schedule), credit-card and expense writes, and Filament pages/actions, run in database transactions, so an observer failure no longer leaves a half-written record.
+- **Transfers:** both legs stay in sync on edit, delete and restore (`TransactionObserver`).
+- **Auth:** refresh tokens are accepted only by the refresh endpoint; deactivated users cannot log in and lose their tokens; login, registration and password recovery are rate limited.
+- **Calculations:** a cycle's daily balances start from the ledger as of the cycle start, not from the current balance; the historical net-worth chart is computed as of each month; `syncLoan()` keeps `defaulted` loans defaulted.
+- **API/schema:** the GraphQL `CreditCard` type matches charge cards and exposes the opening balance and stamp-duty flag; a new loan defaults `remaining_amount` to its total.
+- **Dependencies:** `composer audit` and `npm audit` report no advisories (PR #20).
+- **Tooling:** `php artisan data:audit` (read-only) checks ownership, deleted references, transfer pairs and stored-balance drift. Run on UAT on 2026-09-18: no inconsistencies.
+- **Deploy:** the UAT deploy clears the Lighthouse schema cache.
+
+**Still open (raised by the audit, not addressed):** refresh-token rotation and reuse detection (needs a frontend change); trusted-proxy configuration, without which per-IP limits are global behind a proxy; MFA on the Filament `/hub` login; encrypted off-host backups with a tested restore, private storage and key management for imports; an audit-trail writer for financial changes; money arithmetic done in floats; formula-injection handling in spreadsheet exports; `calculatePaymentBreakdown()` still uses the current balance for exposure; atomicity of paths not covered by tests (e.g. the scheduled commands stop at the first failing item); a cron heartbeat and a smoke test in the deploy.
+
+**Decision needed before planning Phases 24-27 (currency):** `Money` only changes the display symbol and separators without conversion, while accounts carry a currency and some totals add all currencies under one label. Choose one of: a single effective currency; a currency per account with separate totals; or real FX conversion. The audit proposes explicit totals per currency without an FX engine for the current phases. The choice affects import, dedup, precision and reconciliation.
+
+### Phase 22: Proactive notifications — wire the existing (unused) Notification model to real financial triggers
+
+**Goal:** The `Notification` model and table exist but nothing in the codebase writes to them (`grep -rn "Notification::create" app/` returns zero matches). This phase wires real triggers — budget-threshold alerts (`BudgetAlertService` already computes `alert_status` but never surfaces it proactively), credit card due-date/limit warnings, loan installment due dates, subscription renewal reminders — into actual `Notification` rows, delivered in-app only via a daily digest command.
+**Requirements**: D-01 through D-09 (from 22-CONTEXT.md)
+**Depends on:** Phase 21
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 22`
+**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 22-CONTEXT.md, section "Audit-derived requirements".
+
+### Phase 23: Subscription price-hike detection
+
+**Goal:** Detect when a subscription's renewal amount increases relative to its prior charge and surface it through the notification channel built in Phase 22, instead of the increase only being visible by manually comparing past transactions.
+**Requirements**: D-01 through D-05 (from 23-CONTEXT.md)
+**Depends on:** Phase 22 (reuses its notification delivery)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 23`
+**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 23-CONTEXT.md, section "Audit-derived requirements".
+
+### Phase 24: Cash-flow forecast ("safe to spend")
+
+**Goal:** Aggregate already-tracked upcoming commitments (subscription renewals, loan installments, credit card cycle due payments) against current account balances into a forward-looking projection, instead of the user having to mentally net these out from separate pages. Reuses the existing `UpcomingPaymentsService` (Phase 17) rather than building new aggregation logic.
+**Requirements**: D-01 through D-04 (from 24-CONTEXT.md)
+**Depends on:** Phase 21
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 24`
+**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 24-CONTEXT.md, section "Audit-derived requirements".
+
+### Phase 25: Bank statement import & reconciliation
+
+**Goal:** Import transactions from exported bank statement files (CSV/Excel, via a user-configurable column mapping — not one hardcoded bank format) into a reviewable draft state, then reconcile/dedup them against existing `Transaction`/`CreditCardExpense` records before confirming, reducing manual entry. File-based import only — this does **not** reopen the existing "no bank-feed/Open Banking expansion" boundary (see Deferred Longer-Term Product Ideas above), since there is no live external API integration involved, only parsing of files the user exports themselves. PDF statement parsing is explicitly deferred out of this phase. Each import batch can optionally capture the statement's declared ending balance, feeding Phase 27's reconciliation.
+**Requirements**: D-01 through D-06 (from 25-CONTEXT.md; D-06 added retroactively during Phase 27's discuss-phase)
+**Depends on:** Phase 21
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 25`
+**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 25-CONTEXT.md, section "Audit-derived requirements".
+
+### Phase 26: Debt & subscription totals (chatbot + dashboard)
+
+**Goal:** Four new aggregate figures — total monthly-equivalent cost of active subscriptions, total remaining loan principal, total credit-card debt, and their combined "total debts" — exposed on both the chatbot (5 new `ChatIntent`s: 4 single-topic + 1 combined `debt_overview`) and the SPA Dashboard, composing existing services (`SubscriptionService`, `IntentRouter`) rather than new aggregation logic.
+**Requirements**: D-01 through D-05 (from 26-CONTEXT.md)
+**Depends on:** Phase 17 (chatbot/IntentRouter), Phase 24 (should be planned/executed with awareness of it — both add Dashboard aggregate figures)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 26`
+**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 26-CONTEXT.md, section "Audit-derived requirements".
+
+### Phase 27: Automated statement reconciliation
+
+**Goal:** Evolve the manual `credit-cards:balance-audit` command (Phase 21) into an automatic check — when a Phase 25 import batch has a declared statement ending balance, compare it against Fluxa's own computed balance for the same period and notify (Phase 22) on any mismatch. A true external-truth reconciliation, not just an internal consistency check.
+**Requirements**: D-01 through D-05 (from 27-CONTEXT.md)
+**Depends on:** Phase 25 (import batches + the D-06 ending-balance field), Phase 22 (notification delivery), Phase 21 (balance formula reused)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 27` (cannot be planned in full detail until Phase 25's own planning settles its staging data model)
+**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 27-CONTEXT.md, section "Audit-derived requirements".
+
+### Phase 28: Automatic transaction categorization
+
+**Goal:** Suggest/assign a transaction's category automatically — explicit user-defined rules first, then a match against the user's own categorization history as fallback. Silently assigned for manually-created transactions; shown as an overridable suggestion in Phase 25's import draft review. Applies going forward only, no retroactive backfill.
+**Requirements**: D-01 through D-06 (from 28-CONTEXT.md)
+**Depends on:** Phase 25 (shares its import draft review flow for the suggest-not-assign path)
+**Plans:** not started — context gathered, ready for `/gsd-plan-phase 28`
+**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 28-CONTEXT.md, section "Audit-derived requirements".
+
+### Report annuale/fiscale — resolved without a new phase
+
+During this brainstorm the user asked for a simpler, non-monthly per-category annual summary alongside the existing detailed pivot. Investigation found this **already ships** today: `GET /api/v1/reports/finance/export?year=&format=csv|xlsx|pdf` (`FinanceReportController`/`FinanceReportSnapshotService`/`FinanceReportExportService`) already includes a "Distribution" section — a per-category yearly total with no month breakdown — in every export format (its own XLSX sheet, its own PDF/CSV section), alongside the existing "Category Pivot" (monthly detail) and "Cashflow Summary" sections. The SPA already has an export trigger (`resources/js/views/reports/FinanceReportView.vue`). No new phase needed; not added to the roadmap.
+
 ---
 
 ## Direct Next Command
 
-Milestone v5.1 has no further committed phases. Two real, substantive test failures were discovered during Phase 19 execution (`CreditCardCreditLineSyncTest::payments_reintegrate_only_principal_on_status_changes`, `CreditCardKpiServiceTest::it_returns_expected_credit_card_kpis_for_user`, both involving `CreditCardPayment` status-change balance reconciliation) — worth a dedicated proof-first phase. Otherwise pick the next focus from `.planning/codebase/CONCERNS.md` or ROADMAP's Deferred Concerns, then scope it via `/gsd-discuss-phase` or `/gsd-new-milestone`.
+Phases 22-28 are scoped (2026-09-17) from a product-enhancement brainstorm. All have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md) and, since 2026-09-18, an "Audit-derived requirements" section in each CONTEXT.md; none has been researched, planned, or executed. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it), then 25 (Phases 27 and 28 both depend on its staging data model), then 24/26 together, then 27/28 — after settling the currency decision above. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).

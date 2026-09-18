@@ -53,6 +53,15 @@ watch(
         if (unlocked && hasVaultPin.value === null) {
             void checkVaultPin();
         }
+
+        // Locked or expired: nothing revealed may stay in memory or on screen.
+        if (!unlocked) {
+            revealed.value = false;
+            sensitive.value = { cvv: '', pin: '', security_code: '' };
+            editForm.value = { cvv: '', pin: '', security_code: '' };
+            enteredPin.value = '';
+            editing.value = false;
+        }
     },
     { immediate: true }
 );

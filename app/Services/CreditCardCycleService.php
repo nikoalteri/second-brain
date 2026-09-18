@@ -17,14 +17,10 @@ class CreditCardCycleService
     use HasWorkdayCalculation;
 
     private RevolvingCreditCalculator $calculator;
-    private CreditCardBalanceService $balanceService;
 
-    public function __construct(
-        ?RevolvingCreditCalculator $calculator = null,
-        ?CreditCardBalanceService $balanceService = null
-    ) {
+    public function __construct(?RevolvingCreditCalculator $calculator = null)
+    {
         $this->calculator = $calculator ?? app(RevolvingCreditCalculator::class);
-        $this->balanceService = $balanceService ?? app(CreditCardBalanceService::class);
     }
 
     /**
@@ -374,11 +370,7 @@ class CreditCardCycleService
                 }
             }
 
-            if ($payment->status === CreditCardPaymentStatus::PAID) {
-                // Payment was marked PAID: restore debt on deletion
-                $this->balanceService->reversePrincipalPayment($card, (float) $payment->principal_amount);
-            }
-
+            $this->syncCardBalance($card);
             $card->refresh();
         });
     }
@@ -424,7 +416,7 @@ class CreditCardCycleService
             ->where('status', CreditCardPaymentStatus::PAID)
             ->sum('principal_amount');
 
-        $balance = round(max(0.0, $totalExpenses - $totalPrincipalPaid), 2);
+        $balance = round(max(0.0, (float) $card->opening_balance + $totalExpenses - $totalPrincipalPaid), 2);
 
         $card->update(['current_balance' => $balance]);
     }

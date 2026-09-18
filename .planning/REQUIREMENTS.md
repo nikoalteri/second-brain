@@ -27,6 +27,7 @@
 - Phase 14 requirements are documentation outcomes only; they do not promise new product behavior
 - Phase 13 validated evidence defines the top-level confidence boundary for current product claims
 - Structural-only finance areas remain lower-confidence context until later proof upgrades them
+- Requirements for Phases 16-28 are tracked in each phase's CONTEXT.md and plans, not in this file; audit-derived proposals for Phases 22-28 live in the "Audit-derived requirements" section of their CONTEXT.md
 
 ## Out of Scope
 
@@ -54,4 +55,4 @@
 
 ---
 *Requirements defined: 2026-04-30*  
-*Last updated: 2026-04-29 after Phase 15 roadmap reset and concern triage*
+*Last updated: 2026-09-18 (note on where later-phase requirements live); the alignment requirements above are unchanged*

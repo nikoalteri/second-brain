@@ -111,13 +111,18 @@ type CreditCard {
     "Card network: visa, mastercard or amex."
     brand: String! @method(name: "graphqlBrand")
     credit_limit: Float
-    fixed_payment: Float!
-    interest_rate: Float!
+    "Null for charge cards, which pay the full balance and accrue no interest."
+    fixed_payment: Float
+    interest_rate: Float
     stamp_duty_amount: Float!
+    "True when fixed_payment already contains the stamp duty."
+    fixed_payment_includes_stamp_duty: Boolean!
     statement_day: Int!
     due_day: Int!
     skip_weekends: Boolean!
     current_balance: Float!
+    "Starting debt not backed by a tracked expense; current_balance = opening_balance + expenses - repaid principal."
+    opening_balance: Float!
     available_credit: Float
     status: String! @method(name: "graphqlStatus")
     start_date: Date
@@ -285,31 +290,31 @@ input UpdateAccountInput {
 }
 
 input CreateTransactionInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     transaction_type_id: ID!
-    transaction_category_id: ID
+    transaction_category_id: ID @rules(apply: ["App\\Rules\\OwnedCategory"])
     amount: Float!
     date: Date!
     description: String!
     notes: String
     is_transfer: Boolean
-    to_account_id: ID
+    to_account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
 }
 
 input UpdateTransactionInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     transaction_type_id: ID
-    transaction_category_id: ID
+    transaction_category_id: ID @rules(apply: ["App\\Rules\\OwnedCategory"])
     amount: Float
     date: Date
     description: String
     notes: String
     is_transfer: Boolean
-    to_account_id: ID
+    to_account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
 }
 
 input CreateLoanInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String!
     total_amount: Float!
     monthly_payment: Float!
@@ -326,7 +331,7 @@ input CreateLoanInput {
 }
 
 input UpdateLoanInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String
     total_amount: Float
     monthly_payment: Float
@@ -343,7 +348,7 @@ input UpdateLoanInput {
 }
 
 input CreateCreditCardInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String!
     type: String!
     brand: String!
@@ -351,17 +356,19 @@ input CreateCreditCardInput {
     fixed_payment: Float
     interest_rate: Float
     stamp_duty_amount: Float
+    fixed_payment_includes_stamp_duty: Boolean
     statement_day: Int!
     due_day: Int!
     skip_weekends: Boolean
     current_balance: Float
+    opening_balance: Float
     status: String!
     start_date: Date!
     interest_calculation_method: String
 }
 
 input UpdateCreditCardInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String
     type: String
     brand: String
@@ -369,38 +376,40 @@ input UpdateCreditCardInput {
     fixed_payment: Float
     interest_rate: Float
     stamp_duty_amount: Float
+    fixed_payment_includes_stamp_duty: Boolean
     statement_day: Int
     due_day: Int
     skip_weekends: Boolean
     current_balance: Float
+    opening_balance: Float
     status: String
     start_date: Date
     interest_calculation_method: String
 }
 
 input CreateSubscriptionInput {
-    account_id: ID!
+    account_id: ID! @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String!
     monthly_cost: Float
     annual_cost: Float
     frequency: String!
     day_of_month: Int!
     next_renewal_date: Date!
-    category_id: ID
+    category_id: ID @rules(apply: ["App\\Rules\\OwnedCategory"])
     auto_create_transaction: Boolean
     status: String!
     notes: String
 }
 
 input UpdateSubscriptionInput {
-    account_id: ID
+    account_id: ID @rules(apply: ["App\\Rules\\OwnedAccount"])
     name: String
     monthly_cost: Float
     annual_cost: Float
     frequency: String
     day_of_month: Int
     next_renewal_date: Date
-    category_id: ID
+    category_id: ID @rules(apply: ["App\\Rules\\OwnedCategory"])
     auto_create_transaction: Boolean
     status: String
     notes: String

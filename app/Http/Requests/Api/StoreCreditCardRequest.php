@@ -34,6 +34,7 @@ class StoreCreditCardRequest extends FormRequest
             'due_day'                     => ['required', 'integer', 'min:1', 'max:31'],
             'skip_weekends'               => ['boolean'],
             'current_balance'             => ['nullable', 'numeric', 'min:0'],
+            'opening_balance'             => ['numeric', 'min:0'],
             'status'                      => ['required', Rule::in(['active', 'suspended', 'closed'])],
             'start_date'                  => ['nullable', 'date'],
             'interest_calculation_method' => ['nullable', Rule::in(['daily_balance', 'direct_monthly'])],

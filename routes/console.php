@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\CreditCardCycleStatus;
+use App\Enums\CreditCardPaymentStatus;
 use App\Enums\CreditCardStatus;
 use App\Models\CreditCard;
 use App\Models\Loan;
@@ -53,6 +54,50 @@ Artisan::command('credit-cards:generate-cycles {--month=} {--issue-ready}', func
     $this->info("Cycles ensured: {$cards->count()} cards, {$created} created, {$issued} issued.");
 })->purpose('Create monthly credit card cycles and optionally issue ready cycles');
 
+Artisan::command('credit-cards:balance-audit', function () {
+    // No date-based threshold: a migration's filename timestamp only says when the file was
+    // authored, not when it actually ran in this environment. If deploy happens later than
+    // the migration's own timestamp, any card created in between would be silently excluded
+    // by a fixed cutoff, while genuinely being exposed to the pre-fix nightly recompute.
+    // There is no reliable in-data signal for "was this card created before opening_balance
+    // existed in this environment" — so, conservatively, list every active card and let the
+    // owner cross-check all of them against real statements, using created_at only as a
+    // sorting aid (oldest first) rather than a pass/fail flag.
+    $cards = CreditCard::query()
+        ->withoutUserScope()
+        ->where('status', CreditCardStatus::ACTIVE)
+        ->with('user:id,email')
+        ->orderBy('created_at')
+        ->get();
+
+    $rows = $cards->map(function (CreditCard $card) {
+        $expenses = (float) $card->expenses()->sum('amount');
+        $paidPrincipal = (float) $card->payments()
+            ->where('status', CreditCardPaymentStatus::PAID)
+            ->sum('principal_amount');
+
+        return [
+            $card->id,
+            $card->user?->email ?? '—',
+            $card->name,
+            $card->type?->value ?? '—',
+            $card->created_at->toDateString(),
+            number_format((float) $card->current_balance, 2),
+            number_format((float) $card->opening_balance, 2),
+            number_format($expenses, 2),
+            number_format($paidPrincipal, 2),
+        ];
+    });
+
+    $this->table(
+        ['ID', 'User', 'Name', 'Type', 'Created', 'Current balance', 'Opening balance', 'Expenses', 'Paid principal'],
+        $rows
+    );
+
+    $this->info("{$cards->count()} active card(s) listed, oldest first.");
+    $this->line('Cross-check every card above against its real statement and correct \'Opening balance\' in Filament where it differs — there is no reliable way to tell from the data alone which cards were created before this fix was live in this environment, so none are pre-filtered as "safe".');
+})->purpose('List active credit cards with a balance breakdown for manual reconciliation after the opening_balance fix (Phase 21) — not scheduled, run manually');
+
 Artisan::command('loans:sync-installments {--date=}', function () {
     $throughDate = $this->option('date')
         ? Carbon::parse($this->option('date'))->endOfDay()
@@ -86,3 +131,5 @@ Artisan::command('subscriptions:sync-renewals {--date=}', function () {
 Schedule::command('loans:sync-installments')->dailyAt('01:50');
 Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55');
 Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00');
+// Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
+Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');

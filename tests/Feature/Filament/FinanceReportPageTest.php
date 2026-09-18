@@ -82,7 +82,7 @@ class FinanceReportPageTest extends TestCase
             'date' => '2026-04-07',
         ]);
 
-        $response = $this->actingAs($user)->get('/hub/finance-report');
+        $response = $this->actingAs($this->withPanelMfa($user))->get('/hub/finance-report');
 
         $response->assertOk()
             ->assertSee('Budget Month')
@@ -99,7 +99,7 @@ class FinanceReportPageTest extends TestCase
     {
         $user = $this->createAdminUser();
 
-        $response = $this->actingAs($user)->get('/hub');
+        $response = $this->actingAs($this->withPanelMfa($user))->get('/hub');
 
         $response->assertOk()
             ->assertDontSee('Budget Alerts');

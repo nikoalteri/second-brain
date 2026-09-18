@@ -32,6 +32,7 @@ class CreditCardFactory extends Factory
             'due_day' => 25,
             'skip_weekends' => false,
             'current_balance' => 0.00,
+            'opening_balance' => 0.00,
             'status' => CreditCardStatus::ACTIVE,
             'start_date' => now(),
             'interest_calculation_method' => InterestCalculationMethod::DAILY_BALANCE,

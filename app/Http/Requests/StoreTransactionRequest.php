@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\OwnedByAuthenticatedUser;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreTransactionRequest extends FormRequest
@@ -15,12 +16,12 @@ class StoreTransactionRequest extends FormRequest
     {
         return [
             'description' => ['required', 'string', 'max:255'],
-            'account_id' => ['required', 'exists:accounts,id'],
+            'account_id' => ['required', OwnedByAuthenticatedUser::accounts()],
             'transaction_type_id' => ['required', 'exists:transaction_types,id'],
-            'transaction_category_id' => ['nullable', 'exists:transaction_categories,id'],
+            'transaction_category_id' => ['nullable', OwnedByAuthenticatedUser::categories()],
             'amount' => ['required', 'numeric'],
             'date' => ['required', 'date'],
-            'to_account_id' => ['nullable', 'exists:accounts,id'],
+            'to_account_id' => ['nullable', OwnedByAuthenticatedUser::accounts()],
             'is_transfer' => ['boolean'],
         ];
     }

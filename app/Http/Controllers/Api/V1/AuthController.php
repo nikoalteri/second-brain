@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -28,6 +29,8 @@ use Spatie\Permission\Models\Role;
  */
 class AuthController extends Controller
 {
+    private const CONSUMED_REFRESH_TOKEN = 'refresh:used';
+    private const REFRESH_GRACE_SECONDS = 15;
     private const TWO_FACTOR_CACHE_PREFIX = 'two_factor_challenge:';
 
     public function __construct(
@@ -56,6 +59,12 @@ class AuthController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
+        if ($user->is_active === false) {
+            Auth::logout();
+
+            return response()->json(['message' => 'This account is disabled.'], 403);
+        }
+
         if ($user->hasTwoFactorEnabled()) {
             $challenge = (string) Str::uuid();
             Cache::put(self::TWO_FACTOR_CACHE_PREFIX . $challenge, $user->id, now()->addMinutes(5));
@@ -82,6 +91,18 @@ class AuthController extends Controller
     public function twoFactorLogin(TwoFactorLoginRequest $request): JsonResponse
     {
         $cacheKey = self::TWO_FACTOR_CACHE_PREFIX . $request->validated('two_factor_token');
+
+        // One attempt at a time per challenge: without the lock, two simultaneous requests could
+        // both find the challenge and both be issued tokens for a single successful login.
+        $response = Cache::lock($cacheKey . ':lock', 10)->get(
+            fn () => $this->completeTwoFactorLogin($request, $cacheKey)
+        );
+
+        return $response ?: response()->json(['message' => 'This login challenge is being used. Please try again.'], 429);
+    }
+
+    private function completeTwoFactorLogin(TwoFactorLoginRequest $request, string $cacheKey): JsonResponse
+    {
         $userId = Cache::get($cacheKey);
 
         if (! $userId) {
@@ -89,6 +110,13 @@ class AuthController extends Controller
         }
 
         $user = User::findOrFail($userId);
+
+        if ($user->is_active === false) {
+            Cache::forget($cacheKey);
+
+            return response()->json(['message' => 'This account is disabled.'], 403);
+        }
+
         $code = $request->validated('code');
 
         $verified = $this->twoFactor->verifyCode($user, $code) || $this->twoFactor->useRecoveryCode($user, $code);
@@ -119,29 +147,69 @@ class AuthController extends Controller
     }
 
     /**
-     * Refresh an expired access token using a valid refresh token.
+     * Exchange a refresh token for a new access token AND a new refresh token. The presented
+     * refresh token is consumed: presenting it again is treated as a stolen token and revokes the
+     * user's whole session, except for a short window in which a second, simultaneous refresh
+     * (for example from another tab) is told to retry instead.
      *
      * @group Authentication
-     * @authenticated
-     * @response 200 {"access_token":"3|...","token_type":"Bearer","expires_in":1800}
+     * @unauthenticated
+     * @response 200 {"access_token":"3|...","refresh_token":"4|...","token_type":"Bearer","expires_in":1800}
      * @response 401 {"message":"Unauthenticated."}
+     * @response 409 {"message":"This refresh token was just used. Retry with the newest tokens."}
      */
     public function refresh(Request $request): JsonResponse
     {
-        /** @var \App\Models\User $user */
-        $user = $request->user();
+        $plainToken = $request->bearerToken();
+        $token = $plainToken ? PersonalAccessToken::findToken($plainToken) : null;
 
-        // Revoke only access tokens; keep the refresh token alive
+        if ($token === null || ! $token->tokenable instanceof User) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        /** @var User $user */
+        $user = $token->tokenable;
+
+        if ($token->name === self::CONSUMED_REFRESH_TOKEN) {
+            return $this->handleReusedRefreshToken($token, $user);
+        }
+
+        if ($token->name !== 'refresh'
+            || ! in_array('refresh', (array) $token->abilities, true)
+            || ($token->expires_at !== null && $token->expires_at->isPast())
+            || $user->is_active === false) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // Consume the token with a single conditional UPDATE: of two simultaneous requests only
+        // one changes the row. expires_at doubles as the moment of consumption.
+        $consumed = PersonalAccessToken::query()
+            ->whereKey($token->getKey())
+            ->where('name', 'refresh')
+            ->update(['name' => self::CONSUMED_REFRESH_TOKEN, 'expires_at' => now()]);
+
+        if ($consumed === 0) {
+            return $this->handleReusedRefreshToken($token->fresh() ?? $token, $user);
+        }
+
         $user->tokens()->where('name', 'access')->delete();
 
-        $access = $user->createToken('access', ['*'], now()->addMinutes(30));
+        return response()->json($this->issueTokens($user));
+    }
 
-        return response()->json([
-            'access_token' => $access->plainTextToken,
-            'token_type'   => 'Bearer',
-            'expires_in'   => 1800,
-            'user'         => $user->toFrontendPayload(),
-        ]);
+    private function handleReusedRefreshToken(PersonalAccessToken $token, User $user): JsonResponse
+    {
+        $consumedAt = $token->expires_at;
+
+        if ($consumedAt !== null && $consumedAt->greaterThan(now()->subSeconds(self::REFRESH_GRACE_SECONDS))) {
+            return response()->json(['message' => 'This refresh token was just used. Retry with the newest tokens.'], 409);
+        }
+
+        // A consumed token presented after the grace window: assume it was copied and revoke
+        // every token of the user (each login already keeps a single session).
+        $user->tokens()->delete();
+
+        return response()->json(['message' => 'Unauthenticated.'], 401);
     }
 
     /**

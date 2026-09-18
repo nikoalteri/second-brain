@@ -10,6 +10,7 @@ use App\Models\CreditCard;
 use App\Models\CreditCardExpense;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class CreditCardExpenseController extends Controller
 {
@@ -17,7 +18,8 @@ class CreditCardExpenseController extends Controller
     {
         $this->authorize('update', $creditCard);
 
-        $expense = $creditCard->expenses()->create($request->validated());
+        // Observers sync cycle and card balance after the INSERT: keep them in one transaction.
+        $expense = DB::transaction(fn () => $creditCard->expenses()->create($request->validated()));
         $expense->load('cycle');
 
         return (new CreditCardExpenseResource($expense))
@@ -33,7 +35,7 @@ class CreditCardExpenseController extends Controller
         $this->assertExpenseBelongsToCard($creditCard, $expense);
         $this->authorize('update', $creditCard);
 
-        $expense->update($request->validated());
+        DB::transaction(fn () => $expense->update($request->validated()));
         $expense->load('cycle');
 
         return new CreditCardExpenseResource($expense);
@@ -44,7 +46,7 @@ class CreditCardExpenseController extends Controller
         $this->assertExpenseBelongsToCard($creditCard, $expense);
         $this->authorize('update', $creditCard);
 
-        $expense->delete();
+        DB::transaction(fn () => $expense->delete());
 
         return response()->noContent();
     }

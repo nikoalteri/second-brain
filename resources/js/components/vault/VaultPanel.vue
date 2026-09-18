@@ -24,6 +24,20 @@ const revealed = ref(false);
 const data = ref({});
 const form = ref({});
 
+// Locked or expired: nothing revealed may stay in memory or on screen.
+watch(
+    () => vault.isUnlocked,
+    (unlocked) => {
+        if (!unlocked) {
+            revealed.value = false;
+            data.value = {};
+            form.value = {};
+            editing.value = false;
+            unlockCode.value = '';
+        }
+    }
+);
+
 function emptyForm() {
     return Object.fromEntries(props.fields.map((field) => [field.key, '']));
 }
