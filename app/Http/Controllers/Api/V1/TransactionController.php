@@ -8,6 +8,7 @@ use App\Http\Requests\Api\UpdateTransactionRequest;
 use App\Http\Resources\Api\TransactionResource;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -56,9 +57,11 @@ class TransactionController extends Controller
     public function store(StoreTransactionRequest $request): JsonResponse    {
         $this->authorize('create', Transaction::class);
 
-        $transaction = Transaction::create(array_merge($request->validated(), [
+        // The balance observer runs after the INSERT: keep both in one transaction so a
+        // failure never leaves a movement without its balance update.
+        $transaction = DB::transaction(fn () => Transaction::create(array_merge($request->validated(), [
             'user_id' => $request->user()->id,
-        ]));
+        ])));
 
         $transaction->load(['account', 'category']);
 
@@ -86,7 +89,7 @@ class TransactionController extends Controller
     {
         $this->authorize('update', $transaction);
 
-        $transaction->update($request->validated());
+        DB::transaction(fn () => $transaction->update($request->validated()));
         $transaction->load(['account', 'category']);
 
         return new TransactionResource($transaction);
@@ -101,7 +104,7 @@ class TransactionController extends Controller
     {
         $this->authorize('delete', $transaction);
 
-        $transaction->delete();
+        DB::transaction(fn () => $transaction->delete());
 
         return response()->noContent();
     }
