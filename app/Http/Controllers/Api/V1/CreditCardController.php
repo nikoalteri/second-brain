@@ -77,7 +77,10 @@ class CreditCardController extends Controller
         $expensesLimit = $this->historyLimit($request, 'expenses_limit', 500, 1000);
 
         $cycles = $creditCard->cycles()
-            ->with(['expenses' => fn ($expenseQuery) => $expenseQuery->orderByDesc('spent_at')])
+            // Capped per cycle (Eloquent applies this per-parent via a window function), or a
+            // card with years of unusually expense-heavy cycles could still load an unbounded
+            // number of rows despite the cycle count itself being capped above.
+            ->with(['expenses' => fn ($expenseQuery) => $expenseQuery->orderByDesc('spent_at')->limit($expensesLimit)])
             ->orderByDesc('statement_date')
             ->limit($cyclesLimit)
             ->get();

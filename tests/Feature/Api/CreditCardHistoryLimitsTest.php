@@ -86,6 +86,33 @@ class CreditCardHistoryLimitsTest extends TestCase
             ->assertJsonPath('history.expenses.returned', 4);
     }
 
+    public function test_expenses_nested_under_a_single_cycle_are_also_capped(): void
+    {
+        $account = Account::factory()->create(['user_id' => $this->user->id]);
+        $card = CreditCard::factory()->create(['user_id' => $this->user->id, 'account_id' => $account->id]);
+        $cycle = CreditCardCycle::factory()->create([
+            'credit_card_id' => $card->id,
+            'period_month' => '2025-01',
+            'period_start_date' => '2025-01-01',
+            'statement_date' => '2025-01-28',
+            'due_date' => '2025-01-28',
+        ]);
+
+        for ($day = 1; $day <= 5; $day++) {
+            CreditCardExpense::create([
+                'credit_card_id' => $card->id,
+                'credit_card_cycle_id' => $cycle->id,
+                'spent_at' => now()->subDays($day),
+                'amount' => 10,
+                'description' => "Expense {$day}",
+            ]);
+        }
+
+        $this->getJson("/api/v1/credit-cards/{$card->id}?expenses_limit=2")
+            ->assertOk()
+            ->assertJsonCount(2, 'data.cycles.0.expenses');
+    }
+
     public function test_the_history_limits_are_capped(): void
     {
         $card = $this->cardWithHistory(cycles: 1, expenses: 1);
