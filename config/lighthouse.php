@@ -257,9 +257,12 @@ return [
     'security' => [
         // The SPA query surface exceeds the stock cap once paginated finance lists
         // include their planned fields, so keep the limit high enough for first-party use.
-        // Raised from 500 to 700 to fit the transactions list's 50-per-page default
-        // (needed for its collapsible month grouping) — still a guard against pathological queries.
-        'max_query_complexity' => 700,
+        // Raised from 500 to 850 to fit the transactions list's 50-per-page default
+        // (needed for its collapsible month grouping): Apollo Client auto-injects a
+        // __typename selection on every object in the query, which the complexity
+        // calculator counts too, so the real cost (801) is higher than the raw field
+        // count alone (651) — still a guard against pathological queries.
+        'max_query_complexity' => 850,
         // Maximum query depth limit (e.g. 10)
         'max_query_depth' => 10,
         'disable_introspection' => (bool) env('LIGHTHOUSE_SECURITY_DISABLE_INTROSPECTION', false)
