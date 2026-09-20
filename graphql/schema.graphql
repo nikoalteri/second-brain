@@ -224,7 +224,11 @@ type Query {
     transactions(
         account_id: ID @eq
         is_transfer: Boolean @eq
-    ): [Transaction!]! @paginate(defaultCount: 20) @guard
+        transaction_type_id: ID @eq
+        transaction_category_id: ID @eq
+        "Sort the results, e.g. [{ column: DATE, order: ASC }]."
+        orderBy: _ @orderBy(columns: ["date", "amount", "description", "created_at"])
+    ): [Transaction!]! @paginate(defaultCount: 100) @guard
 
     "Get a single transaction by ID."
     transaction(id: ID! @eq): Transaction @find @guard
