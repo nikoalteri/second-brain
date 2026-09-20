@@ -23,6 +23,7 @@ class SubscriptionResource extends JsonResource
             ]),
             'account_id'              => $this->account_id,
             'credit_card_id'          => $this->credit_card_id,
+            'category_id'             => $this->category_id,
             'payment_source_type'     => $this->payment_source_type,
             'monthly_cost'            => (float) $this->monthly_cost,
             'annual_cost'             => (float) $this->annual_cost,

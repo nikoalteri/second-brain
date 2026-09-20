@@ -85,6 +85,11 @@ class GraphQLLimitsTest extends TestCase
      * raised the page size to 100 without checking against the limit broke this page in UAT
      * (complexity 601 > 500) while every other page kept working, since nothing else asked for
      * this many rows with this many fields per row.
+     *
+     * __typename is included on every object here because Apollo Client (what the SPA actually
+     * uses) injects it automatically into every selection set — omitting it here undercounts the
+     * true complexity Apollo sends and would have missed the follow-up bug where 50 rows measured
+     * at 651 by hand actually cost 801 over the wire.
      */
     public function test_the_transactions_page_query_fits_under_the_complexity_limit(): void
     {
@@ -93,7 +98,9 @@ class GraphQLLimitsTest extends TestCase
         $query = '
             query GetTransactions($page: Int, $orderBy: [QueryTransactionsOrderByOrderByClause!]) {
                 transactions(first: 50, page: $page, orderBy: $orderBy) {
+                    __typename
                     data {
+                        __typename
                         id
                         account_id
                         transaction_type_id
@@ -103,7 +110,7 @@ class GraphQLLimitsTest extends TestCase
                         description
                         is_transfer
                     }
-                    paginatorInfo { currentPage lastPage total }
+                    paginatorInfo { __typename currentPage lastPage total }
                 }
             }
         ';

@@ -101,10 +101,12 @@ class GraphQLApiTest extends TestCase
 
         $this->assertEquals('GraphQL Account', $response->json('data.createAccount.name'));
         $this->assertEquals('savings', $response->json('data.createAccount.type'));
+        $this->assertEquals(500.00, $response->json('data.createAccount.balance'));
 
         $this->assertDatabaseHas('accounts', [
             'user_id' => $user->id,
             'name' => 'GraphQL Account',
+            'balance' => 500.00,
         ]);
     }
 

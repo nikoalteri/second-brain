@@ -9,6 +9,7 @@ use App\Models\Account;
 use App\Models\CreditCard;
 use App\Models\Subscription;
 use App\Models\SubscriptionFrequency;
+use App\Models\TransactionCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -122,6 +123,64 @@ class SubscriptionApiTest extends TestCase
             ->assertJsonPath('data.frequency_option.months_interval', 12)
             ->assertJsonPath('data.payment_source_type', 'credit-card')
             ->assertJsonPath('data.credit_card.id', $card->id);
+    }
+
+    public function test_subscription_show_includes_the_category_id_so_the_edit_form_can_preselect_it(): void
+    {
+        $frequency = SubscriptionFrequency::query()->where('slug', 'monthly')->firstOrFail();
+        $user = User::factory()->create();
+        $category = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $user->id,
+            'name' => 'Streaming',
+            'scope' => 'subscription',
+            'is_active' => true,
+        ]);
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'subscription_frequency_id' => $frequency->id,
+            'category_id' => $category->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this->getJson("/api/v1/subscriptions/{$subscription->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.category_id', $category->id);
+    }
+
+    public function test_updating_a_subscription_category_is_reflected_on_the_next_show(): void
+    {
+        $frequency = SubscriptionFrequency::query()->where('slug', 'monthly')->firstOrFail();
+        $user = User::factory()->create();
+        $category = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $user->id,
+            'name' => 'Streaming',
+            'scope' => 'subscription',
+            'is_active' => true,
+        ]);
+        $subscription = Subscription::factory()->create([
+            'user_id' => $user->id,
+            'subscription_frequency_id' => $frequency->id,
+            'category_id' => null,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->putJson("/api/v1/subscriptions/{$subscription->id}", [
+            'name' => $subscription->name,
+            'category_id' => $category->id,
+            'subscription_frequency_id' => $frequency->id,
+            'billing_amount' => $subscription->billing_amount,
+            'day_of_month' => $subscription->day_of_month,
+            'next_renewal_date' => $subscription->next_renewal_date->toDateString(),
+            'auto_create_transaction' => $subscription->auto_create_transaction,
+            'status' => $subscription->status->value,
+        ])->assertOk()->assertJsonPath('data.category_id', $category->id);
+
+        $this->getJson("/api/v1/subscriptions/{$subscription->id}")
+            ->assertOk()
+            ->assertJsonPath('data.category_id', $category->id);
     }
 
     public function test_frequency_index_returns_active_frequency_options(): void
