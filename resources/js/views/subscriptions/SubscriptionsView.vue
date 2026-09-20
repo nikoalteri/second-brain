@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { CalendarDaysIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+import KpiCard from '@/components/ui/KpiCard.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
 import { subscriptionStatusIcons } from '@/icons/domainIcons.js';
@@ -14,6 +15,36 @@ const auth = useAuthStore();
 const { formatCurrency } = useCurrency();
 const subscriptions = ref([]);
 const loading = ref(false);
+const sortField = ref('next_renewal_date');
+const sortDirection = ref('asc');
+const filterStatus = ref('');
+
+const sortOptions = [
+    { value: 'next_renewal_date', label: 'Next renewal' },
+    { value: 'monthly_cost', label: 'Monthly cost' },
+    { value: 'annual_cost', label: 'Annual cost' },
+    { value: 'created_at', label: 'Date added' },
+];
+const statusOptions = [
+    { value: '', label: 'All statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'cancelled', label: 'Cancelled' },
+];
+
+const activeSubscriptions = computed(() => subscriptions.value.filter((subscription) => subscription.status === 'active'));
+const monthlyActualTotal = computed(() =>
+    activeSubscriptions.value
+        .filter((subscription) => (subscription.frequency_option?.months_interval ?? 1) === 1)
+        .reduce((sum, subscription) => sum + (subscription.monthly_cost ?? 0), 0)
+);
+const monthlyWeightedTotal = computed(() =>
+    activeSubscriptions.value.reduce((sum, subscription) => {
+        const interval = Math.max(1, subscription.frequency_option?.months_interval ?? 1);
+        return sum + (subscription.billing_amount ?? 0) / interval;
+    }, 0)
+);
+const annualTotal = computed(() => monthlyWeightedTotal.value * 12);
 
 function isRenewingSoon(dateString) {
     if (!dateString) return false;
@@ -54,7 +85,14 @@ async function fetchSubscriptions() {
     loading.value = true;
 
     try {
-        const response = await fetch('/api/v1/subscriptions?per_page=100', {
+        const params = new URLSearchParams({ per_page: '100' });
+        params.set('sort', `${sortDirection.value === 'desc' ? '-' : ''}${sortField.value}`);
+
+        if (filterStatus.value) {
+            params.set('filter[status]', filterStatus.value);
+        }
+
+        const response = await fetch(`/api/v1/subscriptions?${params.toString()}`, {
             headers: {
                 Authorization: `Bearer ${auth.accessToken}`,
                 Accept: 'application/json',
@@ -76,6 +114,10 @@ async function fetchSubscriptions() {
 onMounted(() => {
     void fetchSubscriptions();
 });
+
+watch([sortField, sortDirection, filterStatus], () => {
+    void fetchSubscriptions();
+});
 </script>
 
 <template>
@@ -90,6 +132,34 @@ onMounted(() => {
             >
                 Add subscription
             </router-link>
+        </div>
+
+        <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <KpiCard label="Monthly (actual)" :value="formatCurrency(monthlyActualTotal)" color="amber" delta="Subscriptions billed monthly" />
+            <KpiCard label="Monthly (weighted)" :value="formatCurrency(monthlyWeightedTotal)" color="blue" delta="Every subscription, normalized to a monthly figure" />
+            <KpiCard label="Annual" :value="formatCurrency(annualTotal)" color="purple" delta="Projected yearly subscription spend" />
+        </div>
+
+        <div class="mb-6 flex flex-wrap gap-3">
+            <select
+                v-model="sortField"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in sortOptions" :key="option.value" :value="option.value">Sort: {{ option.label }}</option>
+            </select>
+            <select
+                v-model="sortDirection"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+            <select
+                v-model="filterStatus"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
         </div>
 
         <LoadingSpinner v-if="loading" class="py-16" />

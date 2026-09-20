@@ -7,11 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\Auditable;
 use App\Traits\HasUserScoping;
 
 class Account extends Model
 {
-    use HasFactory, SoftDeletes, HasUserScoping;
+    use Auditable, HasFactory, SoftDeletes, HasUserScoping;
+
+    /** Maintained by the system on every posting; recording it would only add noise to the audit trail. */
+    protected array $auditIgnored = ['balance'];
+
+    /** Sensitive: an audit row says the column changed, never its value. */
+    protected array $auditRedacted = ['iban'];
 
     protected $fillable = [
         'user_id',

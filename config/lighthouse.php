@@ -257,7 +257,9 @@ return [
     'security' => [
         // The SPA query surface exceeds the stock cap once paginated finance lists
         // include their planned fields, so keep the limit high enough for first-party use.
-        'max_query_complexity' => 500,
+        // Raised from 500 to 700 to fit the transactions list's 50-per-page default
+        // (needed for its collapsible month grouping) — still a guard against pathological queries.
+        'max_query_complexity' => 700,
         // Maximum query depth limit (e.g. 10)
         'max_query_depth' => 10,
         'disable_introspection' => (bool) env('LIGHTHOUSE_SECURITY_DISABLE_INTROSPECTION', false)
@@ -286,7 +288,7 @@ return [
          * Limit the maximum amount of items that clients can request from paginated lists.
          * Setting this to `null` means the count is unrestricted.
          */
-        'max_count' => null,
+        'max_count' => 100,
     ],
 
     /*

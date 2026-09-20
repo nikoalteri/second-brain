@@ -26,6 +26,10 @@ class TransactionCategories
                 ! $isSuperadmin,
                 fn ($query) => $query->where('transaction_categories.user_id', $user->id)
             )
+            ->when(
+                $args['scope'] ?? null,
+                fn ($query, $scope) => $query->where('scope', $scope)
+            )
             ->where('is_active', true)
             ->orderBy('parent_id')
             ->orderBy('name')

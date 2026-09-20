@@ -78,4 +78,39 @@ class GraphQLLimitsTest extends TestCase
         $this->postJson('/graphql', ['query' => self::QUERY])->assertOk();
         $this->postJson('/graphql', ['query' => self::QUERY])->assertStatus(429);
     }
+
+    /**
+     * Regression test: the Transactions page's real query (first: 50, all fields it selects,
+     * plus the orderBy argument) must fit under max_query_complexity. A previous change that
+     * raised the page size to 100 without checking against the limit broke this page in UAT
+     * (complexity 601 > 500) while every other page kept working, since nothing else asked for
+     * this many rows with this many fields per row.
+     */
+    public function test_the_transactions_page_query_fits_under_the_complexity_limit(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $query = '
+            query GetTransactions($page: Int, $orderBy: [QueryTransactionsOrderByOrderByClause!]) {
+                transactions(first: 50, page: $page, orderBy: $orderBy) {
+                    data {
+                        id
+                        account_id
+                        transaction_type_id
+                        transaction_category_id
+                        amount
+                        date
+                        description
+                        is_transfer
+                    }
+                    paginatorInfo { currentPage lastPage total }
+                }
+            }
+        ';
+
+        $this->postJson('/graphql', [
+            'query' => $query,
+            'variables' => ['page' => 1, 'orderBy' => [['column' => 'DATE', 'order' => 'ASC']]],
+        ])->assertOk()->assertJsonMissingPath('errors');
+    }
 }

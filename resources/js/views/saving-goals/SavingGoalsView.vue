@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { FlagIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
@@ -14,6 +14,21 @@ const auth = useAuthStore();
 const { formatCurrency } = useCurrency();
 const goals = ref([]);
 const loading = ref(false);
+const sortField = ref('created_at');
+const sortDirection = ref('desc');
+const filterStatus = ref('');
+
+const sortOptions = [
+    { value: 'created_at', label: 'Date added' },
+    { value: 'target_date', label: 'Target date' },
+    { value: 'target_amount', label: 'Target amount' },
+];
+const statusOptions = [
+    { value: '', label: 'All statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'achieved', label: 'Achieved' },
+    { value: 'archived', label: 'Archived' },
+];
 
 function statusBadgeClass(status) {
     const map = {
@@ -40,7 +55,14 @@ async function fetchGoals() {
     loading.value = true;
 
     try {
-        const response = await fetch('/api/v1/saving-goals?per_page=100', {
+        const params = new URLSearchParams({ per_page: '100' });
+        params.set('sort', `${sortDirection.value === 'desc' ? '-' : ''}${sortField.value}`);
+
+        if (filterStatus.value) {
+            params.set('filter[status]', filterStatus.value);
+        }
+
+        const response = await fetch(`/api/v1/saving-goals?${params.toString()}`, {
             headers: {
                 Authorization: `Bearer ${auth.accessToken}`,
                 Accept: 'application/json',
@@ -62,6 +84,10 @@ async function fetchGoals() {
 onMounted(() => {
     void fetchGoals();
 });
+
+watch([sortField, sortDirection, filterStatus], () => {
+    void fetchGoals();
+});
 </script>
 
 <template>
@@ -76,6 +102,28 @@ onMounted(() => {
             >
                 Add goal
             </router-link>
+        </div>
+
+        <div class="mb-6 flex flex-wrap gap-3">
+            <select
+                v-model="sortField"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in sortOptions" :key="option.value" :value="option.value">Sort: {{ option.label }}</option>
+            </select>
+            <select
+                v-model="sortDirection"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+            <select
+                v-model="filterStatus"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
         </div>
 
         <LoadingSpinner v-if="loading" class="py-16" />

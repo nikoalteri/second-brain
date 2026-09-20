@@ -26,7 +26,7 @@ class FinanceReportExportService
     {
         $rows = $this->stackedCsvRows($snapshot);
         $content = Excel::raw(
-            new FinanceReportSectionSheet('Finance Report', $rows),
+            new FinanceReportSectionSheet('Finance Report', $rows, neutraliseFormulas: true),
             ExcelFormat::CSV,
         );
 

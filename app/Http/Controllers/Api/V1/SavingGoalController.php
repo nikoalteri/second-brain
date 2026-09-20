@@ -35,7 +35,7 @@ class SavingGoalController extends Controller
             ->allowedFilters(AllowedFilter::exact('status'))
             ->allowedSorts('target_date', 'target_amount', 'created_at')
             ->defaultSort('-created_at')
-            ->cursorPaginate($request->integer('per_page', 20));
+            ->cursorPaginate($this->perPage($request));
 
         return SavingGoalResource::collection($goals);
     }

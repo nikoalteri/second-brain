@@ -62,6 +62,12 @@ To renew a session, send the **refresh token** (not the access token) as the Bea
 
 ---
 
+## Pagination
+
+List endpoints use cursor pagination. `per_page` defaults to 20 and is kept between 1 and 100; GraphQL lists (`first`) are capped at 100 as well. `GET /api/v1/credit-cards/{id}` bounds the history it embeds (`cycles_limit`, `payments_limit`, `expenses_limit`; defaults 36 / 200 / 500, maximums 120 / 500 / 1000) and reports in `history` how many rows exist against how many were returned.
+
+---
+
 ## Important finance endpoints
 
 ### Dashboard

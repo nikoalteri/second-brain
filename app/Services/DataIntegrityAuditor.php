@@ -69,6 +69,13 @@ class DataIntegrityAuditor
             'transfer_pairs_target_mismatch' => ['Transfer pairs whose OUT target is not the IN account',
                 $this->transferTargetMismatch()],
 
+            // A renewal (subscription + renewal date) posted more than once. Run this before the
+            // migration that makes the index unique: that migration refuses to run over duplicates.
+            'transaction_renewals_duplicated' => ['Subscription renewals posted more than once as transactions',
+                $this->duplicatedRenewals('transactions')],
+            'card_expense_renewals_duplicated' => ['Subscription renewals posted more than once as card expenses',
+                $this->duplicatedRenewals('credit_card_expenses')],
+
             // Stored balances that no longer match the ledger.
             'account_balance_drift' => ['Accounts whose balance differs from opening balance + movements',
                 $this->accountBalanceDrift()],
@@ -168,6 +175,21 @@ class DataIntegrityAuditor
             ->whereColumn('o.to_account_id', '<>', 'i.account_id')
             ->orderBy('o.transfer_pair_id')
             ->pluck('o.transfer_pair_id')
+            ->all();
+    }
+
+    /** @return list<string> subscription id, renewal date and number of copies */
+    private function duplicatedRenewals(string $table): array
+    {
+        return DB::table($table)
+            ->whereNotNull('subscription_id')
+            ->whereNotNull('subscription_renewal_date')
+            ->groupBy('subscription_id', 'subscription_renewal_date')
+            ->havingRaw('COUNT(*) > 1')
+            ->selectRaw('subscription_id, subscription_renewal_date, COUNT(*) as copies')
+            ->orderBy('subscription_id')
+            ->get()
+            ->map(fn ($row) => "{$row->subscription_id}@".substr((string) $row->subscription_renewal_date, 0, 10)." (x{$row->copies})")
             ->all();
     }
 

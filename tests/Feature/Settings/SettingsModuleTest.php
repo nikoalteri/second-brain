@@ -248,7 +248,7 @@ class SettingsModuleTest extends TestCase
     }
 
     #[Test]
-    public function audit_log_can_be_soft_deleted()
+    public function audit_log_rows_cannot_be_deleted_or_edited()
     {
         $log = AuditLog::create([
             'user_id' => $this->user->id,
@@ -257,9 +257,19 @@ class SettingsModuleTest extends TestCase
             'model_id' => 5,
         ]);
 
-        $log->delete();
+        try {
+            $log->delete();
+            $this->fail('Deleting an audit log row must be refused.');
+        } catch (\LogicException) {
+        }
 
-        $this->assertSoftDeleted($log);
+        try {
+            $log->update(['model_name' => 'Other']);
+            $this->fail('Editing an audit log row must be refused.');
+        } catch (\LogicException) {
+        }
+
+        $this->assertDatabaseHas('audit_logs', ['id' => $log->id, 'model_name' => 'Post', 'deleted_at' => null]);
     }
 
     // Backup Tests

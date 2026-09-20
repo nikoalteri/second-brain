@@ -21,13 +21,23 @@ const { translateAccountType } = useLocalizedLabels();
 const { addToast } = useToast();
 const auth = useAuthStore();
 const page = ref(1);
+const sortColumn = ref('CREATED_AT');
+const sortOrder = ref('DESC');
+const filterType = ref('');
+const filterActive = ref('');
 const showTransferForm = ref(false);
+
+const sortOptions = [
+    { value: 'CREATED_AT', label: 'Date added' },
+    { value: 'NAME', label: 'Name' },
+    { value: 'BALANCE', label: 'Balance' },
+];
 const submittingTransfer = ref(false);
 const transferForm = ref({ from_account_id: '', to_account_id: '', amount: '', date: new Date().toISOString().slice(0, 10), description: '' });
 
 const ACCOUNTS_QUERY = gql`
-    query GetAccounts($page: Int) {
-        accounts(first: 20, page: $page) {
+    query GetAccounts($page: Int, $type: String, $is_active: Boolean, $orderBy: [QueryAccountsOrderByOrderByClause!]) {
+        accounts(first: 20, page: $page, type: $type, is_active: $is_active, orderBy: $orderBy) {
             data {
                 id
                 name
@@ -45,9 +55,18 @@ const ACCOUNTS_QUERY = gql`
     }
 `;
 
-const { result, loading, refetch } = useQuery(ACCOUNTS_QUERY, () => ({ page: page.value }));
+const { result, loading, refetch } = useQuery(ACCOUNTS_QUERY, () => ({
+    page: page.value,
+    type: filterType.value || undefined,
+    is_active: filterActive.value === '' ? undefined : filterActive.value === 'true',
+    orderBy: [{ column: sortColumn.value, order: sortOrder.value }],
+}));
 const accounts = computed(() => result.value?.accounts?.data ?? []);
 const paginator = computed(() => result.value?.accounts?.paginatorInfo);
+const typeOptions = computed(() => [
+    { value: '', label: 'All types' },
+    ...Object.keys(accountTypeIcons).map((type) => ({ value: type, label: translateAccountType(type) })),
+]);
 
 function openTransferForm() {
     transferForm.value = {
@@ -206,6 +225,36 @@ async function submitTransfer() {
                 </button>
             </div>
         </section>
+
+        <div class="mb-6 flex flex-wrap gap-3">
+            <select
+                v-model="sortColumn"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in sortOptions" :key="option.value" :value="option.value">Sort: {{ option.label }}</option>
+            </select>
+            <select
+                v-model="sortOrder"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option value="ASC">Ascending</option>
+                <option value="DESC">Descending</option>
+            </select>
+            <select
+                v-model="filterType"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in typeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
+            <select
+                v-model="filterActive"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option value="">All statuses</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+        </div>
 
         <LoadingSpinner v-if="loading" class="py-16" />
 

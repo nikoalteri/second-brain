@@ -7,11 +7,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Enums\LoanStatus;
+use App\Traits\Auditable;
 use App\Traits\HasUserScoping;
 
 class Loan extends Model
 {
-    use HasFactory, HasUserScoping;
+    use Auditable, HasFactory, HasUserScoping;
+
+    /** Maintained by the system on every posting; recording it would only add noise to the audit trail. */
+    protected array $auditIgnored = ['paid_installments', 'remaining_amount'];
 
     protected $fillable = [
         'user_id',

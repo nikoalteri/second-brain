@@ -222,9 +222,9 @@ Delivered:
 - [x] Full suite green (327 tests, 0 failures)
 - [x] `php artisan credit-cards:balance-audit` available for manual post-deploy reconciliation of real cards (not scheduled)
 
-### Audit hardening (ad-hoc, 2026-09-17 to 2026-09-18) ✅
+### Audit hardening (ad-hoc, 2026-09-17 to 2026-09-19) ✅
 
-Executed directly from a project audit, outside the discuss/plan flow (like Phase 20). Delivered through PRs #11-#20, each with tests that fail without the fix:
+Executed directly from a project audit, outside the discuss/plan flow (like Phase 20). Delivered through PRs #11-#20 and, in a second round, #22-#26 and #28-#34, each with tests that fail without the fix (except where noted):
 
 - **Ownership:** account/category/card references are validated against the authenticated user on REST and GraphQL (transactions, loans, subscriptions, credit cards) through `App\Rules\OwnedByAuthenticatedUser`; soft-deleted accounts/cards are rejected; the dashboard no longer exposes other users' category names.
 - **Atomic writes:** REST transaction, loan (with its schedule), credit-card and expense writes, and Filament pages/actions, run in database transactions, so an observer failure no longer leaves a half-written record.
@@ -234,9 +234,32 @@ Executed directly from a project audit, outside the discuss/plan flow (like Phas
 - **API/schema:** the GraphQL `CreditCard` type matches charge cards and exposes the opening balance and stamp-duty flag; a new loan defaults `remaining_amount` to its total.
 - **Dependencies:** `composer audit` and `npm audit` report no advisories (PR #20).
 - **Tooling:** `php artisan data:audit` (read-only) checks ownership, deleted references, transfer pairs and stored-balance drift. Run on UAT on 2026-09-18: no inconsistencies.
-- **Deploy:** the UAT deploy clears the Lighthouse schema cache.
+- **Deploy:** the UAT deploy clears the Lighthouse schema cache and runs `php artisan app:smoke` (database, migrations, cache, storage, GraphQL schema) before the pre-deploy backup is deleted (PR #32).
 
-**Still open (raised by the audit, not addressed):** refresh-token rotation and reuse detection (needs a frontend change); trusted-proxy configuration, without which per-IP limits are global behind a proxy; MFA on the Filament `/hub` login; encrypted off-host backups with a tested restore, private storage and key management for imports; an audit-trail writer for financial changes; money arithmetic done in floats; formula-injection handling in spreadsheet exports; `calculatePaymentBreakdown()` still uses the current balance for exposure; atomicity of paths not covered by tests (e.g. the scheduled commands stop at the first failing item); a cron heartbeat and a smoke test in the deploy.
+Second round (PRs #22-#26, #28-#34):
+
+- **Vault and 2FA:** the vault unlock is bound to the access token that unlocked it and is revoked on password/PIN changes; recovery codes, TOTP replay and PIN attempts are atomic (PRs #22, #23).
+- **Tokens:** refresh tokens rotate on every use, reuse of a consumed token revokes the whole family, with a short grace window for concurrent tabs (PR #24). The Sanctum prune keeps consumed tokens a week past their expiry.
+- **GraphQL:** query depth, complexity and request size limits, a `graphql` rate limiter, a pagination cap of 100 (PR #25).
+- **Filament `/hub`:** multi-factor authentication (app authenticator with recovery codes) is required for every panel user (PR #26). Deploy note: the first login after the deploy forces the MFA setup.
+- **Concurrency:** subscription renewals are idempotent (unique index, row lock, recovery from a unique violation) and the finance schedules use `withoutOverlapping()` (PR #28); credit cards are locked first and in id order across expense, payment and cycle writes (PR #29). Proven only structurally on SQLite, which ignores `FOR UPDATE`; a two-connection MySQL proof is still open.
+- **Limits:** `per_page` is clamped to 1-100 on every REST list and the credit card detail bounds its history, reporting the totals in a `history` meta block (PR #30). The frontend does not yet adapt to a truncated history.
+- **Exports:** spreadsheet cells that look like formulas are neutralised in XLSX and CSV; PDF was already safe (PR #31).
+- **Ops:** scheduler heartbeat with `GET /health/scheduler` (200/503) for an external monitor (PR #32). The monitor itself is not configured.
+- **Ownership in services:** `SubscriptionService` totals require an explicit owner; tests guard that rows posted by services keep the record owner whether the scheduler or a superadmin triggered them (PR #33).
+- **Audit trail:** accounts, transactions, credit cards, loans, subscriptions, saving goals, budgets and categories write immutable `audit_logs` rows (owner, actor, IP, old/new values; IBAN and card vault fields redacted; system-maintained balances skipped). The Filament resource is read-only (PR #34). Quiet saves and query-builder writes are not audited; derived rows (cycles, expenses, payments, installments) and vault access are not covered.
+
+**Deferred by decision (2026-09-19):** everything about backups (destination, encryption, retention, restore, key management) and trusted-proxy configuration. Until the proxy is configured, per-IP limits see the proxy address behind a reverse proxy.
+
+**Still open:**
+
+- money arithmetic done in floats (decimal/cents);
+- tokens kept in `localStorage` (HttpOnly cookie sessions would need frontend, CORS and CSRF work, and a browser test);
+- report and dashboard query optimisation, only after a measurement;
+- `calculatePaymentBreakdown()` still uses the current balance for exposure (decision needed);
+- atomicity of the scheduled commands, which stop at the first failing item;
+- a two-connection MySQL concurrency test;
+- the frontend and the MFA setup were verified only by build and tests, not exercised in a browser.
 
 **Decision needed before planning Phases 24-27 (currency):** `Money` only changes the display symbol and separators without conversion, while accounts carry a currency and some totals add all currencies under one label. Choose one of: a single effective currency; a currency per account with separate totals; or real FX conversion. The audit proposes explicit totals per currency without an FX engine for the current phases. The choice affects import, dedup, precision and reconciliation.
 

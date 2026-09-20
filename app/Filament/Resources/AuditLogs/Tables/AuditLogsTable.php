@@ -2,13 +2,7 @@
 
 namespace App\Filament\Resources\AuditLogs\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
 class AuditLogsTable
@@ -17,43 +11,32 @@ class AuditLogsTable
     {
         return $table
             ->columns([
-                TextColumn::make('user_id')
-                    ->numeric()
+                TextColumn::make('created_at')
+                    ->dateTime()
                     ->sortable(),
+                TextColumn::make('user.email')
+                    ->label('Owner')
+                    ->searchable(),
+                TextColumn::make('actor.email')
+                    ->label('Changed by')
+                    ->placeholder('System')
+                    ->searchable(),
                 TextColumn::make('action')
                     ->badge(),
                 TextColumn::make('model_name')
+                    ->label('Record')
                     ->searchable(),
                 TextColumn::make('model_id')
+                    ->label('ID')
                     ->numeric()
                     ->sortable(),
+                TextColumn::make('changes')
+                    ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_UNESCAPED_UNICODE) : $state)
+                    ->limit(80)
+                    ->tooltip(fn ($state) => is_array($state) ? json_encode($state, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) : null),
                 TextColumn::make('ip_address')
-                    ->searchable(),
-                TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                TrashedFilter::make(),
-            ])
-            ->recordActions([
-                EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                ]),
-            ]);
+            ->defaultSort('created_at', 'desc');
     }
 }

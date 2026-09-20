@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\SubscriptionStatus;
+use App\Traits\Auditable;
 use App\Traits\HasUserScoping;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Subscription extends Model
 {
-    use HasFactory, SoftDeletes, HasUserScoping;
+    use Auditable, HasFactory, SoftDeletes, HasUserScoping;
 
     protected $fillable = [
         'user_id',
