@@ -81,7 +81,7 @@ const amountLabel = computed(() => {
 });
 const categoryOptions = computed(() => {
     const categories = categoriesResult.value?.transactionCategories ?? [];
-    const parents = categories.filter((category) => !category.parent_id);
+    const topLevel = categories.filter((category) => !category.parent_id);
     const childrenByParentId = new Map();
 
     for (const category of categories.filter((item) => item.parent_id)) {
@@ -92,8 +92,11 @@ const categoryOptions = computed(() => {
     }
 
     const options = [{ value: '', label: 'No category' }];
+    const handledParentIds = new Set();
 
-    for (const parent of parents) {
+    for (const parent of topLevel) {
+        handledParentIds.add(String(parent.id));
+
         const children = (childrenByParentId.get(String(parent.id)) ?? [])
             .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -115,6 +118,31 @@ const categoryOptions = computed(() => {
             options.push({
                 value: String(child.id),
                 label: `${parent.name} › ${child.name}`,
+            });
+        }
+    }
+
+    // A child whose parent didn't itself pass the scope filter (e.g. the parent is shared with
+    // the other category tree) would otherwise vanish — group it under its parent's name, which
+    // the `parent` relation always resolves regardless of the parent's own scope.
+    for (const [parentId, children] of childrenByParentId) {
+        if (handledParentIds.has(parentId)) {
+            continue;
+        }
+
+        const parentName = children[0]?.parent?.name ?? 'Other';
+        const sorted = [...children].sort((a, b) => a.name.localeCompare(b.name));
+
+        options.push({
+            value: `group-${parentId}`,
+            label: parentName,
+            disabled: true,
+        });
+
+        for (const child of sorted) {
+            options.push({
+                value: String(child.id),
+                label: `${parentName} › ${child.name}`,
             });
         }
     }
