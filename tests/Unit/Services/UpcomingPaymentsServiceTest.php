@@ -13,6 +13,7 @@ use App\Models\SubscriptionFrequency;
 use App\Models\User;
 use App\Services\UpcomingPaymentsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class UpcomingPaymentsServiceTest extends TestCase
@@ -130,6 +131,36 @@ class UpcomingPaymentsServiceTest extends TestCase
         $result = $service->forUser($user, 7);
 
         $this->assertCount(0, $result);
+    }
+
+    public function test_it_excludes_other_users_payments_even_when_the_target_user_is_superadmin(): void
+    {
+        $superadmin = User::factory()->create();
+        Role::findOrCreate('superadmin');
+        $superadmin->assignRole('superadmin');
+        $otherUser = User::factory()->create();
+        $otherAccount = Account::factory()->create(['user_id' => $otherUser->id]);
+        $otherLoan = Loan::factory()->create([
+            'user_id' => $otherUser->id,
+            'account_id' => $otherAccount->id,
+            'start_date' => now()->toDateString(),
+            'withdrawal_day' => now()->day,
+            'total_installments' => 2,
+            'monthly_payment' => 250,
+        ]);
+
+        $otherLoan->payments()->create([
+            'due_date' => now()->addDays(3)->toDateString(),
+            'amount' => 250,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($superadmin);
+
+        $service = app(UpcomingPaymentsService::class);
+        $result = $service->forUser($superadmin, 7);
+
+        $this->assertCount(0, $result, 'forUser($superadmin) must return only the superadmin\'s own items, not every user\'s');
     }
 
     public function test_it_excludes_paid_payments(): void

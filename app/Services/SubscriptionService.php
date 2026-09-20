@@ -13,6 +13,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SubscriptionService
 {
@@ -45,7 +46,11 @@ class SubscriptionService
      */
     public function getMonthlyTotal(int $userId): float
     {
-        return Subscription::where('user_id', $userId)
+        // withoutUserScope() so $userId is the sole authority: without it, HasUserScoping's
+        // global scope ANDs in the currently authenticated user, silently returning 0 whenever
+        // the caller (a superadmin, a scheduled job) asks about a user other than themselves.
+        return Subscription::withoutUserScope()
+            ->where('user_id', $userId)
             ->where('status', SubscriptionStatus::ACTIVE)
             ->get()
             ->sum(fn (Subscription $sub) => (float) $sub->monthly_cost);
@@ -58,7 +63,9 @@ class SubscriptionService
         int $days,
         int $userId
     ): Collection {
-        return Subscription::where('user_id', $userId)
+        // See getMonthlyTotal() above for why withoutUserScope() is required here too.
+        return Subscription::withoutUserScope()
+            ->where('user_id', $userId)
             ->active()
             ->forRenewal($days)
             ->with(['frequencyOption', 'account', 'creditCard'])
@@ -180,17 +187,23 @@ class SubscriptionService
 
         $synced = 0;
 
+        // One subscription's exception must not stop every other subscription's renewal from
+        // being processed on the same nightly run.
         foreach ($subscriptions as $subscription) {
-            while (
-                $subscription->next_renewal_date
-                && $subscription->next_renewal_date->copy()->endOfDay()->lessThanOrEqualTo($throughDate)
-            ) {
-                if (! $this->processRenewal($subscription, $subscription->next_renewal_date->copy())) {
-                    break;
-                }
+            try {
+                while (
+                    $subscription->next_renewal_date
+                    && $subscription->next_renewal_date->copy()->endOfDay()->lessThanOrEqualTo($throughDate)
+                ) {
+                    if (! $this->processRenewal($subscription, $subscription->next_renewal_date->copy())) {
+                        break;
+                    }
 
-                $synced++;
-                $subscription->refresh()->load('frequencyOption');
+                    $synced++;
+                    $subscription->refresh()->load('frequencyOption');
+                }
+            } catch (\Throwable $e) {
+                Log::error("subscriptions:sync-renewals failed for subscription {$subscription->id}", ['exception' => $e]);
             }
         }
 

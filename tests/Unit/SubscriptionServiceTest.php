@@ -82,6 +82,49 @@ class SubscriptionServiceTest extends TestCase
     }
 
     #[Test]
+    public function get_monthly_total_is_not_silently_emptied_by_a_different_authenticated_user(): void
+    {
+        // HasUserScoping's global scope ANDs in auth()->id() for a non-superadmin authenticated
+        // user. Without withoutUserScope(), acting as someone other than $this->user would AND
+        // "user_id = $this->user->id" with "user_id = $caller->id" and always return 0.
+        $caller = User::factory()->create();
+        $this->actingAs($caller);
+
+        Subscription::factory()->create([
+            'user_id' => $this->user->id,
+            'subscription_frequency_id' => $this->monthlyFrequency->id,
+            'monthly_cost' => 10.00,
+            'annual_cost' => 10.00,
+            'status' => SubscriptionStatus::ACTIVE,
+        ]);
+
+        $this->assertEquals(10.00, $this->service->getMonthlyTotal($this->user->id));
+    }
+
+    #[Test]
+    public function get_upcoming_renewals_is_not_silently_emptied_by_a_different_authenticated_user(): void
+    {
+        $caller = User::factory()->create();
+        $this->actingAs($caller);
+
+        $now = Carbon::parse('2026-03-23');
+        Carbon::setTestNow($now);
+
+        Subscription::factory()->state([
+            'user_id' => $this->user->id,
+            'subscription_frequency_id' => $this->monthlyFrequency->id,
+            'next_renewal_date' => $now->copy()->addDays(3),
+            'status' => SubscriptionStatus::ACTIVE,
+        ])->make()->saveQuietly();
+
+        $upcoming = $this->service->getUpcomingRenewals(7, $this->user->id);
+
+        $this->assertEquals(1, $upcoming->count());
+
+        Carbon::setTestNow();
+    }
+
+    #[Test]
     public function get_upcoming_renewals(): void
     {
         $now = Carbon::parse('2026-03-23');
