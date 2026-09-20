@@ -6,6 +6,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Models\TransactionCategory;
 use App\Models\TransactionType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -87,11 +88,11 @@ class GraphQLApiTest extends TestCase
             }
         ', [
             'input' => [
-                'name'            => 'GraphQL Account',
-                'type'            => 'savings',
-                'currency'        => 'EUR',
+                'name' => 'GraphQL Account',
+                'type' => 'savings',
+                'currency' => 'EUR',
                 'opening_balance' => 500.00,
-                'is_active'       => true,
+                'is_active' => true,
             ],
         ]);
 
@@ -103,13 +104,13 @@ class GraphQLApiTest extends TestCase
 
         $this->assertDatabaseHas('accounts', [
             'user_id' => $user->id,
-            'name'    => 'GraphQL Account',
+            'name' => 'GraphQL Account',
         ]);
     }
 
     public function test_graphql_monthly_cashflow_returns_aggregated_data(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $account = Account::factory()->create(['user_id' => $user->id]);
 
         // Create an income transaction type and transactions
@@ -118,11 +119,11 @@ class GraphQLApiTest extends TestCase
             ['is_income' => true]
         );
         Transaction::factory()->create([
-            'user_id'             => $user->id,
-            'account_id'          => $account->id,
+            'user_id' => $user->id,
+            'account_id' => $account->id,
             'transaction_type_id' => $incomeType->id,
-            'amount'              => 1000.00,
-            'date'                => '2026-03-15',
+            'amount' => 1000.00,
+            'date' => '2026-03-15',
         ]);
         $expenseType = TransactionType::query()->firstOrCreate(
             ['name' => 'Expenses'],
@@ -353,7 +354,7 @@ class GraphQLApiTest extends TestCase
 
     public function test_graphql_transactions_query_includes_account_relation(): void
     {
-        $user    = User::factory()->create();
+        $user = User::factory()->create();
         $account = Account::factory()->create(['user_id' => $user->id, 'name' => 'GQL Bank']);
 
         $type = TransactionType::query()->firstOrCreate(
@@ -362,8 +363,8 @@ class GraphQLApiTest extends TestCase
         );
 
         Transaction::factory()->create([
-            'user_id'             => $user->id,
-            'account_id'          => $account->id,
+            'user_id' => $user->id,
+            'account_id' => $account->id,
             'transaction_type_id' => $type->id,
         ]);
 
@@ -395,20 +396,20 @@ class GraphQLApiTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
 
-        $parentA = \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        $parentA = TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userA->id,
             'name' => 'Living',
             'is_active' => true,
         ]);
 
-        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userA->id,
             'parent_id' => $parentA->id,
             'name' => 'Rent',
             'is_active' => true,
         ]);
 
-        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userB->id,
             'name' => 'Travel',
             'is_active' => true,
@@ -442,20 +443,20 @@ class GraphQLApiTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
 
-        $parentA = \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        $parentA = TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userA->id,
             'name' => 'Living',
             'is_active' => true,
         ]);
 
-        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userA->id,
             'parent_id' => $parentA->id,
             'name' => 'Rent',
             'is_active' => true,
         ]);
 
-        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userB->id,
             'name' => 'Travel',
             'is_active' => true,
@@ -479,13 +480,13 @@ class GraphQLApiTest extends TestCase
         $userA = User::factory()->create();
         $userB = User::factory()->create();
 
-        $foreignParent = \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        $foreignParent = TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userB->id,
             'name' => 'ForeignParent',
             'is_active' => true,
         ]);
 
-        \App\Models\TransactionCategory::withoutGlobalScopes()->create([
+        TransactionCategory::withoutGlobalScopes()->create([
             'user_id' => $userA->id,
             'parent_id' => $foreignParent->id,
             'name' => 'OwnChild',
@@ -548,19 +549,19 @@ class GraphQLApiTest extends TestCase
         );
 
         Transaction::factory()->create([
-            'user_id'             => $userA->id,
-            'account_id'          => $accountA->id,
+            'user_id' => $userA->id,
+            'account_id' => $accountA->id,
             'transaction_type_id' => $incomeType->id,
-            'amount'              => 1000.00,
-            'date'                => '2026-03-15',
+            'amount' => 1000.00,
+            'date' => '2026-03-15',
         ]);
 
         Transaction::factory()->create([
-            'user_id'             => $userB->id,
-            'account_id'          => $accountB->id,
+            'user_id' => $userB->id,
+            'account_id' => $accountB->id,
             'transaction_type_id' => $incomeType->id,
-            'amount'              => 500.00,
-            'date'                => '2026-03-20',
+            'amount' => 500.00,
+            'date' => '2026-03-20',
         ]);
 
         $response = $this->graphqlAs($superadmin, '
@@ -665,5 +666,161 @@ class GraphQLApiTest extends TestCase
             350.0,
             (float) $account->fresh()->balance,
         );
+    }
+
+    public function test_graphql_create_transaction_category_mutation_works(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->graphqlAs($user, '
+            mutation CreateCategory($input: CreateTransactionCategoryInput!) {
+                createTransactionCategory(input: $input) {
+                    id
+                    name
+                    scope
+                    parent_id
+                }
+            }
+        ', [
+            'input' => [
+                'name' => 'Hobbies',
+                'scope' => 'generic',
+            ],
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('errors', null);
+
+        $this->assertEquals('Hobbies', $response->json('data.createTransactionCategory.name'));
+        $this->assertEquals('generic', $response->json('data.createTransactionCategory.scope'));
+
+        $this->assertDatabaseHas('transaction_categories', [
+            'user_id' => $user->id,
+            'name' => 'Hobbies',
+            'scope' => 'generic',
+        ]);
+    }
+
+    public function test_graphql_create_transaction_category_mutation_defaults_scope_to_generic(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->graphqlAs($user, '
+            mutation CreateCategory($input: CreateTransactionCategoryInput!) {
+                createTransactionCategory(input: $input) { id scope }
+            }
+        ', [
+            'input' => ['name' => 'Misc'],
+        ]);
+
+        $response->assertOk()->assertJsonPath('errors', null);
+        $this->assertEquals('generic', $response->json('data.createTransactionCategory.scope'));
+    }
+
+    public function test_graphql_create_transaction_category_mutation_rejects_foreign_parent(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $foreignParent = TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $other->id,
+            'name' => 'Foreign',
+            'is_active' => true,
+        ]);
+
+        $response = $this->graphqlAs($user, '
+            mutation CreateCategory($input: CreateTransactionCategoryInput!) {
+                createTransactionCategory(input: $input) { id }
+            }
+        ', [
+            'input' => ['name' => 'Child', 'parent_id' => (string) $foreignParent->id],
+        ]);
+
+        $this->assertArrayHasKey('input.parent_id', $response->json('errors.0.extensions.validation') ?? []);
+        $this->assertDatabaseMissing('transaction_categories', ['user_id' => $user->id, 'name' => 'Child']);
+    }
+
+    public function test_graphql_transaction_categories_query_can_filter_by_scope(): void
+    {
+        $user = User::factory()->create();
+
+        TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $user->id,
+            'name' => 'Groceries',
+            'scope' => 'generic',
+            'is_active' => true,
+        ]);
+        TransactionCategory::withoutGlobalScopes()->create([
+            'user_id' => $user->id,
+            'name' => 'Netflix',
+            'scope' => 'subscription',
+            'is_active' => true,
+        ]);
+
+        $response = $this->graphqlAs($user, '
+            query ($scope: String) {
+                transactionCategories(scope: $scope) { name scope }
+            }
+        ', ['scope' => 'subscription']);
+
+        $response->assertOk()->assertJsonPath('errors', null);
+
+        $names = collect($response->json('data.transactionCategories'))->pluck('name')->all();
+        $this->assertContains('Netflix', $names);
+        $this->assertNotContains('Groceries', $names);
+    }
+
+    public function test_graphql_transactions_query_can_be_sorted_by_date(): void
+    {
+        $user = User::factory()->create();
+        $account = Account::factory()->create(['user_id' => $user->id]);
+        $type = TransactionType::query()->firstOrCreate(['name' => 'Expenses'], ['is_income' => false]);
+
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $type->id,
+            'date' => '2026-03-20',
+            'description' => 'Later',
+        ]);
+        Transaction::factory()->create([
+            'user_id' => $user->id,
+            'account_id' => $account->id,
+            'transaction_type_id' => $type->id,
+            'date' => '2026-03-01',
+            'description' => 'Earlier',
+        ]);
+
+        $response = $this->graphqlAs($user, '
+            {
+                transactions(first: 10, orderBy: [{ column: DATE, order: ASC }]) {
+                    data { description date }
+                }
+            }
+        ');
+
+        $response->assertOk()->assertJsonPath('errors', null);
+
+        $descriptions = collect($response->json('data.transactions.data'))->pluck('description')->all();
+        $this->assertSame(['Earlier', 'Later'], $descriptions);
+    }
+
+    public function test_graphql_accounts_query_can_be_sorted_by_name(): void
+    {
+        $user = User::factory()->create();
+        Account::factory()->create(['user_id' => $user->id, 'name' => 'Zeta']);
+        Account::factory()->create(['user_id' => $user->id, 'name' => 'Alpha']);
+
+        $response = $this->graphqlAs($user, '
+            {
+                accounts(first: 10, orderBy: [{ column: NAME, order: ASC }]) {
+                    data { name }
+                }
+            }
+        ');
+
+        $response->assertOk()->assertJsonPath('errors', null);
+
+        $names = collect($response->json('data.accounts.data'))->pluck('name')->all();
+        $this->assertSame(['Alpha', 'Zeta'], $names);
     }
 }

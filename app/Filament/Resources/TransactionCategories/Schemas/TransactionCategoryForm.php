@@ -6,8 +6,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
-use App\Models\TransactionCategory;
-use Illuminate\Database\Eloquent\Builder;
 
 class TransactionCategoryForm
 {
@@ -24,6 +22,14 @@ class TransactionCategoryForm
                 TextInput::make('name')
                     ->required()
                     ->maxLength(255),
+
+                Select::make('scope')
+                    ->options([
+                        'generic' => 'Generic',
+                        'subscription' => 'Subscription',
+                    ])
+                    ->default('generic')
+                    ->required(),
 
                 Toggle::make('is_active')
                     ->default(true),

@@ -21,6 +21,8 @@ class TransactionCategoriesTable
                     ->searchable(),
                 TextColumn::make('name')
                     ->searchable(),
+                TextColumn::make('scope')
+                    ->badge(),
                 IconColumn::make('is_active')
                     ->boolean(),
                 TextColumn::make('created_at')

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { CreditCardIcon } from '@heroicons/vue/24/outline';
 import { useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
@@ -17,6 +17,23 @@ const loading = ref(false);
 const cardsResponse = ref({ data: [] });
 
 const cards = computed(() => cardsResponse.value?.data ?? []);
+const sortField = ref('created_at');
+const sortDirection = ref('desc');
+const filterStatus = ref('');
+
+const sortOptions = [
+    { value: 'created_at', label: 'Date added' },
+    { value: 'name', label: 'Name' },
+    { value: 'credit_limit', label: 'Credit limit' },
+    { value: 'current_balance', label: 'Current balance' },
+    { value: 'due_day', label: 'Due day' },
+];
+const statusOptions = [
+    { value: '', label: 'All statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'suspended', label: 'Suspended' },
+    { value: 'closed', label: 'Closed' },
+];
 
 async function fetchCards() {
     if (!auth.accessToken) {
@@ -27,7 +44,14 @@ async function fetchCards() {
     loading.value = true;
 
     try {
-        const response = await fetch('/api/v1/credit-cards?per_page=100', {
+        const params = new URLSearchParams({ per_page: '100' });
+        params.set('sort', `${sortDirection.value === 'desc' ? '-' : ''}${sortField.value}`);
+
+        if (filterStatus.value) {
+            params.set('filter[status]', filterStatus.value);
+        }
+
+        const response = await fetch(`/api/v1/credit-cards?${params.toString()}`, {
             headers: {
                 Authorization: `Bearer ${auth.accessToken}`,
                 Accept: 'application/json',
@@ -66,6 +90,10 @@ function statusBadgeClass(status) {
 onMounted(() => {
     void fetchCards();
 });
+
+watch([sortField, sortDirection, filterStatus], () => {
+    void fetchCards();
+});
 </script>
 
 <template>
@@ -80,6 +108,28 @@ onMounted(() => {
             >
                 Add card
             </router-link>
+        </div>
+
+        <div class="mb-6 flex flex-wrap gap-3">
+            <select
+                v-model="sortField"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in sortOptions" :key="option.value" :value="option.value">Sort: {{ option.label }}</option>
+            </select>
+            <select
+                v-model="sortDirection"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+            <select
+                v-model="filterStatus"
+                class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+                <option v-for="option in statusOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
         </div>
 
         <LoadingSpinner v-if="loading" class="py-16" />

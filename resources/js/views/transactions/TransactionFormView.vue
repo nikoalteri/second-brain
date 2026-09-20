@@ -5,6 +5,7 @@ import { gql } from 'graphql-tag';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import CreateCategoryModal from '@/components/finance/CreateCategoryModal.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
@@ -23,6 +24,7 @@ const auth = useAuthStore();
 
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
+const showCreateCategoryModal = ref(false);
 const today = new Date().toISOString().split('T')[0];
 
 const form = ref({
@@ -48,8 +50,8 @@ const TYPES_QUERY = gql`
 `;
 
 const CATEGORIES_QUERY = gql`
-    query GetTransactionCategories {
-        transactionCategories {
+    query GetTransactionCategories($scope: String) {
+        transactionCategories(scope: $scope) {
             id
             parent_id
             name
@@ -105,9 +107,11 @@ const DELETE_TX = gql`
 const { result: typesResult } = useQuery(TYPES_QUERY, null, {
     fetchPolicy: 'network-only',
 });
-const { result: categoriesResult } = useQuery(CATEGORIES_QUERY, null, {
-    fetchPolicy: 'network-only',
-});
+const { result: categoriesResult, refetch: refetchCategories } = useQuery(
+    CATEGORIES_QUERY,
+    { scope: 'generic' },
+    { fetchPolicy: 'network-only' }
+);
 const { result: txResult, loading: loadingTx } = useQuery(
     TX_QUERY,
     () => ({ id: route.params.id }),
@@ -303,6 +307,16 @@ async function handleSubmit() {
     }
 }
 
+const categoryParentOptions = computed(() =>
+    (categoriesResult.value?.transactionCategories ?? []).filter((category) => !category.parent_id)
+);
+
+async function handleCategoryCreated(category) {
+    showCreateCategoryModal.value = false;
+    await refetchCategories();
+    form.value.transaction_category_id = category.id;
+}
+
 async function handleDelete() {
     try {
         await deleteTx({ id: route.params.id });
@@ -361,6 +375,13 @@ async function handleDelete() {
                             class="flex-1"
                         />
                         <component :is="selectedCategoryIcon" v-if="form.transaction_category_id" class="mb-2 h-5 w-5 shrink-0 text-gray-400" />
+                        <button
+                            type="button"
+                            class="mb-2 h-10 shrink-0 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                            @click="showCreateCategoryModal = true"
+                        >
+                            + New
+                        </button>
                     </div>
                     <FormSelect
                         v-if="showsDestinationAccount"
@@ -439,6 +460,14 @@ async function handleDelete() {
             :loading="deleting"
             @confirm="handleDelete"
             @cancel="showDeleteModal = false"
+        />
+
+        <CreateCategoryModal
+            :open="showCreateCategoryModal"
+            scope="generic"
+            :parent-options="categoryParentOptions"
+            @close="showCreateCategoryModal = false"
+            @created="handleCategoryCreated"
         />
     </AppLayout>
 </template>

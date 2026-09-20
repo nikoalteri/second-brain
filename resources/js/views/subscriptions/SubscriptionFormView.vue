@@ -4,6 +4,7 @@ import { useQuery } from '@vue/apollo-composable';
 import { gql } from 'graphql-tag';
 import { useRoute, useRouter } from 'vue-router';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import CreateCategoryModal from '@/components/finance/CreateCategoryModal.vue';
 import ConfirmModal from '@/components/ui/ConfirmModal.vue';
 import FormInput from '@/components/ui/FormInput.vue';
 import FormSelect from '@/components/ui/FormSelect.vue';
@@ -18,6 +19,7 @@ const auth = useAuthStore();
 
 const isEdit = computed(() => !!route.params.id);
 const showDeleteModal = ref(false);
+const showCreateCategoryModal = ref(false);
 const loadingSub = ref(false);
 const deleting = ref(false);
 const saving = ref(false);
@@ -42,8 +44,8 @@ const form = ref({
 const errors = ref({});
 
 const CATEGORIES_QUERY = gql`
-    query GetTransactionCategories {
-        transactionCategories {
+    query GetTransactionCategories($scope: String) {
+        transactionCategories(scope: $scope) {
             id
             parent_id
             name
@@ -55,7 +57,7 @@ const CATEGORIES_QUERY = gql`
     }
 `;
 
-const { result: categoriesResult } = useQuery(CATEGORIES_QUERY);
+const { result: categoriesResult, refetch: refetchCategories } = useQuery(CATEGORIES_QUERY, { scope: 'subscription' });
 
 const accountOptions = computed(() =>
     accounts.value.map((account) => ({ value: String(account.id), label: account.name }))
@@ -119,6 +121,9 @@ const categoryOptions = computed(() => {
 
     return options;
 });
+const categoryParentOptions = computed(() =>
+    (categoriesResult.value?.transactionCategories ?? []).filter((category) => !category.parent_id)
+);
 const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
@@ -297,6 +302,12 @@ async function handleSubmit() {
     }
 }
 
+async function handleCategoryCreated(category) {
+    showCreateCategoryModal.value = false;
+    await refetchCategories();
+    form.value.category_id = category.id;
+}
+
 async function handleDelete() {
     deleting.value = true;
 
@@ -406,13 +417,23 @@ async function handleDelete() {
                             placeholder="Select credit card"
                             :error="errors.credit_card_id"
                         />
-                        <FormSelect
-                            label="Category"
-                            v-model="form.category_id"
-                            :options="categoryOptions"
-                            placeholder="No category"
-                            :error="errors.category_id"
-                        />
+                        <div class="flex items-end gap-2">
+                            <FormSelect
+                                label="Category"
+                                v-model="form.category_id"
+                                :options="categoryOptions"
+                                placeholder="No category"
+                                :error="errors.category_id"
+                                class="flex-1"
+                            />
+                            <button
+                                type="button"
+                                class="mb-2 h-10 shrink-0 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                                @click="showCreateCategoryModal = true"
+                            >
+                                + New
+                            </button>
+                        </div>
                     </div>
                 </section>
 
@@ -477,6 +498,14 @@ async function handleDelete() {
             :loading="deleting"
             @confirm="handleDelete"
             @cancel="showDeleteModal = false"
+        />
+
+        <CreateCategoryModal
+            :open="showCreateCategoryModal"
+            scope="subscription"
+            :parent-options="categoryParentOptions"
+            @close="showCreateCategoryModal = false"
+            @created="handleCategoryCreated"
         />
     </AppLayout>
 </template>
