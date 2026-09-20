@@ -330,7 +330,7 @@ onMounted(() => {
             <template #tbody>
                 <template v-for="group in monthGroups" :key="group.key">
                     <tr
-                        class="cursor-pointer bg-gray-50/80 transition-colors hover:bg-gray-100"
+                        class="cursor-pointer bg-gray-500/10 transition-colors hover:bg-gray-500/20"
                         @click="toggleMonth(group.key)"
                     >
                         <td colspan="5" class="py-2 pr-4 text-sm font-medium text-gray-700">
@@ -373,7 +373,7 @@ onMounted(() => {
                 <div v-for="group in monthGroups" :key="group.key" class="flex flex-col gap-2">
                     <button
                         type="button"
-                        class="flex items-center gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700"
+                        class="flex items-center gap-1.5 rounded-lg bg-gray-500/10 px-3 py-2 text-sm font-medium text-gray-700"
                         @click="toggleMonth(group.key)"
                     >
                         <ChevronDownIcon v-if="isMonthOpen(group.key)" class="h-4 w-4 text-gray-400" />
