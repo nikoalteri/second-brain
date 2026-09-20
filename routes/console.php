@@ -9,9 +9,11 @@ use App\Services\CreditCardCycleService;
 use App\Services\LoanScheduleService;
 use App\Services\SubscriptionService;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
@@ -37,28 +39,42 @@ Artisan::command('credit-cards:generate-cycles {--month=} {--issue-ready}', func
 
     $created = 0;
     $issued = 0;
+    $failed = 0;
 
+    // One card's exception must not stop every other card from being processed on the same run
+    // — this command is scheduled nightly across every active card, and a single bad row would
+    // otherwise silently skip cycle generation/issuance for the rest of the user base.
     foreach ($cards as $card) {
-        $cycle = $service->ensureCurrentMonthCycle($card, $reference->copy());
+        try {
+            $cycle = $service->ensureCurrentMonthCycle($card, $reference->copy());
 
-        if ($cycle->wasRecentlyCreated) {
-            $created++;
+            if ($cycle->wasRecentlyCreated) {
+                $created++;
+            }
+
+            if (
+                $this->option('issue-ready')
+                && $cycle->status === CreditCardCycleStatus::OPEN
+                && $reference->toDateString() >= $cycle->statement_date->toDateString()
+            ) {
+                $service->issueCycle($cycle);
+                $issued++;
+            }
+
+            $service->refreshCycleStatuses($card->fresh(['cycles.payments', 'payments']));
+            $service->syncCardBalance($card->fresh(['cycles.payments', 'payments']));
+        } catch (Throwable $e) {
+            $failed++;
+            Log::error("credit-cards:generate-cycles failed for card {$card->id}", ['exception' => $e]);
+            $this->error("Card {$card->id}: {$e->getMessage()}");
         }
-
-        if (
-            $this->option('issue-ready')
-            && $cycle->status === CreditCardCycleStatus::OPEN
-            && $reference->toDateString() >= $cycle->statement_date->toDateString()
-        ) {
-            $service->issueCycle($cycle);
-            $issued++;
-        }
-
-        $service->refreshCycleStatuses($card->fresh(['cycles.payments', 'payments']));
-        $service->syncCardBalance($card->fresh(['cycles.payments', 'payments']));
     }
 
-    $this->info("Cycles ensured: {$cards->count()} cards, {$created} created, {$issued} issued.");
+    $this->info("Cycles ensured: {$cards->count()} cards, {$created} created, {$issued} issued, {$failed} failed.");
+
+    if ($failed > 0) {
+        return Command::FAILURE;
+    }
 })->purpose('Create monthly credit card cycles and optionally issue ready cycles');
 
 Artisan::command('credit-cards:balance-audit', function () {
@@ -117,11 +133,23 @@ Artisan::command('loans:sync-installments {--date=}', function () {
         ->whereNotNull('start_date')
         ->get();
 
+    $failed = 0;
+
     foreach ($loans as $loan) {
-        $scheduleService->generate($loan, onlyMissing: true);
+        try {
+            $scheduleService->generate($loan, onlyMissing: true);
+        } catch (Throwable $e) {
+            $failed++;
+            Log::error("loans:sync-installments failed for loan {$loan->id}", ['exception' => $e]);
+            $this->error("Loan {$loan->id}: {$e->getMessage()}");
+        }
     }
 
-    $this->info("Loans checked and synced through {$throughDate->toDateString()}: {$loans->count()}.");
+    $this->info("Loans checked and synced through {$throughDate->toDateString()}: {$loans->count()}, {$failed} failed.");
+
+    if ($failed > 0) {
+        return Command::FAILURE;
+    }
 })->purpose('Generate missing loan installments and post due ones to transactions');
 
 Artisan::command('subscriptions:sync-renewals {--date=}', function () {

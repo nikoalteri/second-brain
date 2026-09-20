@@ -13,6 +13,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SubscriptionService
 {
@@ -186,17 +187,23 @@ class SubscriptionService
 
         $synced = 0;
 
+        // One subscription's exception must not stop every other subscription's renewal from
+        // being processed on the same nightly run.
         foreach ($subscriptions as $subscription) {
-            while (
-                $subscription->next_renewal_date
-                && $subscription->next_renewal_date->copy()->endOfDay()->lessThanOrEqualTo($throughDate)
-            ) {
-                if (! $this->processRenewal($subscription, $subscription->next_renewal_date->copy())) {
-                    break;
-                }
+            try {
+                while (
+                    $subscription->next_renewal_date
+                    && $subscription->next_renewal_date->copy()->endOfDay()->lessThanOrEqualTo($throughDate)
+                ) {
+                    if (! $this->processRenewal($subscription, $subscription->next_renewal_date->copy())) {
+                        break;
+                    }
 
-                $synced++;
-                $subscription->refresh()->load('frequencyOption');
+                    $synced++;
+                    $subscription->refresh()->load('frequencyOption');
+                }
+            } catch (\Throwable $e) {
+                Log::error("subscriptions:sync-renewals failed for subscription {$subscription->id}", ['exception' => $e]);
             }
         }
 
