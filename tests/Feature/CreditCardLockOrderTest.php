@@ -88,13 +88,22 @@ class CreditCardLockOrderTest extends TestCase
             'status' => CreditCardPaymentStatus::PENDING,
         ]);
 
+        // syncCycleAndCardFromPayment() sums PAID payments straight from the database to compute
+        // the cycle's new paid_amount/status — the $previousStatus/$currentStatus strings below are
+        // only used for the overdue-transition heuristic, not for this sum. Without persisting the
+        // status first, the sum stays 0, the computed paid_amount/status end up identical to the
+        // cycle's existing values, Eloquent sees nothing dirty and silently skips the UPDATE
+        // entirely — which intermittently failed this test depending on incidental global date
+        // state from other tests (whether "now" happened to be past the cycle's due date).
+        $payment->forceFill(['status' => CreditCardPaymentStatus::PAID])->saveQuietly();
+
         $queries = $this->queriesOf(fn () => app(CreditCardCycleService::class)->syncCycleAndCardFromPayment($payment->id, 'pending', 'paid'));
 
         $cardLock = $this->firstIndex($queries, 'from "credit_cards" where "credit_cards"."id" = ?');
         $cycleWrite = $this->firstIndex($queries, 'update "credit_card_cycles"');
 
         $this->assertNotFalse($cardLock, 'the card row is never locked');
-        $this->assertNotFalse($cycleWrite);
+        $this->assertNotFalse($cycleWrite, 'the cycle write never happened');
         $this->assertLessThan($cycleWrite, $cardLock);
     }
 
