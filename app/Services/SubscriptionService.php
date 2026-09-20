@@ -45,7 +45,11 @@ class SubscriptionService
      */
     public function getMonthlyTotal(int $userId): float
     {
-        return Subscription::where('user_id', $userId)
+        // withoutUserScope() so $userId is the sole authority: without it, HasUserScoping's
+        // global scope ANDs in the currently authenticated user, silently returning 0 whenever
+        // the caller (a superadmin, a scheduled job) asks about a user other than themselves.
+        return Subscription::withoutUserScope()
+            ->where('user_id', $userId)
             ->where('status', SubscriptionStatus::ACTIVE)
             ->get()
             ->sum(fn (Subscription $sub) => (float) $sub->monthly_cost);
@@ -58,7 +62,9 @@ class SubscriptionService
         int $days,
         int $userId
     ): Collection {
-        return Subscription::where('user_id', $userId)
+        // See getMonthlyTotal() above for why withoutUserScope() is required here too.
+        return Subscription::withoutUserScope()
+            ->where('user_id', $userId)
             ->active()
             ->forRenewal($days)
             ->with(['frequencyOption', 'account', 'creditCard'])
