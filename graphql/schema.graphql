@@ -445,7 +445,7 @@ type Mutation {
         @update @guard
 
     "Delete an account by ID."
-    deleteAccount(id: ID!): Account
+    deleteAccount(id: ID! @eq): Account
         @delete @guard
 
     "Create a new transaction."
@@ -457,7 +457,7 @@ type Mutation {
         @update @guard
 
     "Delete a transaction by ID."
-    deleteTransaction(id: ID!): Transaction
+    deleteTransaction(id: ID! @eq): Transaction
         @delete @guard
 
     "Create a new loan."
@@ -469,7 +469,7 @@ type Mutation {
         @update @guard
 
     "Delete a loan by ID."
-    deleteLoan(id: ID!): Loan
+    deleteLoan(id: ID! @eq): Loan
         @delete @guard
 
     "Create a new credit card."
@@ -481,7 +481,7 @@ type Mutation {
         @update @guard
 
     "Delete a credit card by ID."
-    deleteCreditCard(id: ID!): CreditCard
+    deleteCreditCard(id: ID! @eq): CreditCard
         @delete @guard
 
     "Create a new subscription."
@@ -493,7 +493,7 @@ type Mutation {
         @update(model: "Subscription") @guard
 
     "Delete a subscription by ID."
-    deleteSubscription(id: ID!): ServiceSubscription
+    deleteSubscription(id: ID! @eq): ServiceSubscription
         @delete(model: "Subscription") @guard
 
     "Create a new transaction category owned by the authenticated user."
