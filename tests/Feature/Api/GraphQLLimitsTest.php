@@ -34,6 +34,27 @@ class GraphQLLimitsTest extends TestCase
             ->assertJsonPath('errors.0.message', 'The GraphQL request is too large.');
     }
 
+    public function test_an_oversized_get_request_is_rejected_before_it_is_parsed(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        config(['lighthouse.request_limits.max_bytes' => 2048]);
+
+        $padding = str_repeat('a', 4096);
+
+        $this->getJson('/graphql?' . http_build_query(['query' => self::QUERY, 'variables' => ['padding' => $padding]]))
+            ->assertStatus(413)
+            ->assertJsonPath('errors.0.message', 'The GraphQL request is too large.');
+    }
+
+    public function test_a_normal_get_request_still_works(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->getJson('/graphql?' . http_build_query(['query' => self::QUERY]))
+            ->assertOk()
+            ->assertJsonMissingPath('errors');
+    }
+
     public function test_batched_requests_are_rejected(): void
     {
         Sanctum::actingAs(User::factory()->create());
