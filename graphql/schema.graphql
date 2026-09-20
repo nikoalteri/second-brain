@@ -215,6 +215,8 @@ type Query {
         is_active: Boolean @eq
         "Filter by account type."
         type: String @eq
+        "Sort the results, e.g. [{ column: NAME, order: ASC }]."
+        orderBy: _ @orderBy(columns: ["name", "balance", "created_at"])
     ): [Account!]! @paginate(defaultCount: 20) @guard
 
     "Get a single account by ID."
