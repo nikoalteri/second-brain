@@ -2,26 +2,27 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
+use App\Traits\HasUserScoping;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\Auditable;
-use App\Traits\HasUserScoping;
 
- class TransactionCategory extends Model
- {
-     use Auditable, HasUserScoping;
+class TransactionCategory extends Model
+{
+    use Auditable, HasUserScoping;
 
     protected $fillable = [
         'user_id',
         'parent_id',
         'name',
-        'is_active'
-     ];
- 
-     protected $casts = [
-         'is_active' => 'boolean',
-     ];
+        'scope',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
 
     public function user(): BelongsTo
     {
@@ -38,10 +39,10 @@ use App\Traits\HasUserScoping;
         return $this->hasMany(TransactionCategory::class, 'parent_id');
     }
 
-     public function transactions(): HasMany
-     {
-         return $this->hasMany(Transaction::class);
-     }
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
 
     public function budgets(): HasMany
     {

@@ -63,6 +63,8 @@ type TransactionCategory {
     parent_id: ID
     name: String!
     color: String
+    "Category tree the category belongs to: generic spending or subscriptions."
+    scope: String!
     parent: TransactionCategory @belongsTo(relation: "parent")
 }
 
@@ -267,7 +269,10 @@ type Query {
     transactionTypes: [TransactionType!]! @all @guard
 
     "List transaction categories owned by the authenticated user. Superadmins see all users' categories."
-    transactionCategories: [TransactionCategory!]!
+    transactionCategories(
+        "Filter to a single category tree: generic or subscription."
+        scope: String
+    ): [TransactionCategory!]!
         @guard
         @field(resolver: "App\\GraphQL\\Queries\\TransactionCategories")
 }
@@ -415,6 +420,13 @@ input UpdateSubscriptionInput {
     notes: String
 }
 
+input CreateTransactionCategoryInput {
+    name: String! @rules(apply: ["max:255"])
+    parent_id: ID @rules(apply: ["App\\Rules\\OwnedCategory"])
+    scope: String = "generic" @rules(apply: ["in:generic,subscription"])
+    is_active: Boolean = true
+}
+
 # ─── MUTATIONS ────────────────────────────────────────────────────────────────
 
 type Mutation {
@@ -477,6 +489,10 @@ type Mutation {
     "Delete a subscription by ID."
     deleteSubscription(id: ID!): ServiceSubscription
         @delete(model: "Subscription") @guard
+
+    "Create a new transaction category owned by the authenticated user."
+    createTransactionCategory(input: CreateTransactionCategoryInput! @spread): TransactionCategory!
+        @create(model: "TransactionCategory") @guard @inject(context: "user.id", name: "user_id")
 }
 
 "Account of a person who uses this application."
