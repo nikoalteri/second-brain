@@ -12,6 +12,11 @@ class UpcomingPaymentsService
     public function __construct(private readonly SubscriptionService $subscriptionService) {}
 
     /**
+     * Always scoped to the given user, including a superadmin: both callers (the dashboard and
+     * the chatbot) pass the currently authenticated user and expect only their own upcoming
+     * items back, not the whole system's. An admin-wide view would be a different, explicit
+     * method, not an implicit role check inside "for this one user".
+     *
      * @return array<int, array<string, mixed>>
      */
     public function forUser(User $user, int $days = 3): array
@@ -23,10 +28,7 @@ class UpcomingPaymentsService
             ->with(['loan', 'postingTransaction'])
             ->whereBetween('due_date', [$today, $until])
             ->where('status', '!=', 'paid')
-            ->when(
-                ! $user->hasRole('superadmin'),
-                fn ($query) => $query->whereHas('loan', fn ($loanQuery) => $loanQuery->where('user_id', $user->id))
-            )
+            ->whereHas('loan', fn ($loanQuery) => $loanQuery->where('user_id', $user->id))
             ->get()
             ->map(fn (LoanPayment $payment) => [
                 'id' => 'loan-' . $payment->id,
@@ -44,10 +46,7 @@ class UpcomingPaymentsService
             ->with(['creditCard', 'postingTransaction'])
             ->whereBetween('due_date', [$today, $until])
             ->where('status', '!=', 'paid')
-            ->when(
-                ! $user->hasRole('superadmin'),
-                fn ($query) => $query->whereHas('creditCard', fn ($cardQuery) => $cardQuery->where('user_id', $user->id))
-            )
+            ->whereHas('creditCard', fn ($cardQuery) => $cardQuery->where('user_id', $user->id))
             ->get()
             ->map(fn (CreditCardPayment $payment) => [
                 'id' => 'credit-card-' . $payment->id,
@@ -65,10 +64,7 @@ class UpcomingPaymentsService
             ->with(['account', 'creditCard', 'frequencyOption'])
             ->active()
             ->whereBetween('next_renewal_date', [$today, $until])
-            ->when(
-                ! $user->hasRole('superadmin'),
-                fn ($query) => $query->where('user_id', $user->id)
-            )
+            ->where('user_id', $user->id)
             ->get()
             ->map(fn (Subscription $subscription) => [
                 'id' => 'subscription-' . $subscription->id,
