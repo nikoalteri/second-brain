@@ -49,6 +49,10 @@ class Account extends Model
 
         static::creating(function ($account) {
             $account->user_id ??= Auth::id();
+            // GraphQL's createAccount mutation has no `balance` input field (only
+            // `opening_balance` is user-facing), so it never reaches here explicitly set —
+            // without this, the column's DB default of 0 wins regardless of opening_balance.
+            $account->balance ??= $account->opening_balance ?? 0;
         });
     }
 
