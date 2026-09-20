@@ -6,6 +6,7 @@ namespace Tests\Feature\Api;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
 use Tests\TestCase;
 
@@ -128,5 +129,32 @@ class RefreshTokenRotationTest extends TestCase
         $this->user->update(['is_active' => false]);
 
         $this->refresh($tokens['refresh'])->assertUnauthorized();
+    }
+
+    /**
+     * Regression test: consuming the refresh token, dropping the old access token, and issuing
+     * the new pair must be one transaction. Forces issueTokens()'s second createToken() call to
+     * fail (both calls generate the same plaintext token, so the second collides with the first
+     * on the unique `token` column) and asserts the refresh token was NOT left consumed — the
+     * bug this guards against otherwise locks the session out until the client re-authenticates
+     * from scratch.
+     */
+    public function test_a_failure_while_issuing_new_tokens_does_not_leave_the_refresh_token_consumed(): void
+    {
+        $tokens = $this->login();
+
+        Str::createRandomStringsUsing(fn () => 'fixed-token-entropy-for-this-test-only');
+
+        try {
+            $this->refresh($tokens['refresh'])->assertStatus(500);
+        } finally {
+            Str::createRandomStringsNormally();
+        }
+
+        $refreshToken = PersonalAccessToken::query()->where('name', 'refresh')->sole();
+        $this->assertSame('refresh', $refreshToken->name, 'the refresh token must still be usable after a failed rotation');
+
+        // The same token still works for a real refresh now that token generation is back to normal.
+        $this->refresh($tokens['refresh'])->assertOk();
     }
 }
