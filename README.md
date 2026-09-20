@@ -4,11 +4,13 @@ Personal finance tracker built with Laravel, a Vue SPA, and a Filament admin pan
 
 ## Current project status
 
-**Snapshot: 2026-09-17 — implementation complete through Phase 21.** The latest work corrects credit-card balance recomputation, including opening debt, payment deletion, creation defaults, and immediate recomputation after opening-balance edits.
+**Snapshot: 2026-09-20 — implementation complete through Phase 21, plus an ad hoc Transactions/Categories UX round.** Outside the numbered phase roadmap, `uat` also carries a September 2026 round (PRs #36–#48): transactions sorted by date with collapsible month groups and sortable/filterable columns; transaction categories creatable inline from the transaction and subscription forms, removing the need for Hub access for that workflow; subscription-only categories via a dedicated `scope` column on `transaction_categories`; monthly-actual, monthly-weighted, and annual subscription totals; sortable/filterable list tables on Accounts, Loans, Credit Cards, Saving Goals, and Subscriptions; and transaction types locked to a fixed, non-editable lookup (including in the Hub). Live verification on UAT surfaced and fixed five further defects in the same round: a GraphQL query-complexity regression that broke the transactions list, a category-picker bug that dropped children of an out-of-scope parent, a systemic bug where an expired Sanctum access token silently broke every GraphQL mutation and REST write instead of refreshing, a missing `category_id` field in the subscription API response that emptied the category on reload, new accounts not inheriting `opening_balance` into `balance`, and all five GraphQL delete mutations (`deleteAccount`, `deleteTransaction`, `deleteLoan`, `deleteCreditCard`, `deleteSubscription`) failing outright because none of them had a Lighthouse filter directive on their `id` argument.
+
+Before that round, the latest phase-numbered work corrects credit-card balance recomputation, including opening debt, payment deletion, creation defaults, and immediate recomputation after opening-balance edits.
 
 The public `/cookie-policy` page documents cookies and browser storage, with links from the frontend and administration panel. Set `LEGAL_OPERATOR_NAME` and `LEGAL_CONTACT_EMAIL` for the instance before publication. Session cookie name and lifetime reflect Laravel configuration. Recheck the policy against the deployed site, including proxy-added cookies, when changing authentication, remember-me duration or adding external services. The current application includes no analytics or advertising trackers; optional tracking would require reviewing consent before activation.
 
-The latest local backend verification passed **333 tests and 1,274 assertions**, including the previously failing credit-card credit-line and KPI tests, which remain unchanged. This verifies the current working tree; it does not establish that these changes have been deployed.
+The latest local backend verification passed **537 tests and 1,962 assertions**. This verifies the current working tree; it does not establish that these changes have been deployed.
 
 The project uses an evidence-first approach. Backend tests cover authentication/settings, ownership boundaries, account operations, reports/exports, chatbot intents, credit-card workflows and calculations, 2FA, vault access, transfers, and savings goals. Broader SPA behavior, GraphQL finance operations, and all combinations of financial workflows still require targeted validation; a passing backend suite is not full end-to-end UI coverage.
 
@@ -18,15 +20,17 @@ Phases 22–28 have discussion context but are **not implemented**. The next pla
 
 ### Accounts, transactions, and transfers
 
-- Account types include bank, cash, investment, and emergency fund, with opening balances and transaction-based balance tracking.
-- Income, expense, transfer, and cashback transactions with hierarchical categories.
+- Account types include bank, cash, investment, and emergency fund, with opening balances and transaction-based balance tracking. New accounts initialize `balance` from `opening_balance`.
+- Income, expense, transfer, and cashback transactions with hierarchical categories. Categories are creatable inline from the transaction and subscription forms; transaction types are a fixed, non-editable lookup (not creatable, including in the Hub).
+- The transactions list sorts by transaction date (not insertion order), groups into collapsible month sections, and supports column sorting and filtering. Accounts, Loans, Credit Cards, Saving Goals, and Subscriptions list views are sortable and filterable too.
+- Subscription-only categories are separated from generic categories via a dedicated `scope` column (`generic` | `subscription`) on `transaction_categories`.
 - Transfers between accounts use paired entries.
 - Authenticated APIs enforce ownership and policy checks, with intended superadmin cross-user access.
 
 ### Loans and subscriptions
 
 - Loan schedules, payment posting, and finance calculations for simple interest, compound interest, and French amortization.
-- Subscriptions with backend-managed frequencies, account or credit-card payment sources, and renewal posting.
+- Subscriptions with backend-managed frequencies, account or credit-card payment sources, and renewal posting. The Subscriptions list shows monthly-actual, monthly-weighted (normalized across billing frequencies), and annual cost totals.
 - Upcoming commitments appear on the dashboard; scheduled commands process installments and renewals.
 
 ### Credit cards
@@ -198,7 +202,7 @@ Run the backend suite with enough memory for the current tests:
 php -d memory_limit=512M vendor/bin/phpunit --no-progress
 ```
 
-Latest verified result on 2026-09-17: **333 tests, 1,274 assertions, no failures**. The suite uses SQLite in memory through [`phpunit.xml`](phpunit.xml); it does not migrate the local MySQL database. A 128 MB PHP memory limit was insufficient for the full suite.
+Latest verified result on 2026-09-20: **537 tests, 1,962 assertions, no failures**. The suite uses SQLite in memory through [`phpunit.xml`](phpunit.xml); it does not migrate the local MySQL database. A 128 MB PHP memory limit is insufficient for the full suite; use `php -d memory_limit=-1 vendor/bin/phpunit` if 512 MB is not enough.
 
 Run a targeted group:
 
@@ -216,7 +220,7 @@ npm run build
 
 ## Roadmap
 
-Completed work includes the finance backend, REST/GraphQL APIs, Vue SPA, capability audit, read-only chatbot, security hardening, revolving-interest fixes, display-currency preferences, and the Phase 21 opening-balance correction.
+Completed work includes the finance backend, REST/GraphQL APIs, Vue SPA, capability audit, read-only chatbot, security hardening, revolving-interest fixes, display-currency preferences, the Phase 21 opening-balance correction, and the September 2026 ad hoc Transactions/Categories UX round described above.
 
 The next phases have discussion context, but research, implementation plans, and execution are still pending:
 
@@ -270,4 +274,4 @@ The generated Obsidian knowledge base is at `~/Documents/DevKnowledge/second-bra
 
 `docs/PROJECT_ROADMAP_EN.md` and `docs/PHASE7_CLOSEOUT.md` preserve earlier planning history. Composer declares the project license as MIT.
 
-**Last updated:** 2026-09-17
+**Last updated:** 2026-09-20
