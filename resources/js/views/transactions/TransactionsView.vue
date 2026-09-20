@@ -57,7 +57,7 @@ const TRANSACTIONS_QUERY = gql`
         $orderBy: [QueryTransactionsOrderByOrderByClause!]
     ) {
         transactions(
-            first: 100
+            first: 50
             page: $page
             account_id: $account_id
             transaction_type_id: $transaction_type_id
@@ -298,7 +298,7 @@ onMounted(() => {
             :current-page="paginator?.currentPage ?? 1"
             :last-page="paginator?.lastPage ?? 1"
             :total="paginator?.total ?? 0"
-            :per-page="100"
+            :per-page="50"
             @page-change="page = $event"
         >
             <template #thead>
