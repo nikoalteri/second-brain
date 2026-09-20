@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -181,20 +182,32 @@ class AuthController extends Controller
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // Consume the token with a single conditional UPDATE: of two simultaneous requests only
-        // one changes the row. expires_at doubles as the moment of consumption.
-        $consumed = PersonalAccessToken::query()
-            ->whereKey($token->getKey())
-            ->where('name', 'refresh')
-            ->update(['name' => self::CONSUMED_REFRESH_TOKEN, 'expires_at' => now()]);
+        // Consuming the refresh token, dropping the old access token, and issuing the new pair
+        // must succeed or fail together: outside a transaction, a failure after the conditional
+        // UPDATE below leaves the refresh token consumed with no new tokens issued, locking the
+        // session out (and, after the grace window, looking like token reuse and revoking it).
+        $tokens = DB::transaction(function () use ($token, $user): ?array {
+            // Consume the token with a single conditional UPDATE: of two simultaneous requests
+            // only one changes the row. expires_at doubles as the moment of consumption.
+            $consumed = PersonalAccessToken::query()
+                ->whereKey($token->getKey())
+                ->where('name', 'refresh')
+                ->update(['name' => self::CONSUMED_REFRESH_TOKEN, 'expires_at' => now()]);
 
-        if ($consumed === 0) {
+            if ($consumed === 0) {
+                return null;
+            }
+
+            $user->tokens()->where('name', 'access')->delete();
+
+            return $this->issueTokens($user);
+        });
+
+        if ($tokens === null) {
             return $this->handleReusedRefreshToken($token->fresh() ?? $token, $user);
         }
 
-        $user->tokens()->where('name', 'access')->delete();
-
-        return response()->json($this->issueTokens($user));
+        return response()->json($tokens);
     }
 
     private function handleReusedRefreshToken(PersonalAccessToken $token, User $user): JsonResponse
