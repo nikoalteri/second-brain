@@ -40,6 +40,9 @@ jobs:
         run: |
           set -e
           cd /var/www/fluxa
+          # Keep AI tooling, planning docs and generated API-doc caches in the repo but off the
+          # server. Idempotent: `set` also removes them from the working tree if already present.
+          git sparse-checkout set --no-cone '/*' '!/graphify-out' '!/.graphifyignore' '!/CLAUDE.md' '!/AGENTS.md' '!/.claude' '!/.planning' '!/openspec' '!/.scribe'
           git fetch origin uat
           git reset --hard origin/uat
           composer install --no-dev --optimize-autoloader
