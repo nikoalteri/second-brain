@@ -70,6 +70,12 @@ the source: `config/scribe.php` now early-returns an empty array via a `class_ex
 when the package isn't installed, verified directly on the VM (both with and without the dev
 package present) before re-enabling `--no-dev` in the pipeline.
 
+**Files kept off the server:** the deploy is a git checkout, so everything tracked would land on
+the VM. `.github/workflows/deploy-uat.yml` therefore runs a `git sparse-checkout` that excludes
+`graphify-out/`, `.graphifyignore`, `CLAUDE.md`, `AGENTS.md`, `.claude/`, `.planning/`,
+`openspec/` and `.scribe/` (AI tooling, planning docs and API-doc caches). They stay in the
+repository. Any future production workflow must apply the same exclusion.
+
 ## Manual deploy (fallback, if the pipeline is down)
 
 On the `fluxa-uat` VM, from `/var/www/fluxa`, the same steps the workflow runs:
