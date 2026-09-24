@@ -1,7 +1,7 @@
 # Fluxa — Roadmap
 
 **Project:** Fluxa Personal Finance Tracker  
-**Last Updated:** 2026-09-18
+**Last Updated:** 2026-09-24
 
 ---
 
@@ -81,7 +81,7 @@ Plans:
 
 ---
 
-## Committed Near-Term Roadmap
+## Committed Near-Term Roadmap (Phases 16-21 delivered; 22-28 scoped below)
 
 ### Phase 16: Proof-First Validation of Structural Finance Surfaces
 
@@ -107,10 +107,10 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 16-01-credit-card-security-proof-PLAN.md — Make the credit-card proof pack trustworthy and prove the highest-risk REST access/scoping boundary first
-- [ ] 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md — Add one credible issue-to-mark-paid proof and update the confidence boundary from actual proof results
+- [x] 16-01-credit-card-security-proof-PLAN.md — Make the credit-card proof pack trustworthy and prove the highest-risk REST access/scoping boundary first
+- [x] 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md — Add one credible issue-to-mark-paid proof and update the confidence boundary from actual proof results
 
-No additional committed phases are listed beyond Phase 16 until that proof-first work reshapes the confidence boundary.
+Phase 16 is complete. Later phases (17-21, delivered, and 22-28, scoped but not planned) are listed further down; the confidence boundary above still reflects Phase 13, and Phase 16 promoted only the credit-card REST slice it proved.
 
 ---
 
@@ -257,11 +257,14 @@ Second round (PRs #22-#26, #28-#34):
 - tokens kept in `localStorage` (HttpOnly cookie sessions would need frontend, CORS and CSRF work, and a browser test);
 - report and dashboard query optimisation, only after a measurement;
 - `calculatePaymentBreakdown()` still uses the current balance for exposure (decision needed);
-- atomicity of the scheduled commands, which stop at the first failing item;
 - a two-connection MySQL concurrency test;
 - the frontend and the MFA setup were verified only by build and tests, not exercised in a browser.
 
 **Decision needed before planning Phases 24-27 (currency):** `Money` only changes the display symbol and separators without conversion, while accounts carry a currency and some totals add all currencies under one label. Choose one of: a single effective currency; a currency per account with separate totals; or real FX conversion. The audit proposes explicit totals per currency without an FX engine for the current phases. The choice affects import, dedup, precision and reconciliation.
+
+Third round (2026-09-20, PRs #49-#55): the GraphQL request size limit also applies to GET requests (#49); expenses nested under each credit card cycle are capped (#50); `SubscriptionService` totals use an explicit owner (#51); refresh-token consumption is atomic with issuing the new tokens (#52); one failing item no longer stops the nightly scheduled commands (#53); the credit card lock-order test is deterministic (#54).
+
+Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list sorting/filtering, plus defect fixes found on UAT. Described in README.md.
 
 ### Phase 22: Proactive notifications — wire the existing (unused) Notification model to real financial triggers
 

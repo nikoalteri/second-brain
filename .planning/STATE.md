@@ -4,14 +4,14 @@ milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
 stopped_at: Phases 22-28 context gathered; audit hardening delivered
-last_updated: "2026-09-19T00:00:00.000Z"
-last_activity: "2026-09-19 -- Second audit hardening round delivered through PRs 22-26 and 28-34 (vault binding, 2FA atomicity, refresh rotation, GraphQL limits, MFA on hub, renewal idempotence, card locking, pagination limits, export formula safety, scheduler heartbeat and smoke test, explicit owner, audit trail); backups and trusted proxies deferred by decision. Earlier, 2026-09-18 -- Audit hardening delivered through PRs 11-20 (see ROADMAP.md, Audit hardening) and the planning docs realigned; Phases 22-28 CONTEXT.md now carry audit-derived requirements. Earlier, 2026-09-17 -- Product-enhancement brainstorm added Phases 22-28 to ROADMAP.md (proactive notifications, subscription price-hike detection, cash-flow forecast, bank-statement import, debt/subscription totals, automated statement reconciliation, automatic transaction categorization). Discuss-phase completed for all seven before planning any of them, per user request: 22 through 28 CONTEXT.md + DISCUSSION-LOG.md all written. A \"report annuale/fiscale\" idea was investigated and found already fully shipped (FinanceReportController's export already has a per-category \"Distribution\" section in every format) — no new phase created for it. Key scouting finds that reshaped scope: Notification model exists but is never written to anywhere (Phase 22); UpcomingPaymentsService (Phase 17) reused for Phase 24; maatwebsite/excel already a dependency for Phase 25; IntentRouter pattern and SubscriptionService::calculateMonthlyCost() reused for Phase 26; Phase 27 required a retroactive addendum to Phase 25 (D-06, an optional statement-ending-balance field) since imported transactions can't independently verify the balance they contributed to. Separately shipped and since merged (PR 4): feat/hub-dark-mode re-enabled the Filament admin dark-mode toggle. Next: plan phases in dependency order (22 before 23; 25 before 27/28; 24/26 together), then execute progressively."
+last_updated: "2026-09-24T00:00:00.000Z"
+last_activity: "2026-09-20 -- Third audit round (PRs 49-55) and ad hoc UX round (PRs 36-48) delivered. Earlier, 2026-09-19 -- Second audit hardening round delivered through PRs 22-26 and 28-34 (vault binding, 2FA atomicity, refresh rotation, GraphQL limits, MFA on hub, renewal idempotence, card locking, pagination limits, export formula safety, scheduler heartbeat and smoke test, explicit owner, audit trail); backups and trusted proxies deferred by decision. Earlier, 2026-09-18 -- Audit hardening delivered through PRs 11-20 (see ROADMAP.md, Audit hardening) and the planning docs realigned; Phases 22-28 CONTEXT.md now carry audit-derived requirements. Earlier, 2026-09-17 -- Product-enhancement brainstorm added Phases 22-28 to ROADMAP.md (proactive notifications, subscription price-hike detection, cash-flow forecast, bank-statement import, debt/subscription totals, automated statement reconciliation, automatic transaction categorization). Discuss-phase completed for all seven before planning any of them, per user request: 22 through 28 CONTEXT.md + DISCUSSION-LOG.md all written. A \"report annuale/fiscale\" idea was investigated and found already fully shipped (FinanceReportController's export already has a per-category \"Distribution\" section in every format) — no new phase created for it. Key scouting finds that reshaped scope: Notification model exists but is never written to anywhere (Phase 22); UpcomingPaymentsService (Phase 17) reused for Phase 24; maatwebsite/excel already a dependency for Phase 25; IntentRouter pattern and SubscriptionService::calculateMonthlyCost() reused for Phase 26; Phase 27 required a retroactive addendum to Phase 25 (D-06, an optional statement-ending-balance field) since imported transactions can't independently verify the balance they contributed to. Separately shipped and since merged (PR 4): feat/hub-dark-mode re-enabled the Filament admin dark-mode toggle. Next: plan phases in dependency order (22 before 23; 25 before 27/28; 24/26 together), then execute progressively."
 progress:
-  total_phases: 7
-  completed_phases: 6
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_phases: 16
+  completed_phases: 9
+  total_plans: 24
+  completed_plans: 24
+  percent: 56
 ---
 
 # v5.1 Project State
@@ -19,7 +19,7 @@ progress:
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
 **Status:** Phase 21 complete; Phase 22 context gathered, not yet planned
-**Updated:** 2026-09-18
+**Updated:** 2026-09-24
 
 ---
 
@@ -35,7 +35,7 @@ See: `.planning/PROJECT.md` (planning realignment milestone definition)
 Phase: 22-28 — CONTEXT GATHERED (none yet planned)
 Plan: none yet — next step is `/gsd-plan-phase 22` (plan in dependency order: 22, then 23, then 25, then 24/26 together, then 27/28)
 Status: Phase 21 remains the last fully-executed phase; its own follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding. Phases 22-28 are newly scoped from a product-enhancement brainstorm — all discussed, none planned/executed.
-Last activity: 2026-09-19 -- Second audit hardening round delivered (PRs #22-#26, #28-#34); before that, 2026-09-18 -- Audit hardening delivered (PRs #11-#20) and planning docs realigned; before that, 2026-09-17 -- Discuss-phase completed for Phases 22 through 28 in sequence (user chose to plan all before implementing any); a small unrelated ad-hoc fix (Filament admin dark-mode toggle) was also shipped and has since been merged (PR #4)
+Last activity: 2026-09-20 -- third audit round (PRs #49-#55: GET size limit, cycle expense cap, explicit owner, atomic refresh, scheduled-command isolation, deterministic lock-order test) and an ad hoc UX round (PRs #36-#48); before that, 2026-09-19 -- Second audit hardening round delivered (PRs #22-#26, #28-#34); before that, 2026-09-18 -- Audit hardening delivered (PRs #11-#20) and planning docs realigned; before that, 2026-09-17 -- Discuss-phase completed for Phases 22 through 28 in sequence (user chose to plan all before implementing any); a small unrelated ad-hoc fix (Filament admin dark-mode toggle) was also shipped and has since been merged (PR #4)
 
 ## Session Resume
 
