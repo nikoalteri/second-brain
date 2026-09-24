@@ -1,0 +1,58 @@
+name: Diagnose UAT
+
+# Manual, read-only health report for the UAT server. Prints state only: it never deploys,
+# migrates, edits files or restarts anything, and it never prints .env values, database
+# contents or application logs (they hold real personal financial data).
+on:
+  workflow_dispatch:
+
+# Share the deploy group so a report never runs in the middle of a deploy.
+concurrency:
+  group: deploy-uat
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, fluxa-uat]
+    steps:
+      - name: Checkout state
+        run: |
+          cd /var/www/fluxa
+          echo "branch: $(git rev-parse --abbrev-ref HEAD)"
+          git log -1 --format='HEAD: %h %s (%cd)' --date=iso
+          echo "local vs origin/uat: $(git rev-list --left-right --count HEAD...origin/uat 2>/dev/null || echo unknown)"
+          echo "uncommitted changes:"; git status --short | head -20
+          echo "sparse-checkout patterns:"; git sparse-checkout list || true
+
+      - name: Files that must not be on the server
+        run: |
+          cd /var/www/fluxa
+          found=0
+          for p in graphify-out .graphifyignore CLAUDE.md AGENTS.md .claude .planning openspec .scribe; do
+            if [ -e "$p" ]; then echo "PRESENT (unexpected): $p"; found=1; fi
+          done
+          [ "$found" = 0 ] && echo "none of the excluded paths are present"
+          exit 0
+
+      - name: Application checks
+        run: |
+          cd /var/www/fluxa
+          echo "APP_ENV=$(grep -m1 '^APP_ENV=' .env | cut -d= -f2-)  APP_DEBUG=$(grep -m1 '^APP_DEBUG=' .env | cut -d= -f2-)"
+          php -v | head -1
+          php artisan app:smoke
+          echo "--- migrations"
+          php artisan migrate:status --no-interaction | tail -5
+
+      - name: Scheduler heartbeat
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 https://fluxauat.nikoalteri.com/health/scheduler || true)
+          echo "GET /health/scheduler -> HTTP ${code:-none} (200 = healthy, 503 = stale)"
+          echo "cron entry:"; crontab -l 2>/dev/null | grep -c 'schedule:run' | sed 's/^/schedule:run entries: /'
+
+      - name: Server resources and leftovers
+        run: |
+          df -h /var/www/fluxa | tail -1
+          echo "--- leftover DB backups (present only after a failed deploy):"
+          ls -lh ~/db-backups 2>/dev/null || echo "none"
+          echo "--- storage/logs (names and sizes only)"
+          ls -lh /var/www/fluxa/storage/logs 2>/dev/null | tail -5
