@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
-stopped_at: Phase 22 research and three plans prepared; implementation pending
+stopped_at: Phase 22 implemented in draft PRs #63-#66; awaiting MySQL concurrency test, /hub visual check and merge
 last_updated: "2026-10-17T00:00:00.000Z"
-last_activity: "2026-10-17 -- Phase 22 researched and planned in three sequential execution plans; no implementation yet. Earlier implementation and audit work is detailed below and in ROADMAP.md."
+last_activity: "2026-10-17 -- Phase 22 researched, planned and implemented (plans 22-01..03 plus review fixes) in stacked draft PRs #63-#66; browser check of the bell done. Earlier implementation and audit work is detailed below and in ROADMAP.md."
 progress:
   total_phases: 16
   completed_phases: 9
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 21 complete; Phase 22 planned (3 plans), not executed
+**Status:** Phase 21 complete; Phase 22 implemented in draft PRs #63-#66, not merged
 **Updated:** 2026-10-17
 
 ---
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Execute Phase 22, starting with its durable notification-condition lifecycle (`22-01-PLAN.md`).
+**Current focus:** Close Phase 22: MySQL two-connection concurrency test, visual check of `/hub/notifications`, then merge PRs #63-#66 in order.
 
 ## Current Position
 
-Phase: 22 — PLANNED (Phases 23-28 retain context only)
-Plan: 22-01, 22-02, 22-03 prepared — next step is execute 22-01, then 22-02 and 22-03.
-Status: Phase 21 remains the last fully-executed phase; its own follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding. Phase 22 is planned but not implemented; Phases 23-28 remain discussed but unplanned.
-Last activity: 2026-10-17 -- Phase 22 researched and split into three execution plans; implementation pending. Prior implementation activity: 2026-09-20 audit and UX rounds.
+Phase: 22 — IMPLEMENTED, UNMERGED (Phases 23-28 retain context only)
+Plan: 22-01, 22-02, 22-03 implemented and summarised; review fixes in PR #66 — next step is the two open verifications, then merge.
+Status: Phase 21 remains the last fully-executed phase; its own follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding. Phase 22 is implemented but not merged; Phases 23-28 remain discussed but unplanned.
+Last activity: 2026-10-17 -- Phase 22 implemented in draft PRs #63-#66; 588 backend tests and SPA build pass; bell verified in a browser. Prior implementation activity: 2026-09-20 audit and UX rounds.
 
 ## Session Resume
 
-**Stopped at:** Phase 22 plans prepared
-**Resume file:** .planning/phases/22-proactive-notifications-wire-the-existing-notification-model-to-real-financial-triggers/22-01-PLAN.md (execute first — Phase 23 depends on Phase 22)
+**Stopped at:** Phase 22 implemented; draft PRs #63-#66 open
+**Resume file:** .planning/phases/22-proactive-notifications-wire-the-existing-notification-model-to-real-financial-triggers/22-03-SUMMARY.md (open verifications listed under Gaps; Phase 23 depends on Phase 22)
 
 ## Accumulated Context
 
@@ -84,7 +84,7 @@ Last activity: 2026-10-17 -- Phase 22 researched and split into three execution 
 
 ## Issues / Blockers
 
-- None blocking. Open items raised by the audit and not yet addressed (decimal money arithmetic, tokens in `localStorage`, report query optimisation after measurement, `calculatePaymentBreakdown()` exposure, a MySQL two-connection concurrency test, the currency decision) are listed in ROADMAP.md under "Audit hardening". Backups and trusted-proxy configuration are deferred by decision (2026-09-19). Phases 17-21 are complete (chatbot, hardening & security proof, revolving interest engine correctness, multi-currency display, credit-card balance recompute correctness). Phase 21's own manual follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding and not tracked by any further phase. Phase 22 is planned; execute `22-01-PLAN.md` first. Phases 23-28 retain context and await planning in dependency order.
+- None blocking. Open items raised by the audit and not yet addressed (decimal money arithmetic, tokens in `localStorage`, report query optimisation after measurement, `calculatePaymentBreakdown()` exposure, a MySQL two-connection concurrency test, the currency decision) are listed in ROADMAP.md under "Audit hardening". Backups and trusted-proxy configuration are deferred by decision (2026-09-19). Phases 17-21 are complete (chatbot, hardening & security proof, revolving interest engine correctness, multi-currency display, credit-card balance recompute correctness). Phase 21's own manual follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding and not tracked by any further phase. Phase 22 is implemented in draft PRs #63-#66; still open: a two-connection MySQL concurrency test of the condition lifecycle and a visual check of the Filament list. Phases 23-28 retain context and await planning in dependency order.
 
 ## Performance Metrics
 
