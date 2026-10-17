@@ -237,6 +237,10 @@ class SubscriptionService
             // billing source meanwhile, so decide the path from the committed row.
             $subscription->refresh()->loadMissing(['frequencyOption', 'creditCard', 'account']);
 
+            if ($this->isStaleRenewal($subscription, $renewalDate)) {
+                return false;
+            }
+
             if ($subscription->credit_card_id) {
                 $created = $this->upsertCreditCardExpense($subscription, $renewalDate);
             } elseif ($subscription->account_id) {
@@ -321,6 +325,24 @@ class SubscriptionService
 
             return false;
         }
+    }
+
+    /**
+     * The caller picked this renewal before waiting for the lock. If the owner meanwhile cancelled
+     * the subscription, turned automatic posting off or postponed it past this date, nothing is
+     * posted. A date that is already posted still falls through so a repeat stays idempotent.
+     */
+    private function isStaleRenewal(Subscription $subscription, CarbonInterface $renewalDate): bool
+    {
+        if ($subscription->status !== SubscriptionStatus::ACTIVE
+            || ! $subscription->auto_create_transaction
+            || $subscription->next_renewal_date === null) {
+            return true;
+        }
+
+        return $subscription->next_renewal_date->gt(Carbon::parse($renewalDate))
+            && ! $this->hasCardPosting($subscription, $renewalDate)
+            && ! $this->hasAccountPosting($subscription, $renewalDate);
     }
 
     private function hasCardPosting(Subscription $subscription, CarbonInterface $renewalDate): bool

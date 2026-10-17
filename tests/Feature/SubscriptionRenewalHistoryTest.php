@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\Account;
 use App\Models\CreditCard;
 use App\Models\CreditCardExpense;
+use App\Models\Notification;
 use App\Models\Subscription;
 use App\Models\SubscriptionFrequency;
 use App\Models\Transaction;
@@ -77,6 +78,9 @@ class SubscriptionRenewalHistoryTest extends TestCase
 
     private function renew(Subscription $subscription, string $date): void
     {
+        // Mirror the nightly job: it only processes the renewal the subscription is currently due for.
+        DB::table('subscriptions')->where('id', $subscription->id)->update(['next_renewal_date' => $date]);
+
         app(SubscriptionService::class)->processRenewal($subscription->fresh(), Carbon::parse($date));
     }
 
@@ -271,9 +275,37 @@ class SubscriptionRenewalHistoryTest extends TestCase
         $this->renew($this->subscription, '2026-05-23');
         $this->assertSame('2026-06-23', $this->subscription->fresh()->next_renewal_date->toDateString());
 
-        $this->renew($this->subscription, '2026-04-23');
+        app(SubscriptionService::class)->processRenewal($this->subscription->fresh(), Carbon::parse('2026-04-23'));
 
         $this->assertSame('2026-06-23', $this->subscription->fresh()->next_renewal_date->toDateString());
         $this->assertSame(2, Transaction::withoutGlobalScopes()->where('subscription_id', $this->subscription->id)->count());
+    }
+
+    /** @return array<string, array{0: array<string, mixed>}> */
+    public static function changesAfterSelection(): array
+    {
+        return [
+            'cancelled' => [['status' => 'cancelled']],
+            'inactive' => [['status' => 'inactive']],
+            'automatic posting off' => [['auto_create_transaction' => false]],
+            'postponed' => [['next_renewal_date' => '2026-05-23']],
+        ];
+    }
+
+    /** @param array<string, mixed> $change */
+    #[\PHPUnit\Framework\Attributes\DataProvider('changesAfterSelection')]
+    public function test_a_renewal_selected_before_the_lock_is_dropped_if_the_subscription_changed_meanwhile(array $change): void
+    {
+        // The nightly job selected this instance while the renewal was due...
+        $selected = $this->subscription->fresh();
+        // ...and the owner changed it before processRenewal() got the lock.
+        DB::table('subscriptions')->where('id', $this->subscription->id)->update($change);
+
+        $processed = app(SubscriptionService::class)->processRenewal($selected, Carbon::parse('2026-04-23'));
+
+        $this->assertFalse($processed);
+        $this->assertSame(0, Transaction::withoutGlobalScopes()->withTrashed()->where('subscription_id', $this->subscription->id)->count());
+        $this->assertEquals(100, $this->account->fresh()->balance);
+        $this->assertSame(0, Notification::query()->withoutUserScope()->where('related_id', $this->subscription->id)->count());
     }
 }
