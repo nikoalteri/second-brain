@@ -10,6 +10,7 @@ use App\Models\CreditCardExpense;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Models\Transaction;
+use App\Support\LedgerLock;
 use App\Models\TransactionType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -29,7 +30,10 @@ class ImportRowPromotionService
         'possible_transfer', 'possible_card_payment', 'matches_generated_renewal',
     ];
 
-    public function __construct(private readonly ImportDuplicateDetector $detector) {}
+    public function __construct(
+        private readonly ImportDuplicateDetector $detector,
+        private readonly LedgerLock $lock,
+    ) {}
 
     /**
      * Confirms rows against the ledger as it is NOW: the stored classification may be hours old, so
@@ -97,6 +101,12 @@ class ImportRowPromotionService
                     return $this->result($rowId, 'skipped', 'This import is no longer open.');
                 }
 
+                // The ledger target next, before any plain read: this transaction now excludes every other
+                // writer of that account/card, and its first plain read below sees all they committed.
+                $batch->account_id
+                    ? $this->lock->accounts([$batch->account_id])
+                    : $this->lock->card($batch->credit_card_id);
+
                 // The row lock plus the status check make a repeated or concurrent confirmation a no-op.
                 $row = ImportRow::query()
                     ->where('import_batch_id', $batch->id)
@@ -120,6 +130,18 @@ class ImportRowPromotionService
 
                 if ($rowCurrency !== null && $rowCurrency !== $batch->currency) {
                     return $this->result($rowId, 'skipped', "The row is in {$rowCurrency} but the target uses {$batch->currency}; no currency conversion is done. Discard it or fix the file.");
+                }
+
+                // The ledger may have changed since the owner reviewed this row (and since the pre-pass in
+                // confirm()). A row reviewed as clean that now matches is held back for review; one the
+                // owner saw flagged proceeds, because choosing it was a conscious decision.
+                if (! self::needsDecision($row) && ($match = $this->detector->matchOne($batch, $row)) !== null) {
+                    $row->forceFill([
+                        'duplicate_class' => $match['class'],
+                        'flags' => array_replace($row->flags ?? ['codes' => [], 'related' => []], ['match' => ['type' => $match['type'], 'id' => $match['id']]]),
+                    ])->save();
+
+                    return $this->result($rowId, 'skipped', 'This row now matches an existing entry; review it again.');
                 }
 
                 $created = $batch->account_id

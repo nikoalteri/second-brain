@@ -5,10 +5,47 @@ namespace App\Observers;
 use App\Enums\CreditCardPaymentStatus;
 use App\Models\CreditCardPayment;
 use App\Models\Transaction;
+use App\Support\LedgerLock;
 use Illuminate\Support\Facades\Log;
 
 class TransactionObserver
 {
+    /**
+     * Every write that can produce a matching movement takes the account row first (see LedgerLock),
+     * so the statement import's duplicate check and insert cannot interleave with any of them.
+     */
+    public function creating(Transaction $transaction): void
+    {
+        app(LedgerLock::class)->accounts([$transaction->account_id]);
+    }
+
+    public function updating(Transaction $transaction): void
+    {
+        if (! $transaction->isDirty(['account_id', 'amount', 'date'])) {
+            return;
+        }
+
+        $ids = [$transaction->getOriginal('account_id'), $transaction->account_id];
+
+        // A transfer leg also moves its pair: lock the pair's account in the same ascending statement,
+        // instead of discovering it later in a different order than a concurrent opposite transfer.
+        $pair = $this->pairedLeg($transaction);
+
+        if ($pair !== null) {
+            $ids[] = $pair->account_id;
+            $ids[] = $transaction->to_account_id;
+        }
+
+        app(LedgerLock::class)->accounts($ids);
+    }
+
+    public function restoring(Transaction $transaction): void
+    {
+        $pair = $this->pairedLeg($transaction, trashed: true);
+
+        app(LedgerLock::class)->accounts([$transaction->account_id, $pair?->account_id]);
+    }
+
     public function created(Transaction $transaction): void
     {
         Log::info('Transaction created', ['transaction_id' => $transaction->id]);

@@ -443,6 +443,10 @@ class CreditCardCycleService
      * inserting; if payment and issuing paths locked a cycle first, a payment and an expense
      * on the same card could each hold what the other needs. Locking the same row again inside
      * the same transaction is a no-op.
+     *
+     * Across the whole ledger the order is: domain rows (import batch, subscription, payment/loan) →
+     * account rows (see App\Support\LedgerLock, ascending ids in one statement) → card rows. A path
+     * that holds a card lock and then creates an account Transaction would invert account → card.
      */
     private function lockCard(int $cardId): void
     {

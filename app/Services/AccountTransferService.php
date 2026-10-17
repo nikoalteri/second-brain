@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Account;
 use App\Models\Transaction;
 use App\Models\TransactionType;
+use App\Support\LedgerLock;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -55,6 +56,10 @@ class AccountTransferService
         $ownerId = $from->user_id;
 
         return DB::transaction(function () use ($ownerId, $from, $to, $amount, $date, $description, $notes) {
+            // Both accounts in one ascending statement: two opposite transfers (A→B and B→A) would
+            // otherwise each hold one account and wait for the other.
+            app(LedgerLock::class)->accounts([$from->id, $to->id]);
+
             $transferType = TransactionType::query()->firstOrCreate(
                 ['name' => 'Transfer'],
                 ['is_income' => false],

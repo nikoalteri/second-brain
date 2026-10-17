@@ -176,30 +176,7 @@ class ImportDuplicateDetector
                     continue;
                 }
 
-                $n = $row->normalized;
-                $best = null;
-                $bestDistance = PHP_INT_MAX;
-
-                foreach ($candidates as $candidate) {
-                    if (isset($used[$candidate['id']]) || $candidate['amount_minor'] !== $this->comparable($batch, $n['amount_minor'])) {
-                        continue;
-                    }
-
-                    $distance = abs(Carbon::parse($candidate['date'])->diffInDays(Carbon::parse($n['date']), false));
-
-                    if ($distance > self::DATE_WINDOW_DAYS) {
-                        continue;
-                    }
-
-                    if ($class === 'exact' && ($distance !== 0.0 || ! $this->similar($candidate['description'], $n['description']))) {
-                        continue;
-                    }
-
-                    if ($distance < $bestDistance) {
-                        $best = $candidate;
-                        $bestDistance = $distance;
-                    }
-                }
+                $best = $this->pick($batch, $row->normalized, $candidates, $used, $class);
 
                 if ($best) {
                     $used[$best['id']] = true;
@@ -214,6 +191,102 @@ class ImportDuplicateDetector
         }
 
         return $result;
+    }
+
+    /**
+     * The match of ONE row against the ledger as it is right now, for the moment of posting: the
+     * caller holds the target lock, so nothing can be added between this check and the insert.
+     * Ledger movements this batch already posted, and those another draft row of the batch has
+     * already been matched to, are not available (the one-to-one rule).
+     *
+     * @return array{class: string, type: string, id: int, subscription: bool}|null
+     */
+    public function matchOne(ImportBatch $batch, ImportRow $row): ?array
+    {
+        $candidates = $this->ledgerCandidates($batch, collect([$row]));
+        $n = $row->normalized;
+
+        // Cheap exit first: only rows with a same-size movement nearby need the claimed-ids lookup.
+        $nearby = array_values(array_filter($candidates, fn (array $c) => $c['amount_minor'] === $this->comparable($batch, $n['amount_minor'])));
+
+        if ($nearby === []) {
+            return null;
+        }
+
+        $claimed = $this->claimedBy($batch, $row, array_column($nearby, 'id'));
+
+        foreach (['exact', 'probable'] as $class) {
+            $best = $this->pick($batch, $n, $nearby, $claimed, $class);
+
+            if ($best) {
+                return ['class' => $class, 'type' => $best['type'], 'id' => $best['id'], 'subscription' => $best['subscription']];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param list<int> $ledgerIds
+     * @return array<int, true> ledger ids that another draft row of this batch is already matched to
+     */
+    private function claimedBy(ImportBatch $batch, ImportRow $row, array $ledgerIds): array
+    {
+        $type = $batch->account_id ? 'transaction' : 'credit_card_expense';
+
+        $others = $batch->rows()
+            ->where('status', ImportRowStatus::DRAFT->value)
+            ->where('id', '!=', $row->id)
+            ->where(function ($query) use ($ledgerIds, $type) {
+                foreach ($ledgerIds as $id) {
+                    // The encoded form written by detect(): {"type":"transaction","id":12} (no spaces).
+                    $query->orWhere('flags', 'like', '%"match":{"type":"' . $type . '","id":' . (int) $id . '}%');
+                }
+            })
+            ->get(['flags']);
+
+        $claimed = [];
+
+        foreach ($others as $other) {
+            $claimed[(int) ($other->flags['match']['id'] ?? 0)] = true;
+        }
+
+        return $claimed;
+    }
+
+    /**
+     * @param array{date: string, amount_minor: int, description: string} $n
+     * @param list<array{id: int, type: string, date: string, amount_minor: int, description: string, subscription: bool}> $candidates
+     * @param array<int, mixed> $used
+     * @return array{id: int, type: string, date: string, amount_minor: int, description: string, subscription: bool}|null
+     */
+    private function pick(ImportBatch $batch, array $n, array $candidates, array $used, string $class): ?array
+    {
+        $best = null;
+        $bestDistance = PHP_INT_MAX;
+
+        foreach ($candidates as $candidate) {
+            if (isset($used[$candidate['id']]) || $candidate['amount_minor'] !== $this->comparable($batch, $n['amount_minor'])) {
+                continue;
+            }
+
+            $distance = abs(Carbon::parse($candidate['date'])->diffInDays(Carbon::parse($n['date']), false));
+
+            if ($distance > self::DATE_WINDOW_DAYS) {
+                continue;
+            }
+
+            if ($class === 'exact' && ($distance !== 0.0 || ! $this->similar($candidate['description'], $n['description']))) {
+                continue;
+            }
+
+            if ($distance < $bestDistance) {
+                $best = $candidate;
+                $bestDistance = $distance;
+            }
+        }
+
+        return $best;
     }
 
     /** The import amount expressed the way the ledger stores it for this target. */
