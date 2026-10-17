@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { clearApolloCache } from '@/apollo/client.js';
 import { useCashFlowForecastStore } from '@/stores/cashFlowForecast.js';
 import { useNotificationsStore } from '@/stores/notifications.js';
+import { useStatementImportStore } from '@/stores/statementImport.js';
 import { useVaultStore } from '@/stores/vault.js';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -49,6 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
         useVaultStore().lock();
         useNotificationsStore().reset();
         useCashFlowForecastStore().reset();
+        useStatementImportStore().reset();
         accessToken.value = null;
         refreshToken.value = null;
         setUser(null);

@@ -238,12 +238,20 @@ onMounted(() => {
             <div>
                 <h1 class="text-xl font-semibold text-gray-900">Transactions</h1>
             </div>
-            <router-link
-                to="/transactions/new"
-                class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white hover:bg-amber-600"
-            >
-                Add transaction
-            </router-link>
+            <div class="flex items-center gap-3">
+                <router-link
+                    to="/transactions/import"
+                    class="flex h-10 items-center rounded-lg border border-gray-300 bg-white px-4 text-sm text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                    Import statement
+                </router-link>
+                <router-link
+                    to="/transactions/new"
+                    class="flex h-10 items-center rounded-lg bg-amber-500 px-4 text-sm text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-white hover:bg-amber-600"
+                >
+                    Add transaction
+                </router-link>
+            </div>
         </div>
 
         <div class="mb-6 flex flex-wrap gap-3">

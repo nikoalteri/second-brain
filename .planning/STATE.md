@@ -3,22 +3,22 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
-stopped_at: Phase 24 implemented and merged to uat (PR #72); next step is planning Phase 25
+stopped_at: Phase 25 implemented (plans 25-01 to 25-04) in one PR awaiting review; next is Phase 26
 last_updated: "2026-10-17T00:00:00.000Z"
 last_activity: "2026-10-17 -- Phase 24 (30-day cash-flow forecast) implemented, reviewed and merged to uat in PR #72; main aligned in PR #73. Visual check done on desktop and mobile."
 progress:
   total_phases: 16
-  completed_phases: 12
-  total_plans: 32
-  completed_plans: 32
-  percent: 75
+  completed_phases: 13
+  total_plans: 36
+  completed_plans: 36
+  percent: 81
 ---
 
 # v5.1 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 24 implemented and on `uat` and `main`
+**Status:** Phase 25 implemented, PR open; Phase 24 on `uat` and `main`
 **Updated:** 2026-10-17
 
 ---
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Plan Phase 25 (bank statement import), which Phases 27 and 28 depend on. Open follow-ups: the Phase 23 UAT renewal observation, Phase 22's MySQL concurrency proof and `/hub/notifications` visual check, and Phase 21's manual `credit-cards:balance-audit`.
+**Current focus:** Merge Phase 25, then plan Phases 26-28 (27 and 28 build on its staging model). Open follow-ups: a real bank file and a two-connection MySQL check for import confirmation; the Phase 23 UAT renewal observation, Phase 22's MySQL concurrency proof and `/hub/notifications` visual check, and Phase 21's manual `credit-cards:balance-audit`.
 
 ## Current Position
 
-Phase: 24 — COMPLETE (merged via PR #72)
-Plan: 24-01, 24-02 and 24-03 executed; summaries in the phase folder.
-Status: the forecast API and Dashboard card are live on `uat`/`main`. The estimate is always labelled incomplete while bank balances are unreconciled (Phase 25). Visual check covered desktop (1440px) and mobile (500px) in the dark theme only; empty/error states and the light theme were not checked, and on mobile the pre-existing chart sections make the page scroll horizontally. The Phase 23 renewal observation, Phase 21's manual balance-audit and Phase 22's two verification follow-ups remain outstanding.
-Last activity: 2026-10-17 -- Phase 24 implemented, reviewed (debt/credit-card accounts excluded from the spendable balance; paid-without-posting and every missed renewal flagged) and merged.
+Phase: 25 — IMPLEMENTED (PR open)
+Plan: 25-01 to 25-04 executed; summaries in the phase folder.
+Status: statement import (CSV/XLSX → draft rows → mapping → duplicate review → idempotent confirmation) is built on `feat/phase-25-import-intake`. Phase 24 is complete on `uat`/`main`. Phase 21's manual balance audit, Phase 22's two verification follow-ups and the Phase 23 renewal observation remain open.
+Last activity: 2026-10-17 -- Phase 25 implemented (735 backend tests, 25 frontend tests, browser check on desktop and mobile with synthetic data).
 
 ## Session Resume
 
-**Stopped at:** Phase 24 complete; Phase 25 not yet planned
-**Resume file:** .planning/phases/24-cash-flow-forecast-safe-to-spend/24-02-SUMMARY.md
+**Stopped at:** Phase 25 implemented; awaiting PR review
+**Resume file:** .planning/phases/25-bank-statement-import-reconciliation/25-04-SUMMARY.md
 
 ## Accumulated Context
 

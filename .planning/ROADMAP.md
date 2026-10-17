@@ -295,7 +295,7 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 **Goal:** Import transactions from exported bank statement files (CSV/Excel, via a user-configurable column mapping — not one hardcoded bank format) into a reviewable draft state, then reconcile/dedup them against existing `Transaction`/`CreditCardExpense` records before confirming, reducing manual entry. File-based import only — this does **not** reopen the existing "no bank-feed/Open Banking expansion" boundary (see Deferred Longer-Term Product Ideas above), since there is no live external API integration involved, only parsing of files the user exports themselves. PDF statement parsing is explicitly deferred out of this phase. Each import batch can optionally capture the statement's declared ending balance, feeding Phase 27's reconciliation.
 **Requirements**: D-01 through D-06 (from 25-CONTEXT.md; D-06 added retroactively during Phase 27's discuss-phase)
 **Depends on:** Phase 21
-**Plans:** not started — context gathered, ready for `/gsd-plan-phase 25`
+**Plans:** 25-01 staging model and safe file intake; 25-02 mapping, normalisation and duplicate detection; 25-03 review and idempotent confirmation; 25-04 SPA flow and verification. Implemented 2026-10-17 on branch `feat/phase-25-import-intake` (one PR for all four plans); see the four SUMMARY files for evidence and what was not verified.
 **Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 25-CONTEXT.md, section "Audit-derived requirements".
 
 ### Phase 26: Debt & subscription totals (chatbot + dashboard)

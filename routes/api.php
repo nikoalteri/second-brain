@@ -12,6 +12,8 @@ use App\Http\Controllers\Api\V1\CreditCardPaymentController;
 use App\Http\Controllers\Api\V1\CreditCardSensitiveVaultController;
 use App\Http\Controllers\Api\V1\CreditCardVaultController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\ImportBatchController;
+use App\Http\Controllers\Api\V1\ImportRowController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\LoanController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -70,6 +72,10 @@ Route::prefix('v1')->group(function () {
         Route::get('dashboard/upcoming-payments', [DashboardController::class, 'upcomingPayments']);
         Route::get('dashboard/cash-flow-forecast', [DashboardController::class, 'cashFlowForecast']);
 
+        Route::get('import-batches', [ImportBatchController::class, 'index']);
+        Route::get('import-batches/{importBatch}', [ImportBatchController::class, 'show'])->whereNumber('importBatch');
+        Route::get('import-batches/{importBatch}/rows', [ImportRowController::class, 'index'])->whereNumber('importBatch');
+
         Route::get('transactions', [TransactionController::class, 'index']);
         Route::get('transactions/{transaction}', [TransactionController::class, 'show']);
 
@@ -101,6 +107,13 @@ Route::prefix('v1')->group(function () {
         Route::put('accounts/{account}', [AccountController::class, 'update']);
         Route::patch('accounts/{account}', [AccountController::class, 'update']);
         Route::delete('accounts/{account}', [AccountController::class, 'destroy']);
+
+        Route::post('import-batches', [ImportBatchController::class, 'store']);
+        Route::post('import-batches/{importBatch}/confirm', [ImportBatchController::class, 'confirm'])->whereNumber('importBatch');
+        Route::patch('import-batches/{importBatch}/rows/{row}', [ImportRowController::class, 'update'])->whereNumber(['importBatch', 'row']);
+        Route::post('import-batches/{importBatch}/close', [ImportBatchController::class, 'close'])->whereNumber('importBatch');
+        Route::put('import-batches/{importBatch}/mapping', [ImportBatchController::class, 'mapping'])->whereNumber('importBatch');
+        Route::delete('import-batches/{importBatch}', [ImportBatchController::class, 'destroy'])->whereNumber('importBatch');
 
         Route::post('transactions', [TransactionController::class, 'store']);
         Route::put('transactions/{transaction}', [TransactionController::class, 'update']);

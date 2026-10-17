@@ -79,6 +79,12 @@ export const routes = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/transactions/import',
+        name: 'transactions.import',
+        component: () => import('@/views/transactions/StatementImportView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/transactions/new',
         name: 'transactions.create',
         component: () => import('@/views/transactions/TransactionFormView.vue'),

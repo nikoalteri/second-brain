@@ -3,7 +3,11 @@
 use App\Enums\CreditCardCycleStatus;
 use App\Enums\CreditCardPaymentStatus;
 use App\Enums\CreditCardStatus;
+use App\Enums\ImportBatchStatus;
+use App\Enums\ImportRowStatus;
 use App\Models\CreditCard;
+use App\Models\ImportBatch;
+use App\Services\Import\ImportRowPromotionService;
 use App\Models\Loan;
 use App\Services\CreditCardCycleService;
 use App\Services\LoanScheduleService;
@@ -14,6 +18,7 @@ use Illuminate\Console\Command;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 
@@ -184,9 +189,66 @@ Artisan::command('finance:notifications-digest {--date=}', function () {
     }
 })->purpose('Evaluate budget, credit card, loan and subscription conditions and publish in-app notifications');
 
+Artisan::command('imports:purge-abandoned {--days=}', function () {
+    $days = (int) ($this->option('days') ?: config('import.abandoned_after_days'));
+    $cutoff = now()->subDays($days);
+
+    $purged = 0;
+    $failed = 0;
+
+    // Draft batches nobody confirmed hold statement data for no reason. A batch that posted even one
+    // row is the provenance of ledger movements and is never touched, nor is a completed one. Each
+    // batch is locked and re-checked, so a confirmation racing the purge wins. One failing batch must
+    // not stop the rest of the run.
+    ImportBatch::query()
+        ->whereIn('status', [ImportBatchStatus::UPLOADED, ImportBatchStatus::MAPPED])
+        ->where('created_at', '<', $cutoff)
+        ->whereDoesntHave('rows', fn ($rows) => $rows->where('status', ImportRowStatus::CONFIRMED->value))
+        ->each(function (ImportBatch $batch) use (&$purged, &$failed) {
+            try {
+                DB::transaction(function () use ($batch, &$purged) {
+                    $locked = ImportBatch::query()->whereKey($batch->id)->lockForUpdate()->first();
+
+                    if ($locked && ! $locked->rows()->where('status', ImportRowStatus::CONFIRMED->value)->exists()) {
+                        $locked->delete();
+                        $purged++;
+                    }
+                });
+            } catch (\Throwable $e) {
+                $failed++;
+                Log::error("imports:purge-abandoned failed for batch {$batch->id}", ['exception' => $e]);
+            }
+        });
+
+    // A batch that posted rows is kept, but its leftover drafts are statement data nobody will review:
+    // close it (drafts discarded, batch completed) once it is as old as an abandoned one.
+    $closed = 0;
+
+    ImportBatch::query()
+        ->where('status', ImportBatchStatus::MAPPED)
+        ->where('created_at', '<', $cutoff)
+        ->whereHas('rows', fn ($rows) => $rows->where('status', ImportRowStatus::CONFIRMED->value))
+        ->each(function (ImportBatch $batch) use (&$closed, &$failed) {
+            try {
+                app(ImportRowPromotionService::class)->close($batch);
+                $closed++;
+            } catch (\Throwable $e) {
+                $failed++;
+                Log::error("imports:purge-abandoned failed to close batch {$batch->id}", ['exception' => $e]);
+            }
+        });
+
+    $this->info("Abandoned import batches purged: {$purged}, partially posted batches closed: {$closed}, failed: {$failed}.");
+
+    if ($failed > 0) {
+        return Command::FAILURE;
+    }
+})->purpose('Delete import batches left unconfirmed for longer than the retention period');
+
 Schedule::command('loans:sync-installments')->dailyAt('01:50')->withoutOverlapping();
 Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55')->withoutOverlapping();
 Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00')->withoutOverlapping();
 Schedule::command('finance:notifications-digest')->dailyAt('02:05')->withoutOverlapping();
+Schedule::command('imports:purge-abandoned')->dailyAt('02:10')->withoutOverlapping();
 // Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
 Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');
