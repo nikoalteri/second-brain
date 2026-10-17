@@ -1,7 +1,7 @@
 # Fluxa — Roadmap
 
 **Project:** Fluxa Personal Finance Tracker  
-**Last Updated:** 2026-09-24
+**Last Updated:** 2026-10-17
 
 ---
 
@@ -110,7 +110,7 @@ Plans:
 - [x] 16-01-credit-card-security-proof-PLAN.md — Make the credit-card proof pack trustworthy and prove the highest-risk REST access/scoping boundary first
 - [x] 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md — Add one credible issue-to-mark-paid proof and update the confidence boundary from actual proof results
 
-Phase 16 is complete. Later phases (17-21, delivered, and 22-28, scoped but not planned) are listed further down; the confidence boundary above still reflects Phase 13, and Phase 16 promoted only the credit-card REST slice it proved.
+Phase 16 is complete. Later phases (17-21 delivered, Phase 22 implemented in open PRs awaiting merge, and Phases 23-28 scoped but not planned) are listed further down; the confidence boundary above still reflects Phase 13, and Phase 16 promoted only the credit-card REST slice it proved.
 
 ---
 
@@ -271,7 +271,7 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 **Goal:** The `Notification` model and table exist but nothing in the codebase writes to them (`grep -rn "Notification::create" app/` returns zero matches). This phase wires real triggers — budget-threshold alerts (`BudgetAlertService` already computes `alert_status` but never surfaces it proactively), credit card due-date/limit warnings, loan installment due dates, subscription renewal reminders — into actual `Notification` rows, delivered in-app only via a daily digest command.
 **Requirements**: D-01 through D-09 (from 22-CONTEXT.md)
 **Depends on:** Phase 21
-**Plans:** not started — context gathered, ready for `/gsd-plan-phase 22`
+**Plans:** 3 of 3 implemented (2026-10-17), not merged — `22-01` (durable condition lifecycle, PR #63), `22-02` (triggers and daily digest, PR #64), `22-03` (REST, SPA and Filament, PR #65) plus review fixes (PR #66), stacked in that order as drafts. Backend suite (588 tests) and SPA build pass; the bell was checked in a browser on desktop and mobile. Still open before merge: a two-connection MySQL concurrency test (SQLite ignores row locks) and a visual check of the read-only Filament list at `/hub/notifications` (covered by automated tests only).
 **Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 22-CONTEXT.md, section "Audit-derived requirements".
 
 ### Phase 23: Subscription price-hike detection
@@ -326,8 +326,15 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 
 During this brainstorm the user asked for a simpler, non-monthly per-category annual summary alongside the existing detailed pivot. Investigation found this **already ships** today: `GET /api/v1/reports/finance/export?year=&format=csv|xlsx|pdf` (`FinanceReportController`/`FinanceReportSnapshotService`/`FinanceReportExportService`) already includes a "Distribution" section — a per-category yearly total with no month breakdown — in every export format (its own XLSX sheet, its own PDF/CSV section), alongside the existing "Category Pivot" (monthly detail) and "Cashflow Summary" sections. The SPA already has an export trigger (`resources/js/views/reports/FinanceReportView.vue`). No new phase needed; not added to the roadmap.
 
+### Phase 29: MCP integration (read-only)
+
+**Goal:** Expose Fluxa's already-validated finance data over MCP in read-only mode — no mutations. The direction is deliberately left open until discuss-phase: an MCP server that lets external AI clients (e.g. Claude) query the user's own data, and/or an MCP client inside Fluxa that consumes external tools. Reuses existing services (`UpcomingPaymentsService`, `IntentRouter`) rather than new aggregation logic.
+**Requirements**: TBD (to be defined in discuss-phase)
+**Depends on:** Phase 17 (chatbot/IntentRouter), Phase 26 (debt and subscription totals); last planned phase, placed after Phase 28
+**Plans:** not started — needs `/gsd-discuss-phase 29` first (server vs client direction, auth and per-user scoping)
+
 ---
 
 ## Direct Next Command
 
-Phases 22-28 are scoped (2026-09-17) from a product-enhancement brainstorm. All have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md) and, since 2026-09-18, an "Audit-derived requirements" section in each CONTEXT.md; none has been researched, planned, or executed. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it), then 25 (Phases 27 and 28 both depend on its staging data model), then 24/26 together, then 27/28 — after settling the currency decision above. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).
+Phase 22 is implemented in stacked draft PRs #63-#66 (merge in that order) after the MySQL concurrency test and the `/hub/notifications` visual check. Phase 23 depends on Phase 22; after it, plan Phase 25 (Phases 27 and 28 depend on its staging data model), then 24/26 together, then 27/28. Settle the currency decision above before planning Phases 24-27. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).
