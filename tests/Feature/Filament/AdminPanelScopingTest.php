@@ -50,7 +50,9 @@ class AdminPanelScopingTest extends TestCase
             'user_id' => $userB->id, 'type' => 'in_app', 'title' => 'T foreign', 'message' => 'M foreign',
         ]);
 
-        $this->actingAs($this->withPanelMfa($userA))->get("/hub/notifications/{$ownNotification->id}/edit")->assertOk();
+        // Notifications are generated alerts: the panel has no edit page, only an owner-scoped list.
+        $this->actingAs($this->withPanelMfa($userA))->get('/hub/notifications')
+            ->assertOk()->assertSee($ownNotification->title)->assertDontSee($foreignNotification->title);
         $this->actingAs($this->withPanelMfa($userA))->get("/hub/notifications/{$foreignNotification->id}/edit")->assertNotFound();
     }
 

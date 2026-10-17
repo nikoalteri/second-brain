@@ -28,6 +28,8 @@ class Transaction extends Model
         'amount',
         'date',
         'subscription_renewal_date',
+        'renewal_frequency',
+        'renewal_currency',
         'competence_month',
         'description',
         'notes',

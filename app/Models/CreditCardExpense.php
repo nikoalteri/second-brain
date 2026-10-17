@@ -17,6 +17,8 @@ class CreditCardExpense extends Model
         'spent_at',
         'posted_at',
         'subscription_renewal_date',
+        'renewal_frequency',
+        'renewal_currency',
         'amount',
         'description',
         'notes',
