@@ -346,6 +346,34 @@ class ForecastObligationCollectorTest extends TestCase
         $this->assertArrayNotHasKey("loan:{$payment->id}:2026-05-01", $this->collect());
     }
 
+    public function test_recently_paid_loan_with_old_due_date_and_no_posting_is_flagged(): void
+    {
+        $payment = $this->loanPayment('2026-05-01', 'paid');
+        DB::table('loan_payments')->where('id', $payment->id)->update(['actual_date' => '2026-10-16']);
+        DB::table('transactions')->where('loan_payment_id', $payment->id)->delete();
+
+        $item = $this->collect()["loan:{$payment->id}:2026-05-01"];
+        $this->assertSame(ForecastObligation::REASON_PAID_WITHOUT_POSTING, $item->reason);
+        $this->assertSame(0, $item->cashOutflowMinor);
+    }
+
+    public function test_recently_paid_card_payment_with_old_due_date_and_no_posting_is_flagged(): void
+    {
+        $card = CreditCard::factory()->create(['user_id' => $this->user->id, 'account_id' => $this->account->id]);
+        $payment = CreditCardPayment::create([
+            'credit_card_id' => $card->id, 'due_date' => '2026-05-01',
+            'installment_amount' => 100, 'interest_amount' => 0, 'principal_amount' => 100,
+            'stamp_duty_amount' => 0, 'total_amount' => 100, 'status' => 'pending',
+        ]);
+        DB::table('credit_card_payments')->where('id', $payment->id)->update([
+            'status' => 'paid', 'actual_date' => '2026-10-16',
+        ]);
+
+        $item = $this->collect()["credit-card:{$payment->id}:2026-05-01"];
+        $this->assertSame(ForecastObligation::REASON_PAID_WITHOUT_POSTING, $item->reason);
+        $this->assertSame(0, $item->cashOutflowMinor);
+    }
+
     public function test_renewal_posted_on_card_path_after_source_switch_is_not_a_cash_debit(): void
     {
         $card = CreditCard::factory()->create(['user_id' => $this->user->id, 'account_id' => $this->account->id]);

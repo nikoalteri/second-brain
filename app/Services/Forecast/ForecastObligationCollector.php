@@ -91,13 +91,18 @@ class ForecastObligationCollector
             return [];
         }
 
+        $paidSince = $today->copy()->subDays(self::PAID_LOOKBACK_DAYS)->toDateString();
         $payments = LoanPayment::query()
             ->whereIn('loan_id', $loans->keys())
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $until->toDateString())
             ->where(fn ($query) => $query
                 ->where('status', '!=', 'paid')
-                ->orWhereDate('due_date', '>=', $today->copy()->subDays(self::PAID_LOOKBACK_DAYS)->toDateString()))
+                ->orWhere(fn ($paidQuery) => $paidQuery
+                    ->whereDate('actual_date', '>=', $paidSince)
+                    ->orWhere(fn ($noActualDate) => $noActualDate
+                        ->whereNull('actual_date')
+                        ->whereDate('due_date', '>=', $paidSince))))
             ->get();
 
         $postings = $this->postingsBy('loan_payment_id', $payments->pluck('id'));
@@ -139,13 +144,18 @@ class ForecastObligationCollector
             return [];
         }
 
+        $paidSince = $today->copy()->subDays(self::PAID_LOOKBACK_DAYS)->toDateString();
         $payments = CreditCardPayment::query()
             ->whereIn('credit_card_id', $cards->filter(fn (CreditCard $c) => ! $c->trashed())->keys())
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $until->toDateString())
             ->where(fn ($query) => $query
                 ->where('status', '!=', 'paid')
-                ->orWhereDate('due_date', '>=', $today->copy()->subDays(self::PAID_LOOKBACK_DAYS)->toDateString()))
+                ->orWhere(fn ($paidQuery) => $paidQuery
+                    ->whereDate('actual_date', '>=', $paidSince)
+                    ->orWhere(fn ($noActualDate) => $noActualDate
+                        ->whereNull('actual_date')
+                        ->whereDate('due_date', '>=', $paidSince))))
             ->get();
 
         $postings = $this->postingsBy('credit_card_payment_id', $payments->pluck('id'));

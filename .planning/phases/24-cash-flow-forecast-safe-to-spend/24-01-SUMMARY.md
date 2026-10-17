@@ -20,4 +20,4 @@
 - A pending item with no posting is assumed unpaid; manual payments not linked to the schedule cannot be seen.
 - Card charges are not matched to a specific cycle payment, so projected card renewals are always disclosed (`card_charge_projected`).
 - Every missed subscription occurrence is listed as overdue (bounded by a 1000-step projection cap).
-- Rows marked `paid` in the last 90 days with no live posting raise `paid_without_posting` (cash 0, coverage gap) for both loan installments and card payments; older paid history is ignored.
+- Rows marked `paid` with no live posting raise `paid_without_posting` (cash 0, coverage gap) for both loan installments and card payments when `actual_date` is within the last 90 days, or when `actual_date` is missing and the due date is within that window. Older paid history is ignored.
