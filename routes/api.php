@@ -107,6 +107,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('accounts/{account}', [AccountController::class, 'destroy']);
 
         Route::post('import-batches', [ImportBatchController::class, 'store']);
+        Route::put('import-batches/{importBatch}/mapping', [ImportBatchController::class, 'mapping'])->whereNumber('importBatch');
         Route::delete('import-batches/{importBatch}', [ImportBatchController::class, 'destroy'])->whereNumber('importBatch');
 
         Route::post('transactions', [TransactionController::class, 'store']);

@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ImportBatchStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\MapImportBatchRequest;
 use App\Http\Requests\Api\StoreImportBatchRequest;
 use App\Http\Resources\Api\ImportBatchResource;
 use App\Models\ImportBatch;
+use App\Models\ImportMapping;
+use App\Services\Import\ImportMappingService;
 use App\Services\Import\ImportBatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,7 +23,10 @@ use Illuminate\Http\Response;
  */
 class ImportBatchController extends Controller
 {
-    public function __construct(private readonly ImportBatchService $service) {}
+    public function __construct(
+        private readonly ImportBatchService $service,
+        private readonly ImportMappingService $mappings,
+    ) {}
 
     /** @group Statement imports @authenticated */
     public function index(Request $request): AnonymousResourceCollection
@@ -38,13 +44,28 @@ class ImportBatchController extends Controller
     {
         $batch = $this->service->stage($request->user(), $request->file('file'), $request->validated());
 
-        return (new ImportBatchResource($this->withPreview($batch)))->response()->setStatusCode(201);
+        return $this->respond($batch)->response()->setStatusCode(201);
     }
 
     /** @group Statement imports @authenticated */
     public function show(Request $request, int $importBatch): ImportBatchResource
     {
-        return new ImportBatchResource($this->withPreview($this->owned($request, $importBatch)));
+        return $this->respond($this->owned($request, $importBatch));
+    }
+
+    /**
+     * Apply (or re-apply) a column mapping: rows are normalised and duplicates classified. The
+     * mapping is remembered for the target's next import.
+     *
+     * @group Statement imports @authenticated
+     */
+    public function mapping(MapImportBatchRequest $request, int $importBatch): ImportBatchResource
+    {
+        $batch = $this->owned($request, $importBatch);
+
+        $this->mappings->apply($batch, $request->mapping());
+
+        return $this->respond($batch);
     }
 
     /** @group Statement imports @authenticated */
@@ -64,6 +85,20 @@ class ImportBatchController extends Controller
     private function owned(Request $request, int $id): ImportBatch
     {
         return ImportBatch::query()->where('user_id', $request->user()->id)->findOrFail($id);
+    }
+
+    private function respond(ImportBatch $batch): ImportBatchResource
+    {
+        $saved = ImportMapping::query()
+            ->where('user_id', $batch->user_id)
+            ->where('account_id', $batch->account_id)
+            ->where('credit_card_id', $batch->credit_card_id)
+            ->value('mapping');
+
+        return (new ImportBatchResource($this->withPreview($batch)))->additional([
+            'summary' => $this->mappings->summary($batch),
+            'saved_mapping' => $saved,
+        ]);
     }
 
     private function withPreview(ImportBatch $batch): ImportBatch

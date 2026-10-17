@@ -25,11 +25,17 @@ class ImportBatchResource extends JsonResource
             'statement_ending_balance' => $this->statement_ending_balance,
             'period_start' => $this->period_start?->toDateString(),
             'period_end' => $this->period_end?->toDateString(),
+            'mapping' => $this->mapping,
+            'mapping_version' => $this->mapping_version,
             'created_at' => $this->created_at->toISOString(),
             'preview' => $this->whenLoaded('rows', fn () => $this->rows->map(fn ($row) => [
                 'row_number' => $row->row_number,
                 'cells' => $row->raw_cells,
                 'status' => $row->status->value,
+                'normalized' => $row->normalized,
+                'error' => $row->error,
+                'duplicate_class' => $row->duplicate_class,
+                'flags' => $row->flags,
             ])->values()),
         ];
     }

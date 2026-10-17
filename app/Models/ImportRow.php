@@ -8,11 +8,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ImportRow extends Model
 {
-    protected $fillable = ['import_batch_id', 'row_number', 'raw_cells', 'status'];
+    protected $fillable = [
+        'import_batch_id', 'row_number', 'raw_cells', 'status', 'normalized', 'error', 'fingerprint', 'duplicate_class', 'flags',
+    ];
 
     protected $casts = [
         'status' => ImportRowStatus::class,
         'raw_cells' => 'encrypted:array',
+        'normalized' => 'encrypted:array',
+        'flags' => 'array',
     ];
 
     public function batch(): BelongsTo
