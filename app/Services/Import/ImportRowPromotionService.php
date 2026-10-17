@@ -42,15 +42,11 @@ class ImportRowPromotionService
      * duplicate is held back once, so the owner decides with the new information.
      *
      * @param list<int>|null $rowIds
+     * @param array<int, string> $reviewedTokens row id => the review token the client held for it (explicit choices)
      * @return list<array{row_id: int, outcome: string, reason: ?string}>
      */
-    public function confirm(ImportBatch $batch, ?array $rowIds): array
+    public function confirm(ImportBatch $batch, ?array $rowIds, array $reviewedTokens = []): array
     {
-        // What the owner could have reviewed when asking: the classification stored at the START of this
-        // request, before the pre-pass below refreshes it. An explicit choice is bound to exactly this.
-        $reviewed = $batch->rows()->where('status', ImportRowStatus::DRAFT->value)->get()
-            ->mapWithKeys(fn (ImportRow $row) => [$row->id => self::signature($row)])->all();
-
         $this->detector->detect($batch, reclassify: true);
 
         $current = $batch->rows()->where('status', ImportRowStatus::DRAFT->value)->orderBy('row_number')->get()->keyBy('id');
@@ -62,10 +58,20 @@ class ImportRowPromotionService
         $outcomes = [];
 
         foreach ($ids as $id) {
-            // "All ready" never authorises a duplicate; an explicit list authorises exactly what was reviewed.
-            $outcomes[] = $rowIds === null
-                ? $this->promote($batch, $id, allowFlagged: false)
-                : $this->promote($batch, $id, allowFlagged: true, reviewedSignature: $reviewed[$id] ?? null);
+            if ($rowIds === null) {
+                // "All ready" never authorises a duplicate.
+                $outcomes[] = $this->promote($batch, $id, allowFlagged: false);
+
+                continue;
+            }
+
+            // An explicit choice authorises what the client actually SHOWED the owner: the token it holds
+            // for the row. The server's own copy of the classification is not evidence of what was seen.
+            $token = $reviewedTokens[$id] ?? null;
+
+            $outcomes[] = $token === null
+                ? $this->result($id, 'skipped', 'This row was chosen without the review it was shown in; reload the review and choose it again.')
+                : $this->promote($batch, $id, allowFlagged: true, reviewedSignature: $token);
         }
 
         $this->completeIfDone($batch);
@@ -74,15 +80,24 @@ class ImportRowPromotionService
     }
 
     /**
-     * Identity of what a row was classified as: class, review flags and the matched ledger entry. A
-     * consent to post a flagged row is only valid for this exact signature.
+     * Version of what a row IS and was classified as: its data (date, amount, description, category), its
+     * duplicate class, review flags and matched ledger entry. It is handed to the client with the row and
+     * must come back with an explicit choice: a consent is only valid for exactly this version.
      */
     public static function signature(ImportRow $row): string
     {
         $codes = $row->flags['codes'] ?? [];
         sort($codes);
+        $n = $row->normalized;
 
-        return md5(json_encode([$row->duplicate_class, $codes, $row->flags['match'] ?? null]));
+        return hash_hmac('sha256', json_encode([
+            $row->status?->value,
+            $n === null ? null : [$n['date'] ?? null, $n['amount_minor'] ?? null, $n['description'] ?? null, $n['category_id'] ?? null],
+            $row->error,
+            $row->duplicate_class,
+            $codes,
+            $row->flags['match'] ?? null,
+        ]), (string) config('app.key'));
     }
 
     /** A row "needs a decision" when it is a duplicate of the ledger or carries a review flag. */

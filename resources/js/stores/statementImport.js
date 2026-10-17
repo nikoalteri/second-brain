@@ -183,7 +183,12 @@ export const useStatementImportStore = defineStore('statementImport', () => {
     }
 
     async function confirm({ rowIds = null, allReady = false }) {
-        const json = rowIds ? { row_ids: rowIds } : { all_ready: allReady };
+        // An explicit choice carries, per row, the review token the server gave with that row: it binds the
+        // choice to what the owner was shown, so a row that changed meanwhile is held back instead of posted.
+        const reviewed = rowIds
+            ? Object.fromEntries(rowIds.map((id) => [id, rows.value.find((row) => row.id === id)?.review_token]).filter(([, token]) => token))
+            : null;
+        const json = rowIds ? { row_ids: rowIds, reviewed } : { all_ready: allReady };
         const result = await request(`/import-batches/${batch.value.id}/confirm`, { method: 'POST', json });
 
         if (result.ok) {

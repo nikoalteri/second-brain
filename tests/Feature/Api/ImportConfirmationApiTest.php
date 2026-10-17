@@ -68,8 +68,19 @@ class ImportConfirmationApiTest extends TestCase
         return ImportRow::where('import_batch_id', $batch)->where('row_number', $number)->firstOrFail();
     }
 
+    /** The token a client holds for a row after loading the list: the row as it is stored right now. */
+    private function token(int $rowId): string
+    {
+        return ImportRowPromotionService::signature(ImportRow::findOrFail($rowId));
+    }
+
+    /** An explicit choice without tokens behaves like a client that has just loaded the review. */
     private function confirm(int $id, array $body)
     {
+        if (isset($body['row_ids']) && ! isset($body['reviewed'])) {
+            $body['reviewed'] = collect($body['row_ids'])->mapWithKeys(fn ($rowId) => [$rowId => ImportRow::where('id', $rowId)->exists() ? $this->token($rowId) : str_repeat('0', 64)])->all();
+        }
+
         return $this->postJson(self::URL . "/{$id}/confirm", $body);
     }
 
@@ -520,14 +531,17 @@ class ImportConfirmationApiTest extends TestCase
         $rowId = $this->row($id, 2)->id;
 
         $batch = ImportBatch::findOrFail($id);
+        $shown = $this->token($rowId); // what the client showed: clean
         $this->raceOnce($id, $rowId, $this->account->id);
-        $outcomes = app(ImportRowPromotionService::class)->confirm($batch, [$rowId]);
+        $outcomes = app(ImportRowPromotionService::class)->confirm($batch, [$rowId], [$rowId => $shown]);
 
         $this->assertSame(['skipped'], array_column($outcomes, 'outcome'));
         $this->assertSame(1, Transaction::withoutGlobalScopes()->count());
 
         // Seen flagged, chosen again: consent for exactly that classification.
-        $this->assertSame(['confirmed'], array_column(app(ImportRowPromotionService::class)->confirm(ImportBatch::findOrFail($id), [$rowId]), 'outcome'));
+        $reshown = $this->token($rowId);
+        $this->assertNotSame($shown, $reshown);
+        $this->assertSame(['confirmed'], array_column(app(ImportRowPromotionService::class)->confirm(ImportBatch::findOrFail($id), [$rowId], [$rowId => $reshown]), 'outcome'));
         $this->assertSame(2, Transaction::withoutGlobalScopes()->count());
     }
 
@@ -541,5 +555,80 @@ class ImportConfirmationApiTest extends TestCase
 
         $this->assertSame('skipped', $result['outcome']);
         $this->assertSame(0, Transaction::withoutGlobalScopes()->count());
+    }
+
+    // ─── the choice is bound to what the client was shown ────────────────────────────────────
+
+    public function test_a_stale_screen_cannot_authorise_a_duplicate_created_after_it_was_shown(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $rowId = $this->row($id, 2)->id;
+
+        // The client loads the review: the row is clean and carries its token.
+        $shown = collect($this->getJson(self::URL . "/{$id}/rows")->assertOk()->json('data'))->firstWhere('id', $rowId);
+        $this->assertSame('none', $shown['duplicate_class']);
+
+        // Another request records the identical movement and reclassifies the draft; the client does not reload.
+        $type = TransactionType::query()->firstOrCreate(['name' => 'Expense'], ['is_income' => false]);
+        Transaction::create(['user_id' => $this->user->id, 'account_id' => $this->account->id, 'transaction_type_id' => $type->id, 'amount' => -5.00, 'date' => '2026-10-01', 'description' => 'Coffee']);
+        app(\App\Services\Import\ImportDuplicateDetector::class)->detect(ImportBatch::findOrFail($id), reclassify: true);
+        $this->assertSame('exact', $this->row($id, 2)->duplicate_class);
+
+        // The ordinary selective confirmation of the stale screen: held back, nothing posted.
+        $response = $this->postJson(self::URL . "/{$id}/confirm", ['row_ids' => [$rowId], 'reviewed' => [$rowId => $shown['review_token']]])->assertOk();
+
+        $response->assertJsonPath('data.skipped', 1);
+        $this->assertStringContainsString('review it again', (string) $response->json('data.outcomes.0.reason'));
+        $this->assertSame(1, Transaction::withoutGlobalScopes()->count());
+
+        // The owner reloads, sees the flagged row and its match, and chooses it: that duplicate is authorised.
+        $reloaded = collect($this->getJson(self::URL . "/{$id}/rows")->json('data'))->firstWhere('id', $rowId);
+        $this->assertSame('exact', $reloaded['duplicate_class']);
+        $this->postJson(self::URL . "/{$id}/confirm", ['row_ids' => [$rowId], 'reviewed' => [$rowId => $reloaded['review_token']]])
+            ->assertOk()->assertJsonPath('data.confirmed', 1);
+        $this->assertSame(2, Transaction::withoutGlobalScopes()->count());
+    }
+
+    public function test_an_edit_after_the_screen_was_loaded_invalidates_its_token(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $rowId = $this->row($id, 2)->id;
+        $shown = collect($this->getJson(self::URL . "/{$id}/rows")->json('data'))->firstWhere('id', $rowId);
+
+        // Another tab changes the amount before this one confirms.
+        $this->patchJson(self::URL . "/{$id}/rows/{$rowId}", ['amount' => '-500.00'])->assertOk();
+
+        $this->postJson(self::URL . "/{$id}/confirm", ['row_ids' => [$rowId], 'reviewed' => [$rowId => $shown['review_token']]])
+            ->assertOk()->assertJsonPath('data.skipped', 1);
+        $this->assertSame(0, Transaction::withoutGlobalScopes()->count());
+    }
+
+    public function test_an_explicit_choice_needs_the_review_tokens(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $rowId = $this->row($id, 2)->id;
+
+        $this->postJson(self::URL . "/{$id}/confirm", ['row_ids' => [$rowId]])->assertUnprocessable()->assertJsonValidationErrors('reviewed');
+        $this->postJson(self::URL . "/{$id}/confirm", ['row_ids' => [$rowId], 'reviewed' => [$rowId => 'short']])->assertUnprocessable();
+
+        // A token for another row (or none for this one) never authorises it.
+        $response = $this->postJson(self::URL . "/{$id}/confirm", ['row_ids' => [$rowId], 'reviewed' => [999999 => str_repeat('a', 64)]])->assertOk();
+        $response->assertJsonPath('data.skipped', 1);
+        $this->assertStringContainsString('reload the review', (string) $response->json('data.outcomes.0.reason'));
+        $this->assertSame(0, Transaction::withoutGlobalScopes()->count());
+    }
+
+    public function test_the_row_list_and_the_preview_hand_out_a_review_token_that_changes_with_the_row(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $rowId = $this->row($id, 2)->id;
+
+        $first = collect($this->getJson(self::URL . "/{$id}/rows")->json('data'))->firstWhere('id', $rowId)['review_token'];
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $first);
+        $this->assertSame($first, collect($this->getJson(self::URL . "/{$id}/rows")->json('data'))->firstWhere('id', $rowId)['review_token'], 'stable while nothing changes');
+        $this->assertNotEmpty($this->getJson(self::URL . "/{$id}")->json('data.preview.1.review_token'));
+
+        $this->patchJson(self::URL . "/{$id}/rows/{$rowId}", ['description' => 'Latte'])->assertOk();
+        $this->assertNotSame($first, collect($this->getJson(self::URL . "/{$id}/rows")->json('data'))->firstWhere('id', $rowId)['review_token']);
     }
 }

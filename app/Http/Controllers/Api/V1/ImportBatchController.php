@@ -89,7 +89,9 @@ class ImportBatchController extends Controller
             ? null
             : array_map('intval', $request->validated('row_ids'));
 
-        $outcomes = $this->promotion->confirm($batch, $rowIds);
+        $tokens = collect($request->validated('reviewed') ?? [])->mapWithKeys(fn ($token, $id) => [(int) $id => (string) $token])->all();
+
+        $outcomes = $this->promotion->confirm($batch, $rowIds, $tokens);
 
         $batch->refresh();
 

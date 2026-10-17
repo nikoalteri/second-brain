@@ -181,4 +181,34 @@ describe('statement import store', () => {
         expect(globalThis.fetch.mock.calls[0][1].method).toBe('POST');
         expect(store.step).toBe('done');
     });
+
+    it('sends, with an explicit choice, the review token the server gave for each row', async () => {
+        store.batch = batch('mapped');
+        store.rows = [
+            { id: 1, status: 'draft', review_token: 'a'.repeat(64) },
+            { id: 2, status: 'draft', review_token: 'b'.repeat(64) },
+        ];
+        globalThis.fetch = vi.fn()
+            .mockResolvedValueOnce(json({ data: { status: 'mapped', outcomes: [] }, summary: {} }))
+            .mockResolvedValueOnce(json({ data: [], meta: {} }));
+
+        await store.confirm({ rowIds: [2] });
+
+        expect(JSON.parse(globalThis.fetch.mock.calls[0][1].body)).toEqual({
+            row_ids: [2],
+            reviewed: { 2: 'b'.repeat(64) },
+        });
+    });
+
+    it('does not send tokens for "confirm all ready", which never authorises a duplicate', async () => {
+        store.batch = batch('mapped');
+        store.rows = [{ id: 1, status: 'draft', review_token: 'a'.repeat(64) }];
+        globalThis.fetch = vi.fn()
+            .mockResolvedValueOnce(json({ data: { status: 'mapped', outcomes: [] }, summary: {} }))
+            .mockResolvedValueOnce(json({ data: [], meta: {} }));
+
+        await store.confirm({ allReady: true });
+
+        expect(JSON.parse(globalThis.fetch.mock.calls[0][1].body)).toEqual({ all_ready: true });
+    });
 });

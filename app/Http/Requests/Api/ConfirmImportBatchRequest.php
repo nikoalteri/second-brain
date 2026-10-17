@@ -22,6 +22,9 @@ class ConfirmImportBatchRequest extends FormRequest
         return [
             'row_ids' => ['required_without:all_ready', 'array', 'min:1', 'max:500'],
             'row_ids.*' => ['integer', 'distinct'],
+            // row id => the `review_token` the client received with that row: what the owner actually saw.
+            'reviewed' => ['required_with:row_ids', 'array', 'max:500'],
+            'reviewed.*' => ['string', 'size:64'],
             'all_ready' => ['required_without:row_ids', 'boolean'],
         ];
     }

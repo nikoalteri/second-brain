@@ -36,6 +36,7 @@ class ImportBatchResource extends JsonResource
                 'error' => $row->error,
                 'duplicate_class' => $row->duplicate_class,
                 'flags' => $row->flags,
+                'review_token' => \App\Services\Import\ImportRowPromotionService::signature($row),
             ])->values()),
         ];
     }

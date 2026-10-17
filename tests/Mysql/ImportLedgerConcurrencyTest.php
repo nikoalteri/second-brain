@@ -300,7 +300,8 @@ class ImportLedgerConcurrencyTest extends MysqlConcurrencyTestCase
         $rowId = $this->row($batch, 2)->id;
 
         // The owner picked this row while it was clean; the same race then flags it before the lock.
-        $a = $this->spec(['action' => 'import_confirm', 'user_id' => $user->id, 'batch_id' => $batch->id, 'row_ids' => [$rowId], 'pause_on' => 'batch_locked']);
+        $shown = ImportRowPromotionService::signature($this->row($batch, 2)); // what the owner's screen holds: clean
+        $a = $this->spec(['action' => 'import_confirm', 'user_id' => $user->id, 'batch_id' => $batch->id, 'row_ids' => [$rowId], 'reviewed' => [$rowId => $shown], 'pause_on' => 'batch_locked']);
         $processA = $this->start($a);
         $this->awaitFrozen($a, $processA);
 
@@ -316,7 +317,7 @@ class ImportLedgerConcurrencyTest extends MysqlConcurrencyTestCase
         $this->assertSame(1, $this->ledgerCount($account));
 
         // The owner now sees it flagged and chooses it again: that is consent, bound to this classification.
-        $this->assertSame(['confirmed'], array_column(app(ImportRowPromotionService::class)->confirm($batch->fresh(), [$rowId]), 'outcome'));
+        $this->assertSame(['confirmed'], array_column(app(ImportRowPromotionService::class)->confirm($batch->fresh(), [$rowId], [$rowId => ImportRowPromotionService::signature($this->row($batch, 2))]), 'outcome'));
         $this->assertSame(2, $this->ledgerCount($account));
     }
 }

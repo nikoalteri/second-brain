@@ -94,7 +94,7 @@ try {
                 });
             }
 
-            return app(ImportRowPromotionService::class)->confirm($batch, $spec['row_ids'] ?? null);
+            return app(ImportRowPromotionService::class)->confirm($batch, $spec['row_ids'] ?? null, array_map('strval', $spec['reviewed'] ?? []));
         })(),
         'loan_posting' => (function () use ($spec) {
             app(LoanPaymentPostingService::class)->syncPosting(LoanPayment::findOrFail($spec['loan_payment_id']));
