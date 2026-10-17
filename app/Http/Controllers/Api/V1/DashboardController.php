@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\CashFlowForecastService;
 use App\Services\UpcomingPaymentsService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -12,7 +13,10 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function __construct(private readonly UpcomingPaymentsService $upcomingPaymentsService) {}
+    public function __construct(
+        private readonly UpcomingPaymentsService $upcomingPaymentsService,
+        private readonly CashFlowForecastService $cashFlowForecastService,
+    ) {}
 
     public function charts(Request $request): JsonResponse
     {
@@ -52,6 +56,13 @@ class DashboardController extends Controller
                 $request->user(),
                 (int) ($validated['days'] ?? 3),
             ),
+        ]);
+    }
+
+    public function cashFlowForecast(Request $request): JsonResponse
+    {
+        return response()->json([
+            'data' => $this->cashFlowForecastService->forUser($request->user()),
         ]);
     }
 
