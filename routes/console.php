@@ -3,7 +3,9 @@
 use App\Enums\CreditCardCycleStatus;
 use App\Enums\CreditCardPaymentStatus;
 use App\Enums\CreditCardStatus;
+use App\Enums\ImportBatchStatus;
 use App\Models\CreditCard;
+use App\Models\ImportBatch;
 use App\Models\Loan;
 use App\Services\CreditCardCycleService;
 use App\Services\LoanScheduleService;
@@ -184,9 +186,39 @@ Artisan::command('finance:notifications-digest {--date=}', function () {
     }
 })->purpose('Evaluate budget, credit card, loan and subscription conditions and publish in-app notifications');
 
+Artisan::command('imports:purge-abandoned {--days=}', function () {
+    $days = (int) ($this->option('days') ?: config('import.abandoned_after_days'));
+    $cutoff = now()->subDays($days);
+
+    $purged = 0;
+    $failed = 0;
+
+    // Draft batches nobody confirmed hold statement data for no reason. A completed batch is ledger
+    // history and is never touched. One batch failing must not stop the rest of the run.
+    ImportBatch::query()
+        ->whereIn('status', [ImportBatchStatus::UPLOADED, ImportBatchStatus::MAPPED])
+        ->where('created_at', '<', $cutoff)
+        ->each(function (ImportBatch $batch) use (&$purged, &$failed) {
+            try {
+                $batch->delete();
+                $purged++;
+            } catch (\Throwable $e) {
+                $failed++;
+                Log::error("imports:purge-abandoned failed for batch {$batch->id}", ['exception' => $e]);
+            }
+        });
+
+    $this->info("Abandoned import batches purged: {$purged}, failed: {$failed}.");
+
+    if ($failed > 0) {
+        return Command::FAILURE;
+    }
+})->purpose('Delete import batches left unconfirmed for longer than the retention period');
+
 Schedule::command('loans:sync-installments')->dailyAt('01:50')->withoutOverlapping();
 Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55')->withoutOverlapping();
 Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00')->withoutOverlapping();
 Schedule::command('finance:notifications-digest')->dailyAt('02:05')->withoutOverlapping();
+Schedule::command('imports:purge-abandoned')->dailyAt('02:10')->withoutOverlapping();
 // Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
 Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');
