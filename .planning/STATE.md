@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
-stopped_at: Phase 22 implemented on uat; MySQL concurrency and /hub visual checks remain
+stopped_at: Phase 23 researched and planned; Phase 22 verification follow-ups remain
 last_updated: "2026-10-17T00:00:00.000Z"
-last_activity: "2026-10-17 -- Phase 22 researched, planned and implemented on uat (plans 22-01..03 plus review fixes); browser check of the bell done. Earlier implementation and audit work is detailed below and in ROADMAP.md."
+last_activity: "2026-10-17 -- Phase 23 researched and planned (23-01 and 23-02); UAT renewal posting observation awaits the next scheduled run after the VM was off. Phase 22 is implemented on uat; its MySQL concurrency and /hub visual checks remain."
 progress:
   total_phases: 16
   completed_phases: 10
-  total_plans: 27
+  total_plans: 29
   completed_plans: 27
   percent: 63
 ---
@@ -18,7 +18,7 @@ progress:
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 22 implemented on `uat`; two verification follow-ups remain
+**Status:** Phase 23 planned, not implemented; Phase 22 on `uat`
 **Updated:** 2026-10-17
 
 ---
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Complete the MySQL two-connection concurrency proof and visual check of `/hub/notifications`; then plan Phase 23.
+**Current focus:** Verify the UAT renewal posting observation after the next 01:55 run, then execute Phase 23. Phase 22's MySQL concurrency proof and `/hub/notifications` visual check remain open.
 
 ## Current Position
 
-Phase: 22 — IMPLEMENTED ON UAT (Phases 23-28 retain context only)
-Plan: 22-01, 22-02, 22-03 implemented and summarised; review fixes included. Two verification follow-ups remain.
-Status: Phase 22 is delivered to `uat`; Phase 21's own follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding. Phases 23-28 remain discussed but unplanned.
-Last activity: 2026-10-17 -- Phase 22 implemented on `uat`; 588 backend tests, frontend store test and SPA build pass; bell verified in a browser. Prior implementation activity: 2026-09-20 audit and UX rounds.
+Phase: 23 — PLANNED (Phase 22 implemented on UAT)
+Plan: 23-01 and 23-02 ready; implementation not started. Phase 22's two verification follow-ups remain.
+Status: Phase 22 is delivered to `uat`. Phase 23 has research and two execution plans; the user's missing-renewal observation is not yet a confirmed defect. Phase 21's manual balance-audit follow-up remains outstanding.
+Last activity: 2026-10-17 -- Phase 23 planned from current `uat` code. The UAT VM had been off, so renewals will be rechecked after the next scheduled run; no live financial data was changed.
 
 ## Session Resume
 
-**Stopped at:** Phase 22 implemented on `uat`; verification follow-ups remain
-**Resume file:** .planning/phases/22-proactive-notifications-wire-the-existing-notification-model-to-real-financial-triggers/22-03-SUMMARY.md (open verifications listed under Gaps; Phase 23 depends on Phase 22)
+**Stopped at:** Phase 23 planned; UAT renewal observation awaits next scheduled run
+**Resume file:** .planning/phases/23-subscription-price-hike-detection/23-01-PLAN.md
 
 ## Accumulated Context
 
