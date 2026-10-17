@@ -22,3 +22,9 @@ The raw file is not stored encrypted with a TTL purge; it is parsed immediately 
 - Mapping, normalisation, fingerprints and duplicate classification are 25-02; row edit/confirm is 25-03; the SPA is 25-04.
 - The header line is staged like any other row; 25-02's mapping will declare the header row.
 - Only `uploaded`/`mapped` statuses are produced so far; `completed` is set by 25-03.
+
+## Review fixes (PR #76 review of 2026-10-17)
+
+- **XLSX content past a limit is rejected, never truncated.** The reader loads a window (limit plus a blank-row/column slack of 50/10); if cells were skipped it loads the outside region separately and refuses the workbook when any of it has content (an empty sentinel row no longer hides data). `XlsxBoundsFilter` is the shared filter. Blank rows inside the data are not a false positive.
+- **CSV delimiter from the record structure.** A candidate (`, ; tab |`) is accepted only when at least 90% of the first records split into the same number of columns (quotes respected); two fitting candidates are ambiguous and raise an error asking for an explicit `delimiter` (`comma|semicolon|tab|pipe`, optional on `POST /import-batches`, and a select in the SPA). Single-column files still read.
+- **Partial batches are kept.** `DELETE` answers 409 and `imports:purge-abandoned` skips any batch that has a confirmed row; both lock the batch and re-check, and promotion locks batch-then-row, so a confirmation racing a delete or purge cannot lose its provenance.

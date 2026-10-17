@@ -17,3 +17,8 @@
 
 - "Same file twice does not stage twice" is implemented as: the second batch is staged but every row is flagged `already_imported` (with the earlier batch id); 25-03's "confirm all" must skip flagged rows by default.
 - Not covered: very large files' normalisation time, descriptions in other scripts for the similarity metric, `date_format` `m/d/y` ambiguity (the user picks the format).
+
+## Review fixes (PR #76 review of 2026-10-17)
+
+- **XLSX numbers are canonical.** The reader reports which cells were real numbers (`numeric_columns` on each row); the normaliser parses those with `.` and no thousands separator whatever the mapping says, so a numeric `-12.5` under a European mapping stays -12.50 instead of becoming -125.00. Text cells still follow the configured separators.
+- **Editing a draft reclassifies it.** Changing date, amount, description or restoring a row re-runs the ledger matching, keeping the row's original fingerprint (it identifies the statement line, not the edit). Ledger movements created by this same batch are excluded from later matching, so two identical legitimate charges stay importable one after the other.

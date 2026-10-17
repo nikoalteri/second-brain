@@ -15,3 +15,11 @@
 - SQLite ignores `FOR UPDATE`, so concurrent confirmation is protected structurally (status check + unique indexes) but not exercised with two real connections; a MySQL two-connection test is a follow-up like Phase 22's.
 - A row edited by the owner keeps its original fingerprint (it identifies the statement line, not the edit).
 - Card refunds and payments must be discarded or entered manually; modelling them is out of scope here.
+
+## Review fixes (PR #76 review of 2026-10-17)
+
+- **Currency is enforced at posting.** A row whose currency differs from the target is skipped even when chosen explicitly (no conversion exists), and a target whose currency changed since the upload (account, or a card's settlement account) is not posted to.
+- **Confirmation uses the ledger as it is now.** `ImportRowPromotionService::confirm()` re-runs the duplicate matching before posting. `all_ready` takes only rows still clean; an explicit choice of a row that has meanwhile become a duplicate is held back once ("review it again") and allowed on the next attempt, once the owner has seen it flagged. A posting that lands between this re-check and the insert is still possible; the unique promotion indexes and the owner's review are the remaining protection.
+- **Partially confirmed batches are never deleted or purged** (see 25-01), and promotion refuses a batch that is no longer open.
+
+Evidence: 14 new tests (each failed before its fix); full backend suite 753 green.
