@@ -326,6 +326,13 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 
 During this brainstorm the user asked for a simpler, non-monthly per-category annual summary alongside the existing detailed pivot. Investigation found this **already ships** today: `GET /api/v1/reports/finance/export?year=&format=csv|xlsx|pdf` (`FinanceReportController`/`FinanceReportSnapshotService`/`FinanceReportExportService`) already includes a "Distribution" section — a per-category yearly total with no month breakdown — in every export format (its own XLSX sheet, its own PDF/CSV section), alongside the existing "Category Pivot" (monthly detail) and "Cashflow Summary" sections. The SPA already has an export trigger (`resources/js/views/reports/FinanceReportView.vue`). No new phase needed; not added to the roadmap.
 
+### Phase 29: MCP integration (read-only)
+
+**Goal:** Expose Fluxa's already-validated finance data over MCP in read-only mode — no mutations. The direction is deliberately left open until discuss-phase: an MCP server that lets external AI clients (e.g. Claude) query the user's own data, and/or an MCP client inside Fluxa that consumes external tools. Reuses existing services (`UpcomingPaymentsService`, `IntentRouter`) rather than new aggregation logic.
+**Requirements**: TBD (to be defined in discuss-phase)
+**Depends on:** Phase 17 (chatbot/IntentRouter), Phase 26 (debt and subscription totals); last planned phase, placed after Phase 28
+**Plans:** not started — needs `/gsd-discuss-phase 29` first (server vs client direction, auth and per-user scoping)
+
 ---
 
 ## Direct Next Command
