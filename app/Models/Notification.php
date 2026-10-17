@@ -20,23 +20,14 @@ class Notification extends Model
         'action_url',
         'related_model',
         'related_id',
-        'notification_condition_id',
-        'episode',
-        'severity',
     ];
 
     protected $casts = [
         'read_at' => 'datetime',
-        'episode' => 'integer',
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function condition()
-    {
-        return $this->belongsTo(NotificationCondition::class, 'notification_condition_id');
     }
 }
