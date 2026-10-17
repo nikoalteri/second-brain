@@ -43,3 +43,13 @@ Seen working: the ambiguous-delimiter error and the delimiter select, mapping gu
 - **Explicit rows** (`allowFlagged: true`): consent is bound to the classification signature (class, review flags, matched ledger entry) stored at the START of the request, before the pre-pass refreshes it. A row whose signature differs under the lock is held back; a row reviewed as clean is re-checked against the live ledger; a row reviewed as flagged and unchanged proceeds (conscious duplicate). Direct `promote()` calls keep the previous behaviour.
 
 Evidence: 3 SQLite tests (a hook on `ImportBatch::retrieved` reproduces "after selection, before the lock") and 2 MySQL tests through the public `confirm(..., null)` and `confirm(..., [ids])` with a worker frozen after row selection while the movement is committed and the draft reclassified. With the old inference all of them fail; the full default suite is 769 tests and the MySQL suite 10 tests, all green.
+
+## Review fix: the choice is bound to what the client was shown (PR #76, 17:28)
+
+Reading the "reviewed" classification from the database when the request arrived still let a stale screen authorise a duplicate: the browser loaded a clean row, another request recorded the movement and reclassified the draft, and the ordinary selective confirmation then found the already-flagged signature and treated it as seen. Now:
+
+- every row the API returns (`GET .../rows`, the batch preview and `PATCH` responses) carries a `review_token`: an HMAC over the row's data (date, amount, description, category), status, error, duplicate class, review flags and matched ledger entry (`ImportRowPromotionService::signature()`);
+- an explicit `POST .../confirm` must send `reviewed` (row id → token) alongside `row_ids`; the server uses ONLY that token as the reviewed version. Missing token → the row is skipped ("reload the review"); a token that no longer matches under the lock (the row, its edit or its match changed, including a flag written by another request) → held back ("review it again"). The owner who reloads, sees the flagged row and its match, and chooses it sends the new token: that is the conscious duplicate;
+- `all_ready` sends no tokens and never authorises a duplicate; the SPA store sends tokens only for explicit choices.
+
+Evidence: API tests for the stale-screen scenario, an edit after loading, missing/invalid/foreign tokens and token stability; the SQLite race tests and the MySQL worker tests now pass the token held before the race; 2 frontend tests. With the server's own copy used instead of the client token, the stale-screen, edit, missing-token and held-back tests fail. Default suite 773 tests, MySQL 10, frontend 32, all green.
