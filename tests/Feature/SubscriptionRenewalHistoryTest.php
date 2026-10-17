@@ -222,4 +222,46 @@ class SubscriptionRenewalHistoryTest extends TestCase
 
         $this->assertSame([], $history);
     }
+
+    public function test_a_soft_deleted_charge_is_not_part_of_the_history(): void
+    {
+        $this->renew($this->subscription, '2026-03-23');
+        $this->setPrice($this->subscription, 15.99);
+        $this->renew($this->subscription, '2026-04-23');
+        Transaction::withoutGlobalScopes()->where('subscription_id', $this->subscription->id)
+            ->whereDate('subscription_renewal_date', '2026-04-23')->firstOrFail()->delete();
+
+        $history = app(SubscriptionRenewalHistory::class)->latest($this->subscription->fresh());
+
+        $this->assertCount(1, $history);
+        $this->assertSame('2026-03-23', $history[0]['date']);
+    }
+
+    public function test_a_renewal_already_posted_on_the_card_is_not_posted_again_on_the_account(): void
+    {
+        $card = $this->makeCard();
+        DB::table('subscriptions')->where('id', $this->subscription->id)->update(['account_id' => null, 'credit_card_id' => $card->id]);
+        $this->renew($this->subscription, '2026-04-23');
+
+        // A run holding a stale instance sees the old account source after the switch back.
+        $stale = $this->subscription->fresh();
+        DB::table('subscriptions')->where('id', $this->subscription->id)->update(['account_id' => $this->account->id, 'credit_card_id' => null]);
+        app(SubscriptionService::class)->processRenewal($stale, Carbon::parse('2026-04-23'));
+
+        $this->assertSame(1, CreditCardExpense::query()->where('subscription_id', $this->subscription->id)->count());
+        $this->assertSame(0, Transaction::withoutGlobalScopes()->withTrashed()->where('subscription_id', $this->subscription->id)->count());
+        $this->assertEquals(100, $this->account->fresh()->balance);
+    }
+
+    public function test_a_renewal_already_posted_on_the_account_is_not_posted_again_on_the_card(): void
+    {
+        $this->renew($this->subscription, '2026-04-23');
+
+        $card = $this->makeCard();
+        DB::table('subscriptions')->where('id', $this->subscription->id)->update(['account_id' => null, 'credit_card_id' => $card->id]);
+        app(SubscriptionService::class)->processRenewal($this->subscription->fresh(), Carbon::parse('2026-04-23'));
+
+        $this->assertSame(0, CreditCardExpense::query()->where('subscription_id', $this->subscription->id)->count());
+        $this->assertSame(1, Transaction::withoutGlobalScopes()->where('subscription_id', $this->subscription->id)->count());
+    }
 }

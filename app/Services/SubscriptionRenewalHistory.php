@@ -29,8 +29,10 @@ class SubscriptionRenewalHistory
         $ownerId = $subscription->user_id;
 
         // Global scopes follow the authenticated user; the owner is pinned explicitly instead so a
-        // scheduler run (no auth) and another user's rows can never leak into the history.
+        // scheduler run (no auth) and another user's rows can never leak into the history. Removing
+        // the scopes also drops the soft-delete filter, so deleted charges are excluded by hand.
         $accountPostings = Transaction::withoutGlobalScopes()
+            ->whereNull('deleted_at')
             ->where('user_id', $ownerId)
             ->where('subscription_id', $subscription->id)
             ->whereNotNull('subscription_renewal_date')

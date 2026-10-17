@@ -227,7 +227,15 @@ class SubscriptionService
         return DB::transaction(function () use ($subscription, $renewalDate) {
             // Serialise overlapping runs for the same subscription: the second one waits here and
             // then finds the renewal already posted instead of racing the lookup below.
-            Subscription::withoutGlobalScopes()->whereKey($subscription->getKey())->lockForUpdate()->first();
+            $locked = Subscription::withoutGlobalScopes()->whereKey($subscription->getKey())->lockForUpdate()->first();
+
+            if ($locked === null) {
+                return false;
+            }
+
+            // The instance was loaded before the lock: a run that held it may have switched the
+            // billing source meanwhile, so decide the path from the committed row.
+            $subscription->refresh()->loadMissing(['frequencyOption', 'creditCard', 'account']);
 
             if ($subscription->credit_card_id) {
                 $created = $this->upsertCreditCardExpense($subscription, $renewalDate);
@@ -255,6 +263,11 @@ class SubscriptionService
      */
     private function upsertTransaction(Subscription $subscription, CarbonInterface $renewalDate): bool
     {
+        // The renewal may already be posted on the card path (source switched between runs).
+        if ($this->hasCardPosting($subscription, $renewalDate)) {
+            return false;
+        }
+
         $typeId = TransactionType::query()->firstOrCreate(
             ['name' => 'Expense'],
             ['is_income' => false]
@@ -307,6 +320,22 @@ class SubscriptionService
         }
     }
 
+    private function hasCardPosting(Subscription $subscription, CarbonInterface $renewalDate): bool
+    {
+        return CreditCardExpense::query()
+            ->where('subscription_id', $subscription->id)
+            ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
+            ->exists();
+    }
+
+    private function hasAccountPosting(Subscription $subscription, CarbonInterface $renewalDate): bool
+    {
+        return Transaction::withTrashed()
+            ->where('subscription_id', $subscription->id)
+            ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
+            ->exists();
+    }
+
     // A retry never rewrites the posted amount or snapshots: the first charge is the history.
     private function keepExistingTransaction(Transaction $existing): void
     {
@@ -320,6 +349,11 @@ class SubscriptionService
      */
     private function upsertCreditCardExpense(Subscription $subscription, CarbonInterface $renewalDate): bool
     {
+        // The renewal may already be posted on the account path (source switched between runs).
+        if ($this->hasAccountPosting($subscription, $renewalDate)) {
+            return false;
+        }
+
         $payload = [
             'credit_card_id' => $subscription->credit_card_id,
             'subscription_id' => $subscription->id,
