@@ -174,12 +174,35 @@ class ImportRowPromotionService
         }
     }
 
-    /** Marks the batch completed once no draft row is left. */
+    /**
+     * Marks the batch completed once no draft row is left, if it posted anything: a batch whose rows
+     * were all discarded has nothing to keep as history and is simply deleted by its owner.
+     */
     public function completeIfDone(ImportBatch $batch): void
     {
-        if (! $batch->rows()->where('status', ImportRowStatus::DRAFT->value)->exists()) {
+        $rows = $batch->rows();
+
+        if (! (clone $rows)->where('status', ImportRowStatus::DRAFT->value)->exists()
+            && (clone $rows)->where('status', ImportRowStatus::CONFIRMED->value)->exists()) {
             $batch->forceFill(['status' => ImportBatchStatus::COMPLETED])->save();
         }
+    }
+
+    /**
+     * Ends a partially confirmed import: what is still a draft is discarded and the batch becomes
+     * completed history of the movements it did post. Locked like a promotion, so it cannot race one.
+     */
+    public function close(ImportBatch $batch): void
+    {
+        DB::transaction(function () use ($batch) {
+            $locked = ImportBatch::query()->whereKey($batch->id)->lockForUpdate()->firstOrFail();
+
+            abort_unless($locked->status === ImportBatchStatus::MAPPED, 409, 'This import is not open.');
+            abort_unless($locked->rows()->where('status', ImportRowStatus::CONFIRMED->value)->exists(), 409, 'Nothing was added from this import; cancel it instead.');
+
+            $locked->rows()->where('status', ImportRowStatus::DRAFT->value)->update(['status' => ImportRowStatus::DISCARDED->value]);
+            $locked->forceFill(['status' => ImportBatchStatus::COMPLETED])->save();
+        });
     }
 
     /**

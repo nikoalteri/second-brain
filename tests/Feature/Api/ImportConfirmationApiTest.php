@@ -311,8 +311,8 @@ class ImportConfirmationApiTest extends TestCase
 
         $this->confirm($id, ['all_ready' => true])->assertOk()->assertJsonPath('data.status', 'mapped');
 
+        // Discarding the last waiting row resolves the import: it posted something, so it is kept as history.
         $this->patchJson(self::URL . "/{$id}/rows/{$this->row($id, 3)->id}", ['status' => 'discarded'])->assertOk();
-        $this->confirm($id, ['row_ids' => [$this->row($id, 3)->id]])->assertOk()->assertJsonPath('data.status', 'completed');
         $this->assertSame(ImportBatchStatus::COMPLETED, ImportBatch::findOrFail($id)->status);
 
         // A closed batch accepts no more edits or re-mapping.
@@ -421,5 +421,55 @@ class ImportConfirmationApiTest extends TestCase
 
         $this->assertModelMissing(new ImportBatch(['id' => $old]));
         $this->assertSame(0, ImportBatch::count());
+    }
+
+    public function test_discarding_the_last_waiting_row_finishes_an_import_that_posted_something(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n2026-10-02,-2.00,b\n");
+        $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id]])->assertOk()->assertJsonPath('data.status', 'mapped');
+
+        $this->patchJson(self::URL . "/{$id}/rows/{$this->row($id, 3)->id}", ['status' => 'discarded'])->assertOk();
+
+        $this->assertSame(ImportBatchStatus::COMPLETED, ImportBatch::findOrFail($id)->status);
+    }
+
+    public function test_discarding_every_row_of_an_untouched_import_leaves_it_open_and_deletable(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n");
+        $this->patchJson(self::URL . "/{$id}/rows/{$this->row($id, 2)->id}", ['status' => 'discarded'])->assertOk();
+
+        $this->assertSame(ImportBatchStatus::MAPPED, ImportBatch::findOrFail($id)->status, 'nothing was posted, so there is no history to keep');
+        $this->deleteJson(self::URL . "/{$id}")->assertNoContent();
+    }
+
+    public function test_a_partially_posted_import_can_be_closed_and_an_untouched_one_cannot(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n2026-10-02,-2.00,b\n2026-10-03,-3.00,c\n");
+        $this->postJson(self::URL . "/{$id}/close")->assertStatus(409);
+
+        $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id]])->assertOk();
+        $this->postJson(self::URL . "/{$id}/close")->assertOk()->assertJsonPath('data.status', 'completed');
+
+        $this->assertSame(1, Transaction::withoutGlobalScopes()->count());
+        $this->assertSame(ImportRowStatus::DISCARDED, $this->row($id, 3)->status);
+        $this->assertSame(ImportRowStatus::DISCARDED, $this->row($id, 4)->status);
+        $this->assertSame(ImportRowStatus::CONFIRMED, $this->row($id, 2)->status);
+        $this->postJson(self::URL . "/{$id}/close")->assertStatus(409);
+
+        Sanctum::actingAs(User::factory()->create());
+        $this->postJson(self::URL . "/{$id}/close")->assertNotFound();
+    }
+
+    public function test_the_purge_closes_stale_partially_posted_imports_instead_of_leaving_drafts_forever(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n2026-10-02,-2.00,b\n");
+        $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id]])->assertOk();
+        DB::table('import_batches')->where('id', $id)->update(['created_at' => Carbon::now()->subDays(60)]);
+
+        $this->artisan('imports:purge-abandoned')->assertSuccessful();
+
+        $this->assertSame(ImportBatchStatus::COMPLETED, ImportBatch::findOrFail($id)->status);
+        $this->assertSame(ImportRowStatus::DISCARDED, $this->row($id, 3)->status);
+        $this->assertNotNull($this->row($id, 2)->transaction_id);
     }
 }

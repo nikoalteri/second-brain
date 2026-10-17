@@ -413,4 +413,22 @@ class ImportMappingApiTest extends TestCase
 
         $this->patchJson(self::URL . "/{$id}/rows/{$row->id}", ['amount' => '-5.00'])->assertOk()->assertJsonPath('data.duplicate_class', 'none');
     }
+
+    public function test_a_mapping_that_read_no_row_is_not_remembered_as_the_targets_default(): void
+    {
+        $first = $this->upload("Date,Amount,Description\n2026-10-01,-1.00,a\n");
+        // Wrong columns: every line becomes an error.
+        $this->map($first, ['amount_column' => 2, 'description_column' => 1])->assertOk()->assertJsonPath('summary.ready', 0);
+
+        $second = $this->upload("Date,Amount,Description\n2026-11-01,-2.00,b\n");
+        $this->getJson(self::URL . "/{$second}")->assertOk()->assertJsonPath('saved_mapping', null);
+
+        // A mapping that works is remembered, and replaces nothing when a later bad one is tried.
+        $this->map($second)->assertOk()->assertJsonPath('summary.ready', 1);
+        $third = $this->upload("Date,Amount,Description\n2026-12-01,-3.00,c\n");
+        $this->map($third, ['amount_column' => 2])->assertOk()->assertJsonPath('summary.ready', 0);
+
+        $fourth = $this->upload("Date,Amount,Description\n2027-01-01,-4.00,d\n");
+        $this->getJson(self::URL . "/{$fourth}")->assertOk()->assertJsonPath('saved_mapping.amount_column', 1);
+    }
 }

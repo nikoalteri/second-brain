@@ -105,6 +105,21 @@ class ImportBatchController extends Controller
         ]);
     }
 
+    /**
+     * Finish a partially confirmed import: the rows still waiting are discarded and the batch is kept
+     * as the history of what it posted.
+     *
+     * @group Statement imports @authenticated
+     */
+    public function close(Request $request, int $importBatch): ImportBatchResource
+    {
+        $batch = $this->owned($request, $importBatch);
+
+        $this->promotion->close($batch);
+
+        return $this->respond($batch->refresh());
+    }
+
     /** @group Statement imports @authenticated */
     public function destroy(Request $request, int $importBatch): Response
     {

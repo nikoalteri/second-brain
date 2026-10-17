@@ -10,6 +10,7 @@ use App\Http\Resources\Api\ImportRowResource;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
 use App\Services\Import\ImportDuplicateDetector;
+use App\Services\Import\ImportRowPromotionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -20,7 +21,10 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class ImportRowController extends Controller
 {
-    public function __construct(private readonly ImportDuplicateDetector $detector) {}
+    public function __construct(
+        private readonly ImportDuplicateDetector $detector,
+        private readonly ImportRowPromotionService $promotion,
+    ) {}
 
     /** @group Statement imports @authenticated */
     public function index(Request $request, int $importBatch): AnonymousResourceCollection
@@ -96,6 +100,11 @@ class ImportRowController extends Controller
         if ($edits !== [] || (isset($data['status']) && $data['status'] === 'draft')) {
             $this->detector->detect($batch, reclassify: true);
             $record->refresh();
+        }
+
+        // Discarding the last waiting row of an import that already posted something finishes it.
+        if (isset($data['status']) && $data['status'] === 'discarded') {
+            $this->promotion->completeIfDone($batch);
         }
 
         return new ImportRowResource($record);

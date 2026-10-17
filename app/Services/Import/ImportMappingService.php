@@ -76,10 +76,14 @@ class ImportMappingService
                 'status' => ImportBatchStatus::MAPPED,
             ])->save();
 
-            ImportMapping::query()->updateOrCreate(
-                ['user_id' => $locked->user_id, 'account_id' => $locked->account_id, 'credit_card_id' => $locked->credit_card_id],
-                ['mapping' => $mapping],
-            );
+            // Only a mapping that read at least one row is worth offering again: a wrong guess that made
+            // every line unreadable must not become the target's default for its next import.
+            if ($locked->rows()->whereNotNull('normalized')->exists()) {
+                ImportMapping::query()->updateOrCreate(
+                    ['user_id' => $locked->user_id, 'account_id' => $locked->account_id, 'credit_card_id' => $locked->credit_card_id],
+                    ['mapping' => $mapping],
+                );
+            }
 
             $this->detector->detect($locked);
         });

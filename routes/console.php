@@ -7,6 +7,7 @@ use App\Enums\ImportBatchStatus;
 use App\Enums\ImportRowStatus;
 use App\Models\CreditCard;
 use App\Models\ImportBatch;
+use App\Services\Import\ImportRowPromotionService;
 use App\Models\Loan;
 use App\Services\CreditCardCycleService;
 use App\Services\LoanScheduleService;
@@ -219,7 +220,25 @@ Artisan::command('imports:purge-abandoned {--days=}', function () {
             }
         });
 
-    $this->info("Abandoned import batches purged: {$purged}, failed: {$failed}.");
+    // A batch that posted rows is kept, but its leftover drafts are statement data nobody will review:
+    // close it (drafts discarded, batch completed) once it is as old as an abandoned one.
+    $closed = 0;
+
+    ImportBatch::query()
+        ->where('status', ImportBatchStatus::MAPPED)
+        ->where('created_at', '<', $cutoff)
+        ->whereHas('rows', fn ($rows) => $rows->where('status', ImportRowStatus::CONFIRMED->value))
+        ->each(function (ImportBatch $batch) use (&$closed, &$failed) {
+            try {
+                app(ImportRowPromotionService::class)->close($batch);
+                $closed++;
+            } catch (\Throwable $e) {
+                $failed++;
+                Log::error("imports:purge-abandoned failed to close batch {$batch->id}", ['exception' => $e]);
+            }
+        });
+
+    $this->info("Abandoned import batches purged: {$purged}, partially posted batches closed: {$closed}, failed: {$failed}.");
 
     if ($failed > 0) {
         return Command::FAILURE;

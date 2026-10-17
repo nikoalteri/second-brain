@@ -111,6 +111,7 @@ Route::prefix('v1')->group(function () {
         Route::post('import-batches', [ImportBatchController::class, 'store']);
         Route::post('import-batches/{importBatch}/confirm', [ImportBatchController::class, 'confirm'])->whereNumber('importBatch');
         Route::patch('import-batches/{importBatch}/rows/{row}', [ImportRowController::class, 'update'])->whereNumber(['importBatch', 'row']);
+        Route::post('import-batches/{importBatch}/close', [ImportBatchController::class, 'close'])->whereNumber('importBatch');
         Route::put('import-batches/{importBatch}/mapping', [ImportBatchController::class, 'mapping'])->whereNumber('importBatch');
         Route::delete('import-batches/{importBatch}', [ImportBatchController::class, 'destroy'])->whereNumber('importBatch');
 
