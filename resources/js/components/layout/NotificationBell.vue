@@ -40,12 +40,13 @@ function formatDate(value) {
 }
 
 onMounted(() => {
-    document.addEventListener('click', handleDocumentClick);
+    // Capture phase: sibling menus stop click propagation, which would hide outside clicks from a bubbling listener.
+    document.addEventListener('click', handleDocumentClick, true);
     void store.fetchNotifications();
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('click', handleDocumentClick);
+    document.removeEventListener('click', handleDocumentClick, true);
 });
 </script>
 
