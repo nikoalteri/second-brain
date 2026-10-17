@@ -96,12 +96,13 @@ export const useStatementImportStore = defineStore('statementImport', () => {
         }
     }
 
-    async function upload({ file, accountId = null, creditCardId = null, endingBalance = '', periodStart = '', periodEnd = '' }) {
+    async function upload({ file, accountId = null, creditCardId = null, delimiter = '', endingBalance = '', periodStart = '', periodEnd = '' }) {
         const form = new FormData();
         form.append('file', file);
 
         if (accountId) form.append('account_id', accountId);
         if (creditCardId) form.append('credit_card_id', creditCardId);
+        if (delimiter) form.append('delimiter', delimiter);
         if (endingBalance !== '') form.append('statement_ending_balance', endingBalance);
         if (periodStart) form.append('period_start', periodStart);
         if (periodEnd) form.append('period_end', periodEnd);

@@ -82,13 +82,14 @@ describe('statement import store', () => {
         const fetchMock = vi.fn().mockResolvedValue(json({ data: batch(), summary: { rows: 2 }, saved_mapping: null }, 201));
         globalThis.fetch = fetchMock;
 
-        await store.upload({ file: new File(['a'], 's.csv'), accountId: '3', endingBalance: '10.5' });
+        await store.upload({ file: new File(['a'], 's.csv'), accountId: '3', endingBalance: '10.5', delimiter: 'semicolon' });
 
         const [url, options] = fetchMock.mock.calls[0];
         expect(url).toBe('/api/v1/import-batches');
         expect(options.headers.Authorization).toBe('Bearer token-a');
         expect(options.body.get('account_id')).toBe('3');
         expect(options.body.get('statement_ending_balance')).toBe('10.5');
+        expect(options.body.get('delimiter')).toBe('semicolon');
         expect(options.body.has('credit_card_id')).toBe(false);
         expect(store.step).toBe('mapping');
     });

@@ -41,6 +41,8 @@ describe('StatementImportView', () => {
         const options = wrapper.findAll('option').map((o) => o.text());
         expect(options).toContain('Main (EUR)');
         expect(options).toContain('Visa (credit card)');
+        expect(options).toContain('Automatic');
+        expect(options).toContain('Semicolon ( ; )');
         expect(wrapper.find('button[type="submit"]').attributes('disabled')).toBeDefined();
     });
 

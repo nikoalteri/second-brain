@@ -22,6 +22,7 @@ const { formatCurrency } = useCurrency();
 
 const target = ref('');
 const file = ref(null);
+const delimiter = ref('');
 const endingBalance = ref('');
 const periodStart = ref('');
 const periodEnd = ref('');
@@ -77,6 +78,7 @@ async function submitUpload() {
         file: file.value,
         accountId: kind === 'account' ? id : null,
         creditCardId: kind === 'card' ? id : null,
+        delimiter: delimiter.value,
         endingBalance: endingBalance.value,
         periodStart: periodStart.value,
         periodEnd: periodEnd.value,
@@ -211,6 +213,12 @@ onMounted(() => {
                 <input id="statement-file" type="file" accept=".csv,.xlsx" class="text-sm text-gray-700" @change="pickFile">
                 <p class="text-xs text-gray-500">Up to 5 MB and 5,000 rows. PDF statements are not supported.</p>
             </div>
+            <FormSelect
+                v-model="delimiter"
+                label="CSV delimiter"
+                helper="Leave on automatic unless the app asks you to choose"
+                :options="[{ value: '', label: 'Automatic' }, { value: 'comma', label: 'Comma ( , )' }, { value: 'semicolon', label: 'Semicolon ( ; )' }, { value: 'tab', label: 'Tab' }, { value: 'pipe', label: 'Pipe ( | )' }]"
+            />
             <div class="grid gap-4 sm:grid-cols-3">
                 <FormInput v-model="endingBalance" label="Ending balance (optional)" type="number" step="0.01" helper="As printed on the statement" />
                 <FormInput v-model="periodStart" label="Period start" type="date" />
