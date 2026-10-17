@@ -10,11 +10,11 @@ Before that round, the latest phase-numbered work corrects credit-card balance r
 
 The public `/cookie-policy` page documents cookies and browser storage, with links from the frontend and administration panel. Set `LEGAL_OPERATOR_NAME` and `LEGAL_CONTACT_EMAIL` for the instance before publication. Session cookie name and lifetime reflect Laravel configuration. Recheck the policy against the deployed site, including proxy-added cookies, when changing authentication, remember-me duration or adding external services. The current application includes no analytics or advertising trackers; optional tracking would require reviewing consent before activation.
 
-The latest local backend verification passed **537 tests and 1,962 assertions**. This verifies the current working tree; it does not establish that these changes have been deployed.
+The latest local backend verification passed **588 tests and 2,134 assertions**. This verifies the current working tree; it does not establish that these changes have been deployed.
 
 The project uses an evidence-first approach. Backend tests cover authentication/settings, ownership boundaries, account operations, reports/exports, chatbot intents, credit-card workflows and calculations, 2FA, vault access, transfers, and savings goals. Broader SPA behavior, GraphQL finance operations, and all combinations of financial workflows still require targeted validation; a passing backend suite is not full end-to-end UI coverage.
 
-Phases 23–28 have discussion context but are **not implemented**. Phase 22 (proactive notifications) is implemented in open pull requests that are not merged yet. Historical production/UAT credit-card balances still need the manual reconciliation described below.
+Phases 23–28 have discussion context but are **not implemented**. Phase 22 (proactive notifications) is implemented on `uat`; MySQL concurrency and Filament visual checks remain. Historical production/UAT credit-card balances still need the manual reconciliation described below.
 
 ## Features in the current codebase
 
@@ -202,7 +202,7 @@ Run the backend suite with enough memory for the current tests:
 php -d memory_limit=512M vendor/bin/phpunit --no-progress
 ```
 
-Latest verified result on 2026-09-20: **537 tests, 1,962 assertions, no failures**. The suite uses SQLite in memory through [`phpunit.xml`](phpunit.xml); it does not migrate the local MySQL database. A 128 MB PHP memory limit is insufficient for the full suite; use `php -d memory_limit=-1 vendor/bin/phpunit` if 512 MB is not enough.
+Latest verified result on 2026-10-17: **588 tests, 2,134 assertions, no failures**. The suite uses SQLite in memory through [`phpunit.xml`](phpunit.xml); it does not migrate the local MySQL database. A 128 MB PHP memory limit is insufficient for the full suite; use `php -d memory_limit=-1 vendor/bin/phpunit` if 512 MB is not enough.
 
 Run a targeted group:
 
@@ -234,7 +234,7 @@ The next phases have discussion context, but research, implementation plans, and
 | 27 | Automated reconciliation against imported statement balances | 21, 22, 25 |
 | 28 | Transaction categorization using user rules and history | 25 |
 
-Start with Phase 22. Import planning in Phase 25 establishes the draft model needed by Phases 27–28; Phases 24 and 26 should be coordinated around dashboard aggregates. Live bank feeds/Open Banking and PDF statement parsing are outside the planned file-import phase.
+Phase 22 is implemented; Phase 23 is the next dependent phase. Import planning in Phase 25 establishes the draft model needed by Phases 27–28; Phases 24 and 26 should be coordinated around dashboard aggregates. Live bank feeds/Open Banking and PDF statement parsing are outside the planned file-import phase.
 
 See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for phase details and [`.planning/STATE.md`](.planning/STATE.md) for handoff context. Some historical headers and confidence notes in the planning files predate the later phases; current source and tests take precedence.
 

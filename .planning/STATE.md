@@ -3,22 +3,22 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
-stopped_at: Phase 22 implemented in draft PRs #63-#66; awaiting MySQL concurrency test, /hub visual check and merge
+stopped_at: Phase 22 implemented on uat; MySQL concurrency and /hub visual checks remain
 last_updated: "2026-10-17T00:00:00.000Z"
-last_activity: "2026-10-17 -- Phase 22 researched, planned and implemented (plans 22-01..03 plus review fixes) in stacked draft PRs #63-#66; browser check of the bell done. Earlier implementation and audit work is detailed below and in ROADMAP.md."
+last_activity: "2026-10-17 -- Phase 22 researched, planned and implemented on uat (plans 22-01..03 plus review fixes); browser check of the bell done. Earlier implementation and audit work is detailed below and in ROADMAP.md."
 progress:
   total_phases: 16
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 27
-  completed_plans: 24
-  percent: 56
+  completed_plans: 27
+  percent: 63
 ---
 
 # v5.1 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 21 complete; Phase 22 implemented in draft PRs #63-#66, not merged
+**Status:** Phase 22 implemented on `uat`; two verification follow-ups remain
 **Updated:** 2026-10-17
 
 ---
@@ -28,18 +28,18 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Close Phase 22: MySQL two-connection concurrency test, visual check of `/hub/notifications`, then merge PRs #63-#66 in order.
+**Current focus:** Complete the MySQL two-connection concurrency proof and visual check of `/hub/notifications`; then plan Phase 23.
 
 ## Current Position
 
-Phase: 22 — IMPLEMENTED, UNMERGED (Phases 23-28 retain context only)
-Plan: 22-01, 22-02, 22-03 implemented and summarised; review fixes in PR #66 — next step is the two open verifications, then merge.
-Status: Phase 21 remains the last fully-executed phase; its own follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding. Phase 22 is implemented but not merged; Phases 23-28 remain discussed but unplanned.
-Last activity: 2026-10-17 -- Phase 22 implemented in draft PRs #63-#66; 588 backend tests and SPA build pass; bell verified in a browser. Prior implementation activity: 2026-09-20 audit and UX rounds.
+Phase: 22 — IMPLEMENTED ON UAT (Phases 23-28 retain context only)
+Plan: 22-01, 22-02, 22-03 implemented and summarised; review fixes included. Two verification follow-ups remain.
+Status: Phase 22 is delivered to `uat`; Phase 21's own follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding. Phases 23-28 remain discussed but unplanned.
+Last activity: 2026-10-17 -- Phase 22 implemented on `uat`; 588 backend tests, frontend store test and SPA build pass; bell verified in a browser. Prior implementation activity: 2026-09-20 audit and UX rounds.
 
 ## Session Resume
 
-**Stopped at:** Phase 22 implemented; draft PRs #63-#66 open
+**Stopped at:** Phase 22 implemented on `uat`; verification follow-ups remain
 **Resume file:** .planning/phases/22-proactive-notifications-wire-the-existing-notification-model-to-real-financial-triggers/22-03-SUMMARY.md (open verifications listed under Gaps; Phase 23 depends on Phase 22)
 
 ## Accumulated Context
@@ -60,7 +60,7 @@ Last activity: 2026-10-17 -- Phase 22 implemented in draft PRs #63-#66; 588 back
 - Phase 17 added: Custom read-only finance chatbot engine — a self-built (no BotMan dependency) intent-router/state-machine conversational engine, inspired by the Leo project's conversation-flow pattern, for read-only queries over existing finance data (account balances, upcoming payments, spending summaries, credit-card usage).
 - Phase 18 added: Hardening & Security Proof — closes auth-scoping, superadmin-bypass, and credit-card lifecycle race-condition gaps flagged in the Deferred Hardening/Security/Performance Concerns bucket, with real tests, before further feature work.
 - Phase 21 added: Credit card balance recompute correctness — `CreditCardCycleService::syncCardBalance()` (introduced in Phase 18 to fix a payment-status race condition) recomputes `current_balance` purely as `sum(expenses) - sum(paid principal)`, with no opening-balance term. Every `CreditCardPayment` create/update fires this via `CreditCardPaymentObserver`, silently zeroing/dropping any card balance not backed by `CreditCardExpense` rows. Root cause of the two Phase 19 test failures (`CreditCardCreditLineSyncTest::payments_reintegrate_only_principal_on_status_changes`, `CreditCardKpiServiceTest::it_returns_expected_credit_card_kpis_for_user`), confirmed still failing on 2026-09-17 full-suite run (325 tests, 323 pass, these 2 fail).
-- Phases 22-28 added (2026-09-17, from a product-enhancement brainstorm, not `/gsd-new-milestone`): Phase 22 — proactive notifications (wire the existing unused `Notification` model to budget/credit-card/loan/subscription triggers, in-app only, daily digest); Phase 23 — subscription price-hike detection (builds on Phase 22's delivery); Phase 24 — cash-flow forecast aggregating known upcoming commitments against current balances; Phase 25 — bank statement file import/reconciliation (explicitly file-based, not Open Banking/live bank-feed — that remains out of scope per the Deferred Longer-Term Product Ideas bucket; D-06 added retroactively for Phase 27); Phase 26 — debt/subscription total figures on both the chatbot (5 new intents) and Dashboard, planned alongside Phase 24 since both touch the Dashboard; Phase 27 — automated reconciliation of computed balances against a Phase-25-imported statement's declared ending balance; Phase 28 — automatic transaction categorization (rules first, then historical match), silent for manual entry, suggested for Phase 25 import drafts. All seven have CONTEXT.md + DISCUSSION-LOG.md; Phase 22 gained three execution plans on 2026-10-17 and remains unimplemented. A "report annuale/fiscale" idea was found already fully shipped (existing FinanceReport export's "Distribution" section) — no phase created. Separately, `feat/hub-dark-mode` (merged via PR #4, not part of any phase) re-enabled the Filament admin dark-mode toggle that `->darkMode(false, true)` had fully disabled.
+- Phases 22-28 added (2026-09-17, from a product-enhancement brainstorm, not `/gsd-new-milestone`): Phase 22 — proactive notifications (wire the existing unused `Notification` model to budget/credit-card/loan/subscription triggers, in-app only, daily digest); Phase 23 — subscription price-hike detection (builds on Phase 22's delivery); Phase 24 — cash-flow forecast aggregating known upcoming commitments against current balances; Phase 25 — bank statement file import/reconciliation (explicitly file-based, not Open Banking/live bank-feed — that remains out of scope per the Deferred Longer-Term Product Ideas bucket; D-06 added retroactively for Phase 27); Phase 26 — debt/subscription total figures on both the chatbot (5 new intents) and Dashboard, planned alongside Phase 24 since both touch the Dashboard; Phase 27 — automated reconciliation of computed balances against a Phase-25-imported statement's declared ending balance; Phase 28 — automatic transaction categorization (rules first, then historical match), silent for manual entry, suggested for Phase 25 import drafts. All seven have CONTEXT.md + DISCUSSION-LOG.md; Phase 22 gained three execution plans and was implemented on uat on 2026-10-17. A "report annuale/fiscale" idea was found already fully shipped (existing FinanceReport export's "Distribution" section) — no phase created. Separately, `feat/hub-dark-mode` (merged via PR #4, not part of any phase) re-enabled the Filament admin dark-mode toggle that `->darkMode(false, true)` had fully disabled.
 - Audit hardening (2026-09-17 to 2026-09-18, ad hoc, no phase number): a project audit found cross-user references, non-atomic writes, unsynchronised transfer legs, token/deactivation gaps, a stale-balance interest input and vulnerable dependencies. All were fixed through PRs #11-#20 with tests that fail without the fix; `php artisan data:audit` ran clean on UAT. A second round (PRs #22-#26, #28-#34) closed refresh-token rotation, MFA on `/hub`, concurrency and idempotence, pagination and export limits, the scheduler heartbeat and smoke test, and added an immutable audit trail. Details and what remains open are in ROADMAP.md ("Audit hardening"). Phases 22-28 CONTEXT.md gained an "Audit-derived requirements" section, and a currency decision is needed before planning Phases 24-27.
 - Phase 29 added (2026-09-26): MCP integration, read-only — expose finance data over MCP with no mutations. Direction (MCP server for external AI clients and/or MCP client inside Fluxa) left open until discuss-phase. Depends on Phases 17 and 26; last planned phase after 28.
 - Phase 19 added: Revolving Credit Card Interest Engine Correctness — the user supplied 5 real Amex statements (docs/reference/credit-card-statements/) plus docs/reference/credit-card-revolving-validation.md documenting expected interest math. Orchestrator-level analysis (2026-08-06) confirmed 4 concrete discrepancies against current code, verified line-by-line: (1) CreditCardCycleService.php:201 uses startOfMonth() instead of the real day-7-to-day-6 billing period; (2) RevolvingCreditCalculator::calculateDailyBalances() never applies payments within the day loop, only expenses; (3) calculatePaymentBreakdown() doesn't subtract stamp duty from the fixed payment when computing principal (233.93 expected vs 235.93 computed — a real 2 EUR/cycle drift), and total_due wrongly adds stamp duty on top instead of treating it as included; (4) calculateInterestDirectMonthly() applies the annual rate directly as a monthly rate (would be ~12x too high), a landmine present but not the default (daily_balance is default). Two real statements (2026-04-06, 2026-05-06) were read and cross-checked against the validation doc's table — both matched exactly (14.07 EUR / 21.98 EUR interest, 1183.30 / 1909.98 EUR average principal, 31 / 30 days).
@@ -84,7 +84,7 @@ Last activity: 2026-10-17 -- Phase 22 implemented in draft PRs #63-#66; 588 back
 
 ## Issues / Blockers
 
-- None blocking. Open items raised by the audit and not yet addressed (decimal money arithmetic, tokens in `localStorage`, report query optimisation after measurement, `calculatePaymentBreakdown()` exposure, a MySQL two-connection concurrency test, the currency decision) are listed in ROADMAP.md under "Audit hardening". Backups and trusted-proxy configuration are deferred by decision (2026-09-19). Phases 17-21 are complete (chatbot, hardening & security proof, revolving interest engine correctness, multi-currency display, credit-card balance recompute correctness). Phase 21's own manual follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding and not tracked by any further phase. Phase 22 is implemented in draft PRs #63-#66; still open: a two-connection MySQL concurrency test of the condition lifecycle and a visual check of the Filament list. Phases 23-28 retain context and await planning in dependency order.
+- None blocking. Open items raised by the audit and not yet addressed (decimal money arithmetic, tokens in `localStorage`, report query optimisation after measurement, `calculatePaymentBreakdown()` exposure, a MySQL two-connection concurrency test, the currency decision) are listed in ROADMAP.md under "Audit hardening". Backups and trusted-proxy configuration are deferred by decision (2026-09-19). Phases 17-22 are complete (chatbot, hardening & security proof, revolving interest engine correctness, multi-currency display, credit-card balance recompute correctness, proactive notifications). Phase 21's own manual follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding and not tracked by any further phase. Phase 22 is implemented on uat; still open: a two-connection MySQL concurrency test of the condition lifecycle and a visual check of the Filament list. Phases 23-28 retain context and await planning in dependency order.
 
 ## Performance Metrics
 
