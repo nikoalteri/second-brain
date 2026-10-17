@@ -151,6 +151,32 @@ export const useStatementImportStore = defineStore('statementImport', () => {
 
         if (result.ok) {
             rows.value = rows.value.map((row) => (row.id === rowId ? result.body.data : row));
+
+            // Discarding or restoring (or a re-classification after an edit) can finish the import or
+            // change the counts: take the batch's status and summary from the server.
+            await refreshBatch();
+        }
+
+        return result;
+    }
+
+    async function refreshBatch() {
+        const result = await request(`/import-batches/${batch.value.id}`);
+
+        if (result.ok) {
+            adopt(result.body);
+        }
+
+        return result;
+    }
+
+    // Ends a partially confirmed import: what is still waiting is discarded and the batch is kept as history.
+    async function closeImport() {
+        const result = await request(`/import-batches/${batch.value.id}/close`, { method: 'POST' });
+
+        if (result.ok) {
+            adopt(result.body);
+            await loadRows();
         }
 
         return result;
@@ -203,6 +229,6 @@ export const useStatementImportStore = defineStore('statementImport', () => {
 
     return {
         targets, batch, preview, savedMapping, summary, rows, nextCursor, outcomes, loading, error, fieldErrors,
-        step, loadTargets, upload, applyMapping, loadRows, updateRow, confirm, discardBatch, clearBatch, reset,
+        step, loadTargets, upload, applyMapping, loadRows, updateRow, refreshBatch, closeImport, confirm, discardBatch, clearBatch, reset,
     };
 });

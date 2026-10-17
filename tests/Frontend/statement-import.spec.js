@@ -49,9 +49,12 @@ describe('row helpers', () => {
         expect(amountToMinor('abc')).toBeNull();
     });
 
-    it('labels columns from the header or sample', () => {
+    it('labels columns from the header, and never from the first data line when there is no header', () => {
         expect(columnOptions(preview(['Date', 'Amount'], ['1', '2']), 1)).toEqual([
             { value: 0, label: 'A: Date' }, { value: 1, label: 'B: Amount' },
+        ]);
+        expect(columnOptions(preview(['2026-10-01', '-5.00']), 0)).toEqual([
+            { value: 0, label: 'Column A' }, { value: 1, label: 'Column B' },
         ]);
     });
 
@@ -149,5 +152,33 @@ describe('statement import store', () => {
         expect(globalThis.fetch.mock.calls[0][1].method).toBe('DELETE');
         expect(store.batch).toBeNull();
         expect(store.step).toBe('upload');
+    });
+
+    it('takes the batch status and summary from the server after discarding a row', async () => {
+        store.batch = batch('mapped');
+        store.rows = [{ id: 5, status: 'draft' }];
+        globalThis.fetch = vi.fn()
+            .mockResolvedValueOnce(json({ data: { id: 5, status: 'discarded' } }))
+            .mockResolvedValueOnce(json({ data: batch('completed'), summary: { confirmed: 1, discarded: 1 } }));
+
+        await store.updateRow(5, { status: 'discarded' });
+
+        expect(globalThis.fetch.mock.calls[1][0]).toBe('/api/v1/import-batches/7');
+        expect(store.rows[0].status).toBe('discarded');
+        expect(store.step).toBe('done');
+        expect(store.summary.confirmed).toBe(1);
+    });
+
+    it('closes a partially confirmed import and reloads its rows', async () => {
+        store.batch = batch('mapped');
+        globalThis.fetch = vi.fn()
+            .mockResolvedValueOnce(json({ data: batch('completed'), summary: { confirmed: 1, discarded: 2 } }))
+            .mockResolvedValueOnce(json({ data: [{ id: 1, status: 'confirmed' }], meta: {} }));
+
+        await store.closeImport();
+
+        expect(globalThis.fetch.mock.calls[0][0]).toBe('/api/v1/import-batches/7/close');
+        expect(globalThis.fetch.mock.calls[0][1].method).toBe('POST');
+        expect(store.step).toBe('done');
     });
 });

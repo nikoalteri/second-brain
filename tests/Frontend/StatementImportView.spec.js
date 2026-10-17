@@ -119,10 +119,56 @@ describe('StatementImportView', () => {
         expect(update).toHaveBeenCalledWith(1, { status: 'discarded' });
     });
 
+    it('offers to finish a partially confirmed import instead of cancelling it', async () => {
+        const { store, wrapper } = render({
+            batch: { id: 1, status: 'mapped', currency: 'EUR' },
+            rows: [row(1)],
+            summary: { confirmed: 2, discarded: 0 },
+        });
+        const close = vi.spyOn(store, 'closeImport').mockResolvedValue({ ok: true });
+        const labels = wrapper.findAll('button').map((b) => b.text());
+
+        expect(labels).toContain('Finish import (discard the rest)');
+        expect(labels).not.toContain('Cancel import');
+
+        await wrapper.findAll('button').find((b) => b.text().startsWith('Finish import')).trigger('click');
+        expect(close).toHaveBeenCalledTimes(1);
+    });
+
     it('shows the finished state with the counts', () => {
         const { wrapper } = render({ batch: { id: 1, status: 'completed', currency: 'EUR' }, summary: { confirmed: 4, discarded: 1 } });
 
         expect(wrapper.text()).toContain('Import finished');
         expect(wrapper.text()).toContain('4 rows were added, 1 discarded.');
+    });
+
+    it('uses the singular when one row was added', () => {
+        const { wrapper } = render({ batch: { id: 1, status: 'completed', currency: 'EUR' }, summary: { confirmed: 1, discarded: 0 } });
+
+        expect(wrapper.text()).toContain('1 row was added, 0 discarded.');
+    });
+});
+
+describe('StatementImportView upload form', () => {
+    beforeEach(() => {
+        setActivePinia(createPinia());
+    });
+
+    it('starts the next import from a clean form: the delimiter choice does not carry over', async () => {
+        const { store, wrapper } = render({ targets: { accounts: [{ id: 1, name: 'Main', currency: 'EUR' }], cards: [] } });
+        vi.spyOn(store, 'upload').mockResolvedValue({ ok: true });
+
+        const [targetSelect, delimiterSelect] = wrapper.findAll('select');
+        await targetSelect.setValue('account:1');
+        await delimiterSelect.setValue('semicolon');
+        const input = wrapper.find('#statement-file');
+        Object.defineProperty(input.element, 'files', { value: [new File(['a'], 's.csv')] });
+        await input.trigger('change');
+        await wrapper.find('form').trigger('submit');
+
+        expect(store.upload).toHaveBeenCalledWith(expect.objectContaining({ delimiter: 'semicolon', accountId: '1' }));
+        await wrapper.vm.$nextTick();
+        expect(wrapper.findAll('select')[1].element.value).toBe('');
+        expect(wrapper.findAll('select')[0].element.value).toBe('');
     });
 });

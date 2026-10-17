@@ -59,6 +59,7 @@ const counts = computed(() => ({
     confirmed: store.rows.filter((row) => row.status === 'confirmed').length,
 }));
 const selectedIds = computed(() => [...selected.value].filter((id) => store.rows.some((row) => row.id === id && isPostable(row))));
+const addedCount = computed(() => store.summary?.confirmed ?? 0);
 const problemOutcomes = computed(() => store.outcomes.filter((outcome) => outcome.outcome !== 'confirmed'));
 
 function initMapping() {
@@ -74,7 +75,7 @@ function pickFile(event) {
 async function submitUpload() {
     const [kind, id] = target.value.split(':');
 
-    await store.upload({
+    const result = await store.upload({
         file: file.value,
         accountId: kind === 'account' ? id : null,
         creditCardId: kind === 'card' ? id : null,
@@ -83,6 +84,20 @@ async function submitUpload() {
         periodStart: periodStart.value,
         periodEnd: periodEnd.value,
     });
+
+    // The one-off choices belong to this file: the next import starts from a clean form.
+    if (result?.ok) {
+        resetUploadForm();
+    }
+}
+
+function resetUploadForm() {
+    target.value = '';
+    file.value = null;
+    delimiter.value = '';
+    endingBalance.value = '';
+    periodStart.value = '';
+    periodEnd.value = '';
 }
 
 function mappingPayload() {
@@ -156,7 +171,7 @@ async function startOver() {
         store.clearBatch();
     }
 
-    file.value = null;
+    resetUploadForm();
 }
 
 watch(() => store.step, (step) => {
@@ -198,7 +213,7 @@ onMounted(() => {
             </li>
         </ol>
 
-        <div v-if="store.error" role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <div v-if="store.error" role="alert" class="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             <p class="font-semibold">{{ store.error }}</p>
             <ul v-if="Object.keys(store.fieldErrors).length" class="mt-1 list-disc pl-5">
                 <li v-for="(messages, field) in store.fieldErrors" :key="field">{{ messages[0] }}</li>
@@ -316,7 +331,16 @@ onMounted(() => {
                 <button type="button" class="h-10 rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!selectedIds.length || store.loading" @click="confirmSelected">
                     Confirm selected ({{ selectedIds.length }})
                 </button>
-                <button type="button" class="h-10 rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-50" @click="startOver">Cancel import</button>
+                <button
+                    v-if="(store.summary?.confirmed ?? 0) > 0"
+                    type="button"
+                    class="h-10 rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    :disabled="store.loading"
+                    @click="store.closeImport()"
+                >
+                    Finish import (discard the rest)
+                </button>
+                <button v-else type="button" class="h-10 rounded-lg border border-gray-300 px-4 text-sm text-gray-700 hover:bg-gray-50" @click="startOver">Cancel import</button>
             </div>
 
             <LoadingSpinner v-if="store.loading && !store.rows.length" class="py-10" />
@@ -363,14 +387,14 @@ onMounted(() => {
         </section>
 
         <!-- 4. Done -->
-        <section v-else class="max-w-2xl rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900">
+        <section v-else class="max-w-2xl rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-700">
             <h2 class="text-lg font-semibold">Import finished</h2>
             <p class="mt-1 text-sm">
-                {{ store.summary?.confirmed ?? 0 }} rows were added, {{ store.summary?.discarded ?? 0 }} discarded.
+                {{ addedCount }} {{ addedCount === 1 ? 'row was' : 'rows were' }} added, {{ store.summary?.discarded ?? 0 }} discarded.
             </p>
             <div class="mt-4 flex gap-3">
                 <router-link to="/transactions" class="h-10 rounded-lg bg-amber-500 px-4 text-sm leading-10 text-gray-900 hover:bg-amber-600">View transactions</router-link>
-                <button type="button" class="h-10 rounded-lg border border-emerald-300 px-4 text-sm hover:bg-emerald-100" @click="startOver">Import another</button>
+                <button type="button" class="h-10 rounded-lg border border-emerald-200 px-4 text-sm hover:bg-gray-50" @click="startOver">Import another</button>
             </div>
         </section>
     </AppLayout>

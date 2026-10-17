@@ -182,7 +182,8 @@ export function guessMapping(previewRows) {
 export function columnOptions(previewRows, headerRow) {
     const rows = (previewRows ?? []).map((row) => row.cells ?? []);
     const width = Math.max(0, ...rows.map((cells) => cells.length));
-    const labelRow = headerRow > 0 ? rows[headerRow - 1] ?? [] : rows[0] ?? [];
+    // Only a real header names its columns; without one the first data line must not be used as labels.
+    const labelRow = headerRow > 0 ? rows[headerRow - 1] ?? [] : [];
 
     return Array.from({ length: width }, (_, index) => {
         const letter = String.fromCharCode(65 + (index % 26));
