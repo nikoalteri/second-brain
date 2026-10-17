@@ -89,11 +89,12 @@ async function handleLogout() {
 }
 
 onMounted(() => {
-    document.addEventListener('click', handleDocumentClick);
+    // Capture phase so opening the notification bell (which stops propagation) still closes this menu.
+    document.addEventListener('click', handleDocumentClick, true);
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('click', handleDocumentClick);
+    document.removeEventListener('click', handleDocumentClick, true);
 });
 </script>
 
