@@ -23,6 +23,7 @@ class NotificationCondition extends Model
         'current_severity',
         'max_notified_severity',
         'episode',
+        'publish_seq',
         'activated_at',
         'resolved_at',
     ];
@@ -32,6 +33,7 @@ class NotificationCondition extends Model
         'current_severity' => NotificationSeverity::class,
         'max_notified_severity' => NotificationSeverity::class,
         'episode' => 'integer',
+        'publish_seq' => 'integer',
         'activated_at' => 'datetime',
         'resolved_at' => 'datetime',
     ];
