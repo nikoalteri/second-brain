@@ -79,7 +79,23 @@ try {
             });
         })(),
         'import_promote' => app(ImportRowPromotionService::class)->promote(ImportBatch::findOrFail($spec['batch_id']), $spec['row_id']),
-        'import_confirm' => app(ImportRowPromotionService::class)->confirm(ImportBatch::findOrFail($spec['batch_id']), $spec['row_ids'] ?? null),
+        'import_confirm' => (function () use ($spec, $pause) {
+            $batch = ImportBatch::findOrFail($spec['batch_id']);
+
+            if (($spec['pause_on'] ?? null) === 'batch_locked') {
+                // The first ImportBatch read after this point is promote()'s locking read: pause there, i.e.
+                // AFTER confirm() chose its rows and BEFORE the target lock is taken.
+                $done = false;
+                ImportBatch::retrieved(function () use (&$done, $pause) {
+                    if (! $done) {
+                        $done = true;
+                        $pause();
+                    }
+                });
+            }
+
+            return app(ImportRowPromotionService::class)->confirm($batch, $spec['row_ids'] ?? null);
+        })(),
         'loan_posting' => (function () use ($spec) {
             app(LoanPaymentPostingService::class)->syncPosting(LoanPayment::findOrFail($spec['loan_payment_id']));
 

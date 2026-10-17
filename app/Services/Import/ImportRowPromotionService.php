@@ -46,8 +46,10 @@ class ImportRowPromotionService
      */
     public function confirm(ImportBatch $batch, ?array $rowIds): array
     {
-        $before = $batch->rows()->where('status', ImportRowStatus::DRAFT->value)->get(['id', 'duplicate_class', 'flags'])
-            ->mapWithKeys(fn (ImportRow $row) => [$row->id => self::needsDecision($row)])->all();
+        // What the owner could have reviewed when asking: the classification stored at the START of this
+        // request, before the pre-pass below refreshes it. An explicit choice is bound to exactly this.
+        $reviewed = $batch->rows()->where('status', ImportRowStatus::DRAFT->value)->get()
+            ->mapWithKeys(fn (ImportRow $row) => [$row->id => self::signature($row)])->all();
 
         $this->detector->detect($batch, reclassify: true);
 
@@ -60,20 +62,27 @@ class ImportRowPromotionService
         $outcomes = [];
 
         foreach ($ids as $id) {
-            $row = $current->get($id);
-
-            if ($rowIds !== null && $row && self::needsDecision($row) && ! ($before[$id] ?? false)) {
-                $outcomes[] = $this->result($id, 'skipped', 'This row now matches an existing entry; review it again.');
-
-                continue;
-            }
-
-            $outcomes[] = $this->promote($batch, $id);
+            // "All ready" never authorises a duplicate; an explicit list authorises exactly what was reviewed.
+            $outcomes[] = $rowIds === null
+                ? $this->promote($batch, $id, allowFlagged: false)
+                : $this->promote($batch, $id, allowFlagged: true, reviewedSignature: $reviewed[$id] ?? null);
         }
 
         $this->completeIfDone($batch);
 
         return $outcomes;
+    }
+
+    /**
+     * Identity of what a row was classified as: class, review flags and the matched ledger entry. A
+     * consent to post a flagged row is only valid for this exact signature.
+     */
+    public static function signature(ImportRow $row): string
+    {
+        $codes = $row->flags['codes'] ?? [];
+        sort($codes);
+
+        return md5(json_encode([$row->duplicate_class, $codes, $row->flags['match'] ?? null]));
     }
 
     /** A row "needs a decision" when it is a duplicate of the ledger or carries a review flag. */
@@ -87,12 +96,17 @@ class ImportRowPromotionService
     }
 
     /**
+     * @param bool $allowFlagged false for "confirm all ready": a row that is, or has become, a duplicate or
+     *                           carries a review flag is never posted. true for an explicit choice of rows.
+     * @param string|null $reviewedSignature for an explicit choice: the classification the owner could have
+     *                           seen (see signature()); a row classified differently under the lock is held back.
+     *                           null (direct calls) means "the current state is what was reviewed".
      * @return array{row_id: int, outcome: 'confirmed'|'skipped'|'failed', reason: ?string}
      */
-    public function promote(ImportBatch $batch, int $rowId): array
+    public function promote(ImportBatch $batch, int $rowId, bool $allowFlagged = true, ?string $reviewedSignature = null): array
     {
         try {
-            return DB::transaction(function () use ($batch, $rowId) {
+            return DB::transaction(function () use ($batch, $rowId, $allowFlagged, $reviewedSignature) {
                 // Batch first, then row, everywhere: a concurrent delete of the batch and this promotion
                 // exclude each other, so a posted movement can never lose the batch that explains it.
                 $openBatch = ImportBatch::query()->whereKey($batch->id)->lockForUpdate()->first();
@@ -132,16 +146,30 @@ class ImportRowPromotionService
                     return $this->result($rowId, 'skipped', "The row is in {$rowCurrency} but the target uses {$batch->currency}; no currency conversion is done. Discard it or fix the file.");
                 }
 
-                // The ledger may have changed since the owner reviewed this row (and since the pre-pass in
-                // confirm()). A row reviewed as clean that now matches is held back for review; one the
-                // owner saw flagged proceeds, because choosing it was a conscious decision.
-                if (! self::needsDecision($row) && ($match = $this->detector->matchOne($batch, $row)) !== null) {
+                // The ledger and the row's classification may have changed since the owner reviewed it (and
+                // since the pre-pass in confirm()): the decision is judged HERE, under the lock, against
+                // what this request was allowed to do, never inferred from flags other requests may have written.
+                $reviewAgain = fn () => $this->result($rowId, 'skipped', 'This row now matches an existing entry or changed since you reviewed it; review it again.');
+
+                if (! $allowFlagged && self::needsDecision($row)) {
+                    return $reviewAgain();
+                }
+
+                if ($allowFlagged && $reviewedSignature !== null && self::signature($row) !== $reviewedSignature) {
+                    return $reviewAgain();
+                }
+
+                // A flagged row is posted only with consent (explicit choice, classification unchanged since
+                // it was reviewed); every other row is re-checked against the live ledger.
+                $consented = $allowFlagged && self::needsDecision($row);
+
+                if (! $consented && ($match = $this->detector->matchOne($batch, $row)) !== null) {
                     $row->forceFill([
                         'duplicate_class' => $match['class'],
                         'flags' => array_replace($row->flags ?? ['codes' => [], 'related' => []], ['match' => ['type' => $match['type'], 'id' => $match['id']]]),
                     ])->save();
 
-                    return $this->result($rowId, 'skipped', 'This row now matches an existing entry; review it again.');
+                    return $reviewAgain();
                 }
 
                 $created = $batch->account_id

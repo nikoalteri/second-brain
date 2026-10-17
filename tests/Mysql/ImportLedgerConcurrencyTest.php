@@ -6,6 +6,8 @@ namespace Tests\Mysql;
 
 use App\Enums\ImportRowStatus;
 use App\Models\Loan;
+use App\Models\Transaction;
+use App\Services\Import\ImportDuplicateDetector;
 use App\Models\TransactionType;
 use App\Services\Import\ImportRowPromotionService;
 use Carbon\Carbon;
@@ -249,5 +251,72 @@ class ImportLedgerConcurrencyTest extends MysqlConcurrencyTestCase
 
         $this->assertSame('confirmed', app(ImportRowPromotionService::class)->promote($coffee, $rowId)['outcome'], 'flagged rows proceed when chosen');
         $this->assertSame(4, $this->ledgerCount($account));
+    }
+
+    // ─── the public confirm() path: consent is bound to the request, not to shared state ───────
+
+    /**
+     * "Confirm all ready" selected a clean row. Before it takes the target lock, another writer records the
+     * matching movement and another request reclassifies the draft (the row is now flagged). The flag was
+     * written by someone else: it must never be read as the owner's consent to post a duplicate.
+     */
+    public function test_all_ready_does_not_post_a_row_that_was_reclassified_by_a_concurrent_request(): void
+    {
+        $user = $this->user();
+        $account = $this->account($user);
+        $batch = $this->mappedBatch($user, $account, self::COFFEE);
+        $row = $this->row($batch, 2);
+        $this->assertSame('none', $row->duplicate_class);
+
+        // A: confirm(all_ready) chose the row and is about to lock the batch/target; frozen right there.
+        $a = $this->spec(['action' => 'import_confirm', 'user_id' => $user->id, 'batch_id' => $batch->id, 'row_ids' => null, 'pause_on' => 'batch_locked']);
+        $processA = $this->start($a);
+        $this->awaitFrozen($a, $processA);
+
+        // Meanwhile: the matching movement is committed, and a second request reclassifies the draft.
+        $user->forceFill([])->save();
+        DB::transaction(fn () => Transaction::create([
+            'user_id' => $user->id, 'account_id' => $account->id,
+            'transaction_type_id' => TransactionType::query()->firstOrCreate(['name' => 'Expense'], ['is_income' => false])->id,
+            'amount' => -5.0, 'date' => '2026-10-01', 'description' => 'Coffee',
+        ]));
+        app(ImportDuplicateDetector::class)->detect($batch->fresh(), reclassify: true);
+        $this->assertSame('exact', $this->row($batch, 2)->duplicate_class, 'now flagged, by someone else');
+
+        $this->release($a);
+        $outcomes = $this->outcomeOf($processA);
+
+        $this->assertSame(['skipped'], array_column($outcomes, 'outcome'));
+        $this->assertSame(1, $this->ledgerCount($account), 'only the movement that was already there');
+        $this->assertSame(995.0, $this->balance($account));
+        $this->assertSame(ImportRowStatus::DRAFT, $this->row($batch, 2)->status);
+    }
+
+    public function test_an_explicit_choice_is_bound_to_what_was_reviewed_and_a_changed_row_is_held_back(): void
+    {
+        $user = $this->user();
+        $account = $this->account($user);
+        $batch = $this->mappedBatch($user, $account, self::COFFEE);
+        $rowId = $this->row($batch, 2)->id;
+
+        // The owner picked this row while it was clean; the same race then flags it before the lock.
+        $a = $this->spec(['action' => 'import_confirm', 'user_id' => $user->id, 'batch_id' => $batch->id, 'row_ids' => [$rowId], 'pause_on' => 'batch_locked']);
+        $processA = $this->start($a);
+        $this->awaitFrozen($a, $processA);
+
+        DB::transaction(fn () => Transaction::create([
+            'user_id' => $user->id, 'account_id' => $account->id,
+            'transaction_type_id' => TransactionType::query()->firstOrCreate(['name' => 'Expense'], ['is_income' => false])->id,
+            'amount' => -5.0, 'date' => '2026-10-01', 'description' => 'Coffee',
+        ]));
+        app(ImportDuplicateDetector::class)->detect($batch->fresh(), reclassify: true);
+
+        $this->release($a);
+        $this->assertSame(['skipped'], array_column($this->outcomeOf($processA), 'outcome'));
+        $this->assertSame(1, $this->ledgerCount($account));
+
+        // The owner now sees it flagged and chooses it again: that is consent, bound to this classification.
+        $this->assertSame(['confirmed'], array_column(app(ImportRowPromotionService::class)->confirm($batch->fresh(), [$rowId]), 'outcome'));
+        $this->assertSame(2, $this->ledgerCount($account));
     }
 }

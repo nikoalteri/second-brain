@@ -472,4 +472,74 @@ class ImportConfirmationApiTest extends TestCase
         $this->assertSame(ImportRowStatus::DISCARDED, $this->row($id, 3)->status);
         $this->assertNotNull($this->row($id, 2)->transaction_id);
     }
+
+    // ─── consent is bound to the request ────────────────────────────────────────────────────
+
+    /** Records the matching movement and flags the draft as another request's reclassification would. */
+    private function raceOnce(int $batchId, int $rowId, int $accountId): void
+    {
+        $done = false;
+        ImportBatch::retrieved(function () use (&$done, $batchId, $rowId, $accountId) {
+            if ($done) {
+                return;
+            }
+
+            $done = true;
+            $type = TransactionType::query()->firstOrCreate(['name' => 'Expense'], ['is_income' => false]);
+            $id = DB::table('transactions')->insertGetId([
+                'user_id' => $this->user->id, 'account_id' => $accountId, 'transaction_type_id' => $type->id, 'amount' => -5,
+                'date' => '2026-10-01', 'description' => 'Coffee', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            DB::table('import_rows')->where('id', $rowId)->update([
+                'duplicate_class' => 'exact',
+                'flags' => json_encode(['codes' => [], 'match' => ['type' => 'transaction', 'id' => $id], 'related' => []]),
+            ]);
+        });
+    }
+
+    public function test_all_ready_never_treats_a_flag_written_by_another_request_as_consent(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $rowId = $this->row($id, 2)->id;
+        $this->assertSame('none', $this->row($id, 2)->duplicate_class);
+
+        // After confirm() picked the row, before promote() reads it: the row gets flagged and the movement exists.
+        $batch = ImportBatch::findOrFail($id); // loaded before the race hook: only promote()'s locking read triggers it
+        $this->raceOnce($id, $rowId, $this->account->id);
+        $outcomes = app(ImportRowPromotionService::class)->confirm($batch, null);
+
+        $this->assertSame(['skipped'], array_column($outcomes, 'outcome'));
+        $this->assertStringContainsString('review it again', $outcomes[0]['reason']);
+        $this->assertSame(1, Transaction::withoutGlobalScopes()->count(), 'only the pre-existing movement');
+        $this->assertSame(ImportRowStatus::DRAFT, $this->row($id, 2)->status);
+    }
+
+    public function test_an_explicit_choice_made_on_a_clean_row_does_not_cover_a_classification_that_changed(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $rowId = $this->row($id, 2)->id;
+
+        $batch = ImportBatch::findOrFail($id);
+        $this->raceOnce($id, $rowId, $this->account->id);
+        $outcomes = app(ImportRowPromotionService::class)->confirm($batch, [$rowId]);
+
+        $this->assertSame(['skipped'], array_column($outcomes, 'outcome'));
+        $this->assertSame(1, Transaction::withoutGlobalScopes()->count());
+
+        // Seen flagged, chosen again: consent for exactly that classification.
+        $this->assertSame(['confirmed'], array_column(app(ImportRowPromotionService::class)->confirm(ImportBatch::findOrFail($id), [$rowId]), 'outcome'));
+        $this->assertSame(2, Transaction::withoutGlobalScopes()->count());
+    }
+
+    public function test_promote_with_all_ready_semantics_refuses_any_flagged_row(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $rowId = $this->row($id, 2)->id;
+        $this->row($id, 2)->forceFill(['flags' => ['codes' => ['possible_transfer'], 'match' => null, 'related' => []]])->save();
+
+        $result = app(ImportRowPromotionService::class)->promote(ImportBatch::findOrFail($id), $rowId, allowFlagged: false);
+
+        $this->assertSame('skipped', $result['outcome']);
+        $this->assertSame(0, Transaction::withoutGlobalScopes()->count());
+    }
 }
