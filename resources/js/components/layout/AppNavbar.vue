@@ -22,6 +22,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
+import NotificationBell from '@/components/layout/NotificationBell.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -113,6 +114,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="flex items-center gap-2">
+            <NotificationBell />
+
             <div ref="userMenuRef" class="relative hidden md:block">
                 <button
                     type="button"
