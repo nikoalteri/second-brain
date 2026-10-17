@@ -2,57 +2,76 @@
 
 namespace App\Filament\Resources\Notifications\Tables;
 
+use App\Models\Notification;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\TrashedFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 class NotificationsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
-                TextColumn::make('user_id')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('type')
-                    ->badge(),
+                TextColumn::make('user.name')
+                    ->label('Owner')
+                    ->visible(fn () => (bool) auth()->user()?->hasRole('superadmin')),
+                TextColumn::make('severity')
+                    ->badge()
+                    ->color(fn (?string $state) => match ($state) {
+                        'critical' => 'danger',
+                        'exceeded' => 'warning',
+                        'warning' => 'info',
+                        default => 'gray',
+                    }),
                 TextColumn::make('title')
                     ->searchable(),
-                TextColumn::make('read_at')
-                    ->dateTime()
-                    ->sortable(),
-                TextColumn::make('action_url')
-                    ->searchable(),
+                TextColumn::make('message')
+                    ->wrap()
+                    ->limit(120),
+                IconColumn::make('is_read')
+                    ->label('Read')
+                    ->boolean()
+                    ->state(fn (Notification $record) => $record->read_at !== null),
                 TextColumn::make('created_at')
                     ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('deleted_at')
-                    ->dateTime()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable(),
             ])
             ->filters([
-                TrashedFilter::make(),
+                TernaryFilter::make('unread')
+                    ->label('Unread only')
+                    ->queries(
+                        true: fn ($query) => $query->whereNull('read_at'),
+                        false: fn ($query) => $query->whereNotNull('read_at'),
+                        blank: fn ($query) => $query,
+                    ),
             ])
             ->recordActions([
-                EditAction::make(),
+                Action::make('markRead')
+                    ->label('Mark read')
+                    ->icon('heroicon-o-check')
+                    ->visible(fn (Notification $record) => $record->read_at === null && $record->user_id === auth()->id())
+                    ->action(fn (Notification $record) => $record->forceFill(['read_at' => now()])->save()),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
+                    BulkAction::make('markRead')
+                        ->label('Mark read')
+                        ->icon('heroicon-o-check')
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records) {
+                            // Only the signed-in user's own notifications are ever changed.
+                            $records
+                                ->where('user_id', auth()->id())
+                                ->whereNull('read_at')
+                                ->each(fn (Notification $record) => $record->forceFill(['read_at' => now()])->save());
+                        }),
                 ]),
             ]);
     }

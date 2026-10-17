@@ -227,26 +227,54 @@ class SubscriptionService
         return DB::transaction(function () use ($subscription, $renewalDate) {
             // Serialise overlapping runs for the same subscription: the second one waits here and
             // then finds the renewal already posted instead of racing the lookup below.
-            Subscription::withoutGlobalScopes()->whereKey($subscription->getKey())->lockForUpdate()->first();
+            $locked = Subscription::withoutGlobalScopes()->whereKey($subscription->getKey())->lockForUpdate()->first();
+
+            if ($locked === null) {
+                return false;
+            }
+
+            // The instance was loaded before the lock: a run that held it may have switched the
+            // billing source meanwhile, so decide the path from the committed row.
+            $subscription->refresh()->loadMissing(['frequencyOption', 'creditCard', 'account']);
+
+            if ($this->isStaleRenewal($subscription, $renewalDate)) {
+                return false;
+            }
 
             if ($subscription->credit_card_id) {
-                $this->upsertCreditCardExpense($subscription, $renewalDate);
+                $created = $this->upsertCreditCardExpense($subscription, $renewalDate);
             } elseif ($subscription->account_id) {
-                $this->upsertTransaction($subscription, $renewalDate);
+                $created = $this->upsertTransaction($subscription, $renewalDate);
             } else {
                 return false;
             }
 
-            $subscription->updateQuietly([
-                'next_renewal_date' => $this->calculateNextRenewalDate($subscription, Carbon::parse($renewalDate)),
-            ]);
+            // A publisher failure propagates and rolls back the charge and the date advance together.
+            if ($created) {
+                app(SubscriptionPriceHikeDetector::class)->detect($subscription, Carbon::parse($renewalDate));
+            }
+
+            // A run that already advanced past this date must not be rewound by a repeat of it.
+            if ($subscription->next_renewal_date === null || $subscription->next_renewal_date->lte(Carbon::parse($renewalDate))) {
+                $subscription->updateQuietly([
+                    'next_renewal_date' => $this->calculateNextRenewalDate($subscription, Carbon::parse($renewalDate)),
+                ]);
+            }
 
             return true;
         });
     }
 
-    private function upsertTransaction(Subscription $subscription, CarbonInterface $renewalDate): void
+    /**
+     * @return bool true when a new charge was inserted, false when the renewal was already posted
+     */
+    private function upsertTransaction(Subscription $subscription, CarbonInterface $renewalDate): bool
     {
+        // The renewal may already be posted on the card path (source switched between runs).
+        if ($this->hasCardPosting($subscription, $renewalDate)) {
+            return false;
+        }
+
         $typeId = TransactionType::query()->firstOrCreate(
             ['name' => 'Expense'],
             ['is_income' => false]
@@ -261,6 +289,8 @@ class SubscriptionService
             'amount' => -abs($this->getBillingAmount($subscription)),
             'date' => $renewalDate,
             'subscription_renewal_date' => $renewalDate,
+            'renewal_frequency' => $subscription->frequencyOption?->slug,
+            'renewal_currency' => $subscription->account?->currency,
             'competence_month' => $renewalDate->format('Y-m'),
             'description' => 'Subscription renewal - ' . $subscription->name,
             'notes' => $subscription->notes,
@@ -275,40 +305,89 @@ class SubscriptionService
             ->first();
 
         if ($existing) {
-            if ($existing->trashed()) {
-                $existing->restore();
-            }
+            $this->keepExistingTransaction($existing);
 
-            $existing->fill($payload)->save();
-
-            return;
+            return false;
         }
 
         try {
             Transaction::create($payload);
+
+            return true;
         } catch (UniqueConstraintViolationException) {
             // The unique index caught a concurrent run that posted this renewal after our lookup.
-            $existing = Transaction::withTrashed()
-                ->where('subscription_id', $subscription->id)
-                ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
-                ->firstOrFail();
+            $this->keepExistingTransaction(
+                Transaction::withTrashed()
+                    ->where('subscription_id', $subscription->id)
+                    ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
+                    ->firstOrFail()
+            );
 
-            if ($existing->trashed()) {
-                $existing->restore();
-            }
-
-            $existing->fill($payload)->save();
+            return false;
         }
     }
 
-    private function upsertCreditCardExpense(Subscription $subscription, CarbonInterface $renewalDate): void
+    /**
+     * The caller picked this renewal before waiting for the lock. If the owner meanwhile cancelled
+     * the subscription, turned automatic posting off or postponed it past this date, nothing is
+     * posted. A date that is already posted still falls through so a repeat stays idempotent.
+     */
+    private function isStaleRenewal(Subscription $subscription, CarbonInterface $renewalDate): bool
     {
+        if ($subscription->status !== SubscriptionStatus::ACTIVE
+            || ! $subscription->auto_create_transaction
+            || $subscription->next_renewal_date === null) {
+            return true;
+        }
+
+        return $subscription->next_renewal_date->gt(Carbon::parse($renewalDate))
+            && ! $this->hasCardPosting($subscription, $renewalDate)
+            && ! $this->hasAccountPosting($subscription, $renewalDate);
+    }
+
+    private function hasCardPosting(Subscription $subscription, CarbonInterface $renewalDate): bool
+    {
+        return CreditCardExpense::query()
+            ->where('subscription_id', $subscription->id)
+            ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
+            ->exists();
+    }
+
+    private function hasAccountPosting(Subscription $subscription, CarbonInterface $renewalDate): bool
+    {
+        return Transaction::withTrashed()
+            ->where('subscription_id', $subscription->id)
+            ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
+            ->exists();
+    }
+
+    // A retry never rewrites the posted amount or snapshots: the first charge is the history.
+    private function keepExistingTransaction(Transaction $existing): void
+    {
+        if ($existing->trashed()) {
+            $existing->restore();
+        }
+    }
+
+    /**
+     * @return bool true when a new charge was inserted, false when the renewal was already posted
+     */
+    private function upsertCreditCardExpense(Subscription $subscription, CarbonInterface $renewalDate): bool
+    {
+        // The renewal may already be posted on the account path (source switched between runs).
+        if ($this->hasAccountPosting($subscription, $renewalDate)) {
+            return false;
+        }
+
         $payload = [
             'credit_card_id' => $subscription->credit_card_id,
             'subscription_id' => $subscription->id,
             'spent_at' => $renewalDate,
             'posted_at' => $renewalDate,
             'subscription_renewal_date' => $renewalDate,
+            'renewal_frequency' => $subscription->frequencyOption?->slug,
+            // Cards carry no currency of their own; the settlement account's currency is the evidence.
+            'renewal_currency' => $subscription->creditCard?->account?->currency,
             'amount' => $this->getBillingAmount($subscription),
             'description' => 'Subscription renewal - ' . $subscription->name,
             'notes' => $subscription->notes,
@@ -320,21 +399,16 @@ class SubscriptionService
             ->first();
 
         if ($existing) {
-            $existing->fill($payload)->save();
-
-            return;
+            return false;
         }
 
         try {
             CreditCardExpense::create($payload);
+
+            return true;
         } catch (UniqueConstraintViolationException) {
             // See upsertTransaction(): a concurrent run posted this renewal after our lookup.
-            CreditCardExpense::query()
-                ->where('subscription_id', $subscription->id)
-                ->whereDate('subscription_renewal_date', $renewalDate->toDateString())
-                ->firstOrFail()
-                ->fill($payload)
-                ->save();
+            return false;
         }
     }
 }
