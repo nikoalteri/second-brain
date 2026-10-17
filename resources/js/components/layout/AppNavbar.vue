@@ -22,6 +22,7 @@ import {
 } from '@heroicons/vue/24/outline';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
+import NotificationBell from '@/components/layout/NotificationBell.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -88,11 +89,12 @@ async function handleLogout() {
 }
 
 onMounted(() => {
-    document.addEventListener('click', handleDocumentClick);
+    // Capture phase so opening the notification bell (which stops propagation) still closes this menu.
+    document.addEventListener('click', handleDocumentClick, true);
 });
 
 onBeforeUnmount(() => {
-    document.removeEventListener('click', handleDocumentClick);
+    document.removeEventListener('click', handleDocumentClick, true);
 });
 </script>
 
@@ -113,6 +115,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="flex items-center gap-2">
+            <NotificationBell />
+
             <div ref="userMenuRef" class="relative hidden md:block">
                 <button
                     type="button"

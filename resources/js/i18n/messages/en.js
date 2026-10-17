@@ -23,6 +23,16 @@ export default {
             closeMenu: 'Close menu',
         },
     },
+    notifications: {
+        title: 'Notifications',
+        open: 'Open notifications',
+        unreadCount: '{count} unread notifications',
+        unread: 'Unread',
+        loading: 'Loading notifications…',
+        empty: 'You have no notifications.',
+        error: 'Notifications could not be loaded.',
+        retry: 'Retry',
+    },
     settings: {
         title: 'Settings',
         preferences: 'Preferences',

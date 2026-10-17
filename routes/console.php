@@ -7,6 +7,7 @@ use App\Models\CreditCard;
 use App\Models\Loan;
 use App\Services\CreditCardCycleService;
 use App\Services\LoanScheduleService;
+use App\Services\Notifications\FinanceNotificationDigest;
 use App\Services\SubscriptionService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -163,8 +164,29 @@ Artisan::command('subscriptions:sync-renewals {--date=}', function () {
     $this->info("Subscriptions checked and synced through {$throughDate->toDateString()}: {$synced} renewal(s) processed.");
 })->purpose('Post due subscription renewals to transactions or credit card expenses');
 
+Artisan::command('finance:notifications-digest {--date=}', function () {
+    $date = $this->option('date') ? Carbon::parse($this->option('date')) : now();
+    $digest = app(FinanceNotificationDigest::class);
+
+    // One owner's failure must not stop the others, and a failed owner keeps its
+    // existing conditions (nothing is resolved without a complete evaluation).
+    $totals = $digest->run($date, function (int $userId, Throwable $e) {
+        Log::error("finance:notifications-digest failed for user {$userId}", ['exception' => $e]);
+        $this->error("User {$userId}: {$e->getMessage()}");
+    });
+
+    $purged = $digest->purgeReadNotifications($date);
+
+    $this->info("Notifications digest for {$date->toDateString()}: {$totals['users']} user(s), {$totals['created']} created, {$totals['resolved']} resolved, {$purged} old read purged, {$totals['failed']} failed.");
+
+    if ($totals['failed'] > 0) {
+        return Command::FAILURE;
+    }
+})->purpose('Evaluate budget, credit card, loan and subscription conditions and publish in-app notifications');
+
 Schedule::command('loans:sync-installments')->dailyAt('01:50')->withoutOverlapping();
 Schedule::command('subscriptions:sync-renewals')->dailyAt('01:55')->withoutOverlapping();
 Schedule::command('credit-cards:generate-cycles --issue-ready')->dailyAt('02:00')->withoutOverlapping();
+Schedule::command('finance:notifications-digest')->dailyAt('02:05')->withoutOverlapping();
 // Consumed refresh tokens stay for a week past their expiry so their reuse can still be detected.
 Schedule::command('sanctum:prune-expired --hours=168')->dailyAt('03:30');
