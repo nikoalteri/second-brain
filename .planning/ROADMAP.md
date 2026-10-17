@@ -1,7 +1,7 @@
 # Fluxa — Roadmap
 
 **Project:** Fluxa Personal Finance Tracker  
-**Last Updated:** 2026-09-24
+**Last Updated:** 2026-10-17
 
 ---
 
@@ -110,7 +110,7 @@ Plans:
 - [x] 16-01-credit-card-security-proof-PLAN.md — Make the credit-card proof pack trustworthy and prove the highest-risk REST access/scoping boundary first
 - [x] 16-02-credit-card-lifecycle-proof-and-boundary-update-PLAN.md — Add one credible issue-to-mark-paid proof and update the confidence boundary from actual proof results
 
-Phase 16 is complete. Later phases (17-21, delivered, and 22-28, scoped but not planned) are listed further down; the confidence boundary above still reflects Phase 13, and Phase 16 promoted only the credit-card REST slice it proved.
+Phase 16 is complete. Later phases (17-21 delivered, Phase 22 planned, and Phases 23-28 scoped but not planned) are listed further down; the confidence boundary above still reflects Phase 13, and Phase 16 promoted only the credit-card REST slice it proved.
 
 ---
 
@@ -271,7 +271,7 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 **Goal:** The `Notification` model and table exist but nothing in the codebase writes to them (`grep -rn "Notification::create" app/` returns zero matches). This phase wires real triggers — budget-threshold alerts (`BudgetAlertService` already computes `alert_status` but never surfaces it proactively), credit card due-date/limit warnings, loan installment due dates, subscription renewal reminders — into actual `Notification` rows, delivered in-app only via a daily digest command.
 **Requirements**: D-01 through D-09 (from 22-CONTEXT.md)
 **Depends on:** Phase 21
-**Plans:** not started — context gathered, ready for `/gsd-plan-phase 22`
+**Plans:** 3 plans prepared, 0 executed — `22-01-PLAN.md` (durable condition lifecycle), `22-02-PLAN.md` (triggers and daily digest), `22-03-PLAN.md` (REST, SPA and Filament). Start with 22-01; see `22-RESEARCH.md` for source-verified integration details.
 **Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 22-CONTEXT.md, section "Audit-derived requirements".
 
 ### Phase 23: Subscription price-hike detection
@@ -330,4 +330,4 @@ During this brainstorm the user asked for a simpler, non-monthly per-category an
 
 ## Direct Next Command
 
-Phases 22-28 are scoped (2026-09-17) from a product-enhancement brainstorm. All have completed discuss-phase (CONTEXT.md + DISCUSSION-LOG.md) and, since 2026-09-18, an "Audit-derived requirements" section in each CONTEXT.md; none has been researched, planned, or executed. Plan them in dependency order — `/gsd-plan-phase 22` first (Phase 23 depends on it), then 25 (Phases 27 and 28 both depend on its staging data model), then 24/26 together, then 27/28 — after settling the currency decision above. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).
+Phase 22 now has research and three execution plans; implementation has not started. Execute `22-01-PLAN.md`, then 22-02 and 22-03. Phase 23 depends on Phase 22; after it, plan Phase 25 (Phases 27 and 28 depend on its staging data model), then 24/26 together, then 27/28. Settle the currency decision above before planning Phases 24-27. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).

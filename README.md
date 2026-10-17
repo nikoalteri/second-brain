@@ -14,7 +14,7 @@ The latest local backend verification passed **537 tests and 1,962 assertions**.
 
 The project uses an evidence-first approach. Backend tests cover authentication/settings, ownership boundaries, account operations, reports/exports, chatbot intents, credit-card workflows and calculations, 2FA, vault access, transfers, and savings goals. Broader SPA behavior, GraphQL finance operations, and all combinations of financial workflows still require targeted validation; a passing backend suite is not full end-to-end UI coverage.
 
-Phases 22–28 have discussion context but are **not implemented**. The next planning step is Phase 22 (proactive notifications). Historical production/UAT credit-card balances still need the manual reconciliation described below.
+Phases 22–28 have discussion context but are **not implemented**. Phase 22 (proactive notifications) now has research and three execution plans; implementation starts with `22-01-PLAN.md`. Historical production/UAT credit-card balances still need the manual reconciliation described below.
 
 ## Features in the current codebase
 
