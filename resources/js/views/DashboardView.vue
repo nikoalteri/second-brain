@@ -30,6 +30,7 @@ import {
 import { Bar, Doughnut, Line } from 'vue-chartjs';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import BudgetAlertPanel from '@/components/reports/BudgetAlertPanel.vue';
+import CashFlowForecastCard from '@/components/dashboard/CashFlowForecastCard.vue';
 import KpiCard from '@/components/ui/KpiCard.vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
 import { useCurrency } from '@/composables/useCurrency.js';
@@ -38,6 +39,7 @@ import { useLocalizedLabels } from '@/composables/useLocalizedLabels.js';
 import { useToast } from '@/composables/useToast.js';
 import { useUserPreferences } from '@/composables/useUserPreferences.js';
 import { useAuthStore } from '@/stores/auth.js';
+import { useCashFlowForecastStore } from '@/stores/cashFlowForecast.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Title, Tooltip, Legend);
 
@@ -46,6 +48,7 @@ const { translateCategoryName } = useLocalizedLabels();
 const { addToast } = useToast();
 const { locale } = useUserPreferences();
 const auth = useAuthStore();
+const cashFlowForecast = useCashFlowForecastStore();
 const now = new Date();
 const year = now.getFullYear();
 const month = now.getMonth() + 1;
@@ -519,6 +522,7 @@ onMounted(() => {
     void fetchAccounts();
     void fetchUpcomingPayments();
     void fetchBudgetAlerts();
+    void cashFlowForecast.fetchForecast();
 });
 </script>
 
@@ -651,6 +655,10 @@ onMounted(() => {
                     empty-label="No current dashboard budget alerts."
                     compact
                 />
+            </div>
+
+            <div class="mt-6">
+                <CashFlowForecastCard />
             </div>
 
             <div class="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
