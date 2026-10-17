@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\CreditCardVaultController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\LoanController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\SavingGoalController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SubscriptionFrequencyController;
@@ -84,6 +85,7 @@ Route::prefix('v1')->group(function () {
         Route::get('subscription-frequencies', [SubscriptionFrequencyController::class, 'index']);
 
         Route::get('budgets/monthly', [BudgetController::class, 'index']);
+        Route::get('notifications', [NotificationController::class, 'index']);
         Route::get('reports/finance', [FinanceReportController::class, 'summary']);
         Route::get('reports/finance/export', [FinanceReportController::class, 'export']);
         Route::get('reports/finance/details', [FinanceReportController::class, 'details']);
@@ -136,6 +138,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('saving-goals/{savingGoal}', [SavingGoalController::class, 'update']);
         Route::delete('saving-goals/{savingGoal}', [SavingGoalController::class, 'destroy']);
 
+        Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead'])->whereNumber('notification');
         Route::put('budgets/monthly/{transactionCategory}', [BudgetController::class, 'upsert']);
         Route::delete('budgets/monthly/{transactionCategory}', [BudgetController::class, 'destroy']);
     });
