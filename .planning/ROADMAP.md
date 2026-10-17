@@ -260,7 +260,7 @@ Second round (PRs #22-#26, #28-#34):
 - a two-connection MySQL concurrency test;
 - the frontend and the MFA setup were verified only by build and tests, not exercised in a browser.
 
-**Decision needed before planning Phases 24-27 (currency):** `Money` only changes the display symbol and separators without conversion, while accounts carry a currency and some totals add all currencies under one label. Choose one of: a single effective currency; a currency per account with separate totals; or real FX conversion. The audit proposes explicit totals per currency without an FX engine for the current phases. The choice affects import, dedup, precision and reconciliation.
+**Currency rule for Phase 24:** the forecast has explicit totals per account currency and no FX conversion or cross-currency grand total (24-RESEARCH.md). This is the conservative choice for a read-only projection; Phase 25-27 import, dedup, precision and reconciliation details still need their own currency decisions. `Money` only changes the display symbol and separators without conversion, while older dashboard totals may still add currencies under one label.
 
 Third round (2026-09-20, PRs #49-#55): the GraphQL request size limit also applies to GET requests (#49); expenses nested under each credit card cycle are capped (#50); `SubscriptionService` totals use an explicit owner (#51); refresh-token consumption is atomic with issuing the new tokens (#52); one failing item no longer stops the nightly scheduled commands (#53); the credit card lock-order test is deterministic (#54).
 
@@ -279,16 +279,16 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 **Goal:** Detect when a subscription's renewal amount increases relative to its prior charge and surface it through the notification channel built in Phase 22, instead of the increase only being visible by manually comparing past transactions.
 **Requirements**: D-01 through D-05 (from 23-CONTEXT.md)
 **Depends on:** Phase 22 (reuses its notification delivery)
-**Plans:** 23-01 reliable renewal-charge history and UAT posting verification; 23-02 increase detection and in-app notification. Research and plans prepared 2026-10-17; implementation not started.
+**Plans:** 23-01 reliable renewal-charge history and UAT posting verification; 23-02 increase detection and in-app notification. Implemented and merged to `uat` in PR #70 on 2026-10-17. See Phase 23 summaries for validation and remaining UAT observation.
 **Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 23-CONTEXT.md, section "Audit-derived requirements".
 
 ### Phase 24: Cash-flow forecast ("safe to spend")
 
-**Goal:** Aggregate already-tracked upcoming commitments (subscription renewals, loan installments, credit card cycle due payments) against current account balances into a forward-looking projection, instead of the user having to mentally net these out from separate pages. Reuses the existing `UpcomingPaymentsService` (Phase 17) rather than building new aggregation logic.
+**Goal:** Project known subscription renewals, loan installments and credit-card cycle payments against active, non-goal-linked account balances for the next 30 days. Reuse the existing upcoming-payment sources while adding the posting, recurrence, source-account and currency classification needed for a trustworthy estimate.
 **Requirements**: D-01 through D-04 (from 24-CONTEXT.md)
 **Depends on:** Phase 21
-**Plans:** not started — context gathered, ready for `/gsd-plan-phase 24`
-**Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 24-CONTEXT.md, section "Audit-derived requirements".
+**Plans:** 24-01 obligation classification and recurrence; 24-02 per-currency forecast service and API; 24-03 Dashboard presentation and verification. Research and plans prepared 2026-10-17; implementation not started.
+**Audit constraints:** 24-RESEARCH.md settles the audit-derived coverage and currency issues from 24-CONTEXT.md. The figure is an estimate with explicit gaps, not a guaranteed spendable balance.
 
 ### Phase 25: Bank statement import & reconciliation
 
@@ -337,4 +337,4 @@ During this brainstorm the user asked for a simpler, non-monthly per-category an
 
 ## Direct Next Command
 
-Phase 22 is implemented on `uat`. Complete its MySQL concurrency proof and `/hub/notifications` visual check as follow-ups. Phase 23 depends on Phase 22; after it, plan Phase 25 (Phases 27 and 28 depend on its staging data model), then 24/26 together, then 27/28. Settle the currency decision above before planning Phases 24-27. Phase 21's own follow-up is still outstanding: run `php artisan credit-cards:balance-audit` in production/uat and manually reconcile any flagged real cards against real statements (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).
+Phase 24 is planned; execute 24-01, then 24-02 and 24-03. Phase 26's Dashboard work should use the resulting API/component boundaries. Phase 25 should be planned before Phases 27 and 28, which depend on its staging data model. Phase 22's MySQL concurrency proof and `/hub/notifications` visual check remain follow-ups; Phase 23's UAT renewal observation remains separate. Phase 21's manual `php artisan credit-cards:balance-audit` in production/uat is also outstanding (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).

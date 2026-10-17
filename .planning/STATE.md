@@ -3,22 +3,22 @@ gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: — Planning Realignment ⏳
 status: planning
-stopped_at: Phase 23 researched and planned; Phase 22 verification follow-ups remain
+stopped_at: Phase 24 researched and planned; implementation not started
 last_updated: "2026-10-17T00:00:00.000Z"
-last_activity: "2026-10-17 -- Phase 23 researched and planned (23-01 and 23-02); UAT renewal posting observation awaits the next scheduled run after the VM was off. Phase 22 is implemented on uat; its MySQL concurrency and /hub visual checks remain."
+last_activity: "2026-10-17 -- Phase 24 researched and planned (24-01 through 24-03) from current uat source. Phase 23 was merged to uat in PR #70; its UAT renewal observation remains open."
 progress:
   total_phases: 16
-  completed_phases: 10
-  total_plans: 29
-  completed_plans: 27
-  percent: 63
+  completed_phases: 11
+  total_plans: 32
+  completed_plans: 29
+  percent: 69
 ---
 
 # v5.1 Project State
 
 **Project:** Fluxa — Personal Finance Tracker  
 **Milestone:** v5.1 — Planning Realignment  
-**Status:** Phase 23 planned, not implemented; Phase 22 on `uat`
+**Status:** Phase 24 planned, not implemented; Phase 23 on `uat`
 **Updated:** 2026-10-17
 
 ---
@@ -28,19 +28,19 @@ progress:
 See: `.planning/PROJECT.md` (planning realignment milestone definition)
 
 **Core value:** Keep personal finance data and behavior consistent across every surface, with one shared source of truth for preferences, reporting, and user-facing workflows.  
-**Current focus:** Verify the UAT renewal posting observation after the next 01:55 run, then execute Phase 23. Phase 22's MySQL concurrency proof and `/hub/notifications` visual check remain open.
+**Current focus:** Execute Phase 24's 30-day forecast plans. The Phase 23 UAT renewal observation and Phase 22's MySQL concurrency proof and `/hub/notifications` visual check remain open.
 
 ## Current Position
 
-Phase: 23 — PLANNED (Phase 22 implemented on UAT)
-Plan: 23-01 and 23-02 ready; implementation not started. Phase 22's two verification follow-ups remain.
-Status: Phase 22 is delivered to `uat`. Phase 23 has research and two execution plans; the user's missing-renewal observation is not yet a confirmed defect. Phase 21's manual balance-audit follow-up remains outstanding.
-Last activity: 2026-10-17 -- Phase 23 planned from current `uat` code. The UAT VM had been off, so renewals will be rechecked after the next scheduled run; no live financial data was changed.
+Phase: 24 — PLANNED (Phase 23 merged to UAT)
+Plan: 24-01, 24-02 and 24-03 ready; implementation not started.
+Status: Phase 24 has research and three execution plans. The user's missing-renewal observation is still separate from Phase 23's merged code. Phase 21's manual balance-audit and Phase 22's two verification follow-ups remain outstanding.
+Last activity: 2026-10-17 -- Phase 24 planned from current `uat` code, with per-currency estimates and explicit coverage gaps.
 
 ## Session Resume
 
-**Stopped at:** Phase 23 planned; UAT renewal observation awaits next scheduled run
-**Resume file:** .planning/phases/23-subscription-price-hike-detection/23-01-PLAN.md
+**Stopped at:** Phase 24 planned; implementation awaits 24-01
+**Resume file:** .planning/phases/24-cash-flow-forecast-safe-to-spend/24-01-PLAN.md
 
 ## Accumulated Context
 
@@ -84,7 +84,7 @@ Last activity: 2026-10-17 -- Phase 23 planned from current `uat` code. The UAT V
 
 ## Issues / Blockers
 
-- None blocking. Open items raised by the audit and not yet addressed (decimal money arithmetic, tokens in `localStorage`, report query optimisation after measurement, `calculatePaymentBreakdown()` exposure, a MySQL two-connection concurrency test, the currency decision) are listed in ROADMAP.md under "Audit hardening". Backups and trusted-proxy configuration are deferred by decision (2026-09-19). Phases 17-22 are complete (chatbot, hardening & security proof, revolving interest engine correctness, multi-currency display, credit-card balance recompute correctness, proactive notifications). Phase 21's own manual follow-up (`php artisan credit-cards:balance-audit` in production/uat) is still outstanding and not tracked by any further phase. Phase 22 is implemented on uat; still open: a two-connection MySQL concurrency test of the condition lifecycle and a visual check of the Filament list. Phases 23-28 retain context and await planning in dependency order.
+- None blocking. Open items raised by the audit and not yet addressed (decimal money arithmetic, tokens in `localStorage`, report query optimisation after measurement, `calculatePaymentBreakdown()` exposure, a MySQL two-connection concurrency test) are listed in ROADMAP.md under "Audit hardening". Phase 24 uses separate totals per currency; import and reconciliation currency details remain open. Backups and trusted-proxy configuration are deferred by decision (2026-09-19). Phases 17-23 are implemented on uat. Phase 21's manual `credit-cards:balance-audit` follow-up remains outstanding. Phase 22 still needs a two-connection MySQL concurrency test and Filament-list visual check. Phase 23's UAT renewal observation remains open. Phase 24 is planned; Phases 25-28 retain context and await planning.
 
 ## Performance Metrics
 
