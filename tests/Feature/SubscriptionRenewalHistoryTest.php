@@ -264,4 +264,16 @@ class SubscriptionRenewalHistoryTest extends TestCase
         $this->assertSame(0, CreditCardExpense::query()->where('subscription_id', $this->subscription->id)->count());
         $this->assertSame(1, Transaction::withoutGlobalScopes()->where('subscription_id', $this->subscription->id)->count());
     }
+
+    public function test_repeating_an_old_renewal_does_not_rewind_the_next_renewal_date(): void
+    {
+        $this->renew($this->subscription, '2026-04-23');
+        $this->renew($this->subscription, '2026-05-23');
+        $this->assertSame('2026-06-23', $this->subscription->fresh()->next_renewal_date->toDateString());
+
+        $this->renew($this->subscription, '2026-04-23');
+
+        $this->assertSame('2026-06-23', $this->subscription->fresh()->next_renewal_date->toDateString());
+        $this->assertSame(2, Transaction::withoutGlobalScopes()->where('subscription_id', $this->subscription->id)->count());
+    }
 }

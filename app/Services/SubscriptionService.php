@@ -250,9 +250,12 @@ class SubscriptionService
                 app(SubscriptionPriceHikeDetector::class)->detect($subscription, Carbon::parse($renewalDate));
             }
 
-            $subscription->updateQuietly([
-                'next_renewal_date' => $this->calculateNextRenewalDate($subscription, Carbon::parse($renewalDate)),
-            ]);
+            // A run that already advanced past this date must not be rewound by a repeat of it.
+            if ($subscription->next_renewal_date === null || $subscription->next_renewal_date->lte(Carbon::parse($renewalDate))) {
+                $subscription->updateQuietly([
+                    'next_renewal_date' => $this->calculateNextRenewalDate($subscription, Carbon::parse($renewalDate)),
+                ]);
+            }
 
             return true;
         });
