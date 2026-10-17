@@ -17,14 +17,15 @@ class ImportRowNormalizer
     /**
      * @param list<string> $cells
      * @param array<string, mixed> $mapping validated mapping
+     * @param list<int> $numericColumns columns that held a real XLSX number: parsed canonically
      * @return array{date: string, amount_minor: int, description: string, category: ?string, currency: ?string}
      *
      * @throws ImportFileException with a message safe to show next to the row
      */
-    public function normalize(array $cells, array $mapping, string $fileFormat): array
+    public function normalize(array $cells, array $mapping, string $fileFormat, array $numericColumns = []): array
     {
         $date = $this->date($this->cell($cells, $mapping['date_column']), $mapping['date_format'], $fileFormat);
-        $amount = $this->amount($cells, $mapping);
+        $amount = $this->amount($cells, $mapping, $numericColumns);
 
         $description = preg_replace('/\s+/u', ' ', $this->cell($cells, $mapping['description_column'])) ?? '';
         $description = mb_substr(trim($description), 0, 500);
@@ -90,11 +91,18 @@ class ImportRowNormalizer
         return $date;
     }
 
-    /** @param list<string> $cells */
-    private function amount(array $cells, array $mapping): int
+    /**
+     * @param list<string> $cells
+     * @param list<int> $numericColumns
+     */
+    private function amount(array $cells, array $mapping, array $numericColumns): int
     {
-        $decimal = $mapping['decimal_separator'];
-        $thousands = $mapping['thousands_separator'];
+        // A real number is already canonical ("-12.5"): the separators describe TEXT and would corrupt it.
+        $parse = function (string $text, int $column) use ($mapping, $numericColumns): int {
+            return in_array($column, $numericColumns, true)
+                ? $this->amounts->parse($text, '.', '')
+                : $this->amounts->parse($text, $mapping['decimal_separator'], $mapping['thousands_separator']);
+        };
 
         if ($mapping['amount_mode'] === 'split') {
             $debit = trim($this->cell($cells, $mapping['debit_column']));
@@ -109,10 +117,10 @@ class ImportRowNormalizer
             }
 
             $minor = $debit !== ''
-                ? -abs($this->amounts->parse($debit, $decimal, $thousands))
-                : abs($this->amounts->parse($credit, $decimal, $thousands));
+                ? -abs($parse($debit, $mapping['debit_column']))
+                : abs($parse($credit, $mapping['credit_column']));
         } else {
-            $minor = $this->amounts->parse($this->cell($cells, $mapping['amount_column']), $decimal, $thousands);
+            $minor = $parse($this->cell($cells, $mapping['amount_column']), $mapping['amount_column']);
         }
 
         return ! empty($mapping['invert_sign']) ? -$minor : $minor;

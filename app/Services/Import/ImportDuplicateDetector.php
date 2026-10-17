@@ -24,7 +24,11 @@ class ImportDuplicateDetector
     public const PAYMENT_WINDOW_DAYS = 5;
     private const SIMILARITY_PERCENT = 80;
 
-    public function detect(ImportBatch $batch): void
+    /**
+     * @param bool $reclassify re-run the ledger matching against the ledger as it is now, keeping each
+     *                         row's original fingerprint (it identifies the statement line, not an edit)
+     */
+    public function detect(ImportBatch $batch, bool $reclassify = false): void
     {
         $rows = $batch->rows()
             ->where('status', ImportRowStatus::DRAFT->value)
@@ -36,7 +40,9 @@ class ImportDuplicateDetector
             return;
         }
 
-        $fingerprints = $this->fingerprints($batch, $rows);
+        $fingerprints = $reclassify && $rows->every(fn (ImportRow $row) => $row->fingerprint !== null)
+            ? $this->storedFingerprints($rows)
+            : $this->fingerprints($batch, $rows);
         $alreadyImported = $this->alreadyImported($batch, $fingerprints);
         $ledger = $this->matchLedger($batch, $rows);
         $transfers = $batch->account_id ? $this->transferCandidates($batch, $rows) : [];
@@ -114,6 +120,18 @@ class ImportDuplicateDetector
         }
 
         return $result;
+    }
+
+    /**
+     * @param Collection<int, ImportRow> $rows
+     * @return array<int, array{hash: string, occurrence: int}> keyed by row id
+     */
+    private function storedFingerprints(Collection $rows): array
+    {
+        return $rows->mapWithKeys(fn (ImportRow $row) => [$row->id => [
+            'hash' => $row->fingerprint,
+            'occurrence' => in_array('within_file_duplicate', $row->flags['codes'] ?? [], true) ? 2 : 1,
+        ]])->all();
     }
 
     /**
@@ -213,9 +231,16 @@ class ImportDuplicateDetector
     {
         [$from, $to] = $this->dateRange($rows, self::DATE_WINDOW_DAYS);
 
+        // Movements this very import already posted are not duplicates of its remaining rows: two
+        // identical legitimate charges must stay importable one after the other.
+        $own = $batch->rows()->where('status', ImportRowStatus::CONFIRMED->value)
+            ->pluck($batch->account_id ? 'transaction_id' : 'credit_card_expense_id')
+            ->filter()->all();
+
         if ($batch->account_id) {
             return Transaction::query()->withoutUserScope()
                 ->where('account_id', $batch->account_id)
+                ->whereNotIn('id', $own)
                 ->whereBetween('date', [$from, $to])
                 ->get(['id', 'date', 'amount', 'description', 'subscription_id'])
                 ->map(fn (Transaction $t) => [
@@ -230,6 +255,7 @@ class ImportDuplicateDetector
 
         return CreditCardExpense::query()
             ->where('credit_card_id', $batch->credit_card_id)
+            ->whereNotIn('id', $own)
             ->whereBetween('spent_at', [$from, $to])
             ->get(['id', 'spent_at', 'amount', 'description', 'subscription_id'])
             ->map(fn (CreditCardExpense $e) => [

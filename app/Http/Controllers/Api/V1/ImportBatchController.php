@@ -15,6 +15,7 @@ use App\Services\Import\ImportMappingService;
 use App\Services\Import\ImportRowPromotionService;
 use App\Services\Import\ImportBatchService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -84,13 +85,12 @@ class ImportBatchController extends Controller
         $batch = $this->owned($request, $importBatch);
         abort_unless($batch->status === ImportBatchStatus::MAPPED, 409, 'Map the columns before confirming rows.');
 
-        $ids = $request->boolean('all_ready') && ! $request->has('row_ids')
-            ? $this->readyRowIds($batch)
+        $rowIds = $request->boolean('all_ready') && ! $request->has('row_ids')
+            ? null
             : array_map('intval', $request->validated('row_ids'));
 
-        $outcomes = array_map(fn (int $id) => $this->promotion->promote($batch, $id), $ids);
+        $outcomes = $this->promotion->confirm($batch, $rowIds);
 
-        $this->promotion->completeIfDone($batch);
         $batch->refresh();
 
         return response()->json([
@@ -110,10 +110,19 @@ class ImportBatchController extends Controller
     {
         $batch = $this->owned($request, $importBatch);
 
-        // A batch with confirmed rows is ledger history; it is never deleted from here.
-        abort_if($batch->status === ImportBatchStatus::COMPLETED, 409, 'A completed import cannot be deleted.');
+        DB::transaction(function () use ($batch) {
+            // Locked like a promotion is: a row cannot be confirmed while its batch is being deleted.
+            $locked = ImportBatch::query()->whereKey($batch->id)->lockForUpdate()->firstOrFail();
 
-        $batch->delete();
+            // Any posted row makes the batch the provenance of ledger movements: it is kept.
+            abort_if(
+                $locked->status === ImportBatchStatus::COMPLETED || $locked->rows()->where('status', ImportRowStatus::CONFIRMED->value)->exists(),
+                409,
+                'This import already added entries to your accounts and is kept as their history.',
+            );
+
+            $locked->delete();
+        });
 
         return response()->noContent();
     }
@@ -122,24 +131,6 @@ class ImportBatchController extends Controller
     private function owned(Request $request, int $id): ImportBatch
     {
         return ImportBatch::query()->where('user_id', $request->user()->id)->findOrFail($id);
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function readyRowIds(ImportBatch $batch): array
-    {
-        return $batch->rows()
-            ->where('status', ImportRowStatus::DRAFT->value)
-            ->whereNotNull('normalized')
-            ->whereNull('error')
-            ->where('duplicate_class', 'none')
-            ->orderBy('row_number')
-            ->get(['id', 'flags'])
-            ->reject(fn ($row) => array_intersect(ImportRowPromotionService::REVIEW_FLAGS, $row->flags['codes'] ?? []) !== [])
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
     }
 
     private function respond(ImportBatch $batch): ImportBatchResource

@@ -345,4 +345,72 @@ class ImportMappingApiTest extends TestCase
         $this->assertSame('none', $this->row($id, 2)->duplicate_class);
         $this->assertSame([], $this->row($id, 2)->flags['related']);
     }
+
+    // ─── review fixes ───────────────────────────────────────────────────────────────────────
+
+    private function xlsxUpload(array $rows): UploadedFile
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+
+        foreach ($rows as $r => $cells) {
+            foreach ($cells as $c => $value) {
+                $coordinate = chr(65 + $c) . ($r + 1);
+
+                if (is_string($value)) {
+                    $sheet->setCellValueExplicit($coordinate, $value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                } else {
+                    $sheet->setCellValue($coordinate, $value);
+                }
+            }
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'imp') . '.xlsx';
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($path);
+
+        return new UploadedFile($path, 'statement.xlsx', null, null, true);
+    }
+
+    public function test_xlsx_numbers_keep_their_value_under_a_european_text_mapping(): void
+    {
+        $id = $this->post(self::URL, [
+            'account_id' => $this->account->id,
+            'file' => $this->xlsxUpload([['Date', 'Amount', 'Memo'], ['2026-10-01', -12.5, 'Numeric cell'], ['2026-10-02', '1.234,56', 'Text cell']]),
+        ], ['Accept' => 'application/json'])->assertCreated()->json('data.id');
+
+        // A European mapping: the dot is a thousands separator for TEXT, never for a real number.
+        $this->map($id, ['decimal_separator' => ',', 'thousands_separator' => '.'])->assertOk()->assertJsonPath('summary.ready', 2);
+
+        $this->assertSame(-1250, $this->row($id, 2)->normalized['amount_minor'], 'a numeric -12.5 stays -12.50, not -125.00');
+        $this->assertSame(123456, $this->row($id, 3)->normalized['amount_minor'], 'text still follows the configured separators');
+    }
+
+    public function test_the_upload_can_name_the_csv_delimiter(): void
+    {
+        $csv = "2026-10-01;-12,50;Coffee\n2026-10-02;-3,00;Tea\n";
+
+        $this->post(self::URL, ['account_id' => $this->account->id, 'file' => UploadedFile::fake()->createWithContent('s.csv', $csv)], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors('file');
+
+        $this->post(self::URL, ['account_id' => $this->account->id, 'delimiter' => 'semicolon', 'file' => UploadedFile::fake()->createWithContent('s.csv', $csv)], ['Accept' => 'application/json'])
+            ->assertCreated()->assertJsonPath('data.preview.0.cells.2', 'Coffee');
+
+        $this->post(self::URL, ['account_id' => $this->account->id, 'delimiter' => 'bogus', 'file' => UploadedFile::fake()->createWithContent('s.csv', $csv)], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors('delimiter');
+    }
+
+    public function test_editing_a_draft_reclassifies_it_without_changing_its_fingerprint(): void
+    {
+        $this->ledgerTransaction(['amount' => -77.00, 'date' => '2026-10-01', 'description' => 'Hardware store']);
+        $id = $this->upload("Date,Amount,Description\n2026-10-01,-5.00,Hardware store\n");
+        $this->map($id)->assertOk();
+        $row = $this->row($id, 2);
+        $fingerprint = $row->fingerprint;
+        $this->assertSame('none', $row->duplicate_class);
+
+        $this->patchJson(self::URL . "/{$id}/rows/{$row->id}", ['amount' => '-77.00'])->assertOk()->assertJsonPath('data.duplicate_class', 'exact');
+        $this->assertSame($fingerprint, $this->row($id, 2)->fingerprint, 'the fingerprint identifies the statement line, not the edit');
+
+        $this->patchJson(self::URL . "/{$id}/rows/{$row->id}", ['amount' => '-5.00'])->assertOk()->assertJsonPath('data.duplicate_class', 'none');
+    }
 }

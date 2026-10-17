@@ -9,6 +9,7 @@ use App\Http\Requests\Api\UpdateImportRowRequest;
 use App\Http\Resources\Api\ImportRowResource;
 use App\Models\ImportBatch;
 use App\Models\ImportRow;
+use App\Services\Import\ImportDuplicateDetector;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -19,6 +20,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  */
 class ImportRowController extends Controller
 {
+    public function __construct(private readonly ImportDuplicateDetector $detector) {}
+
     /** @group Statement imports @authenticated */
     public function index(Request $request, int $importBatch): AnonymousResourceCollection
     {
@@ -88,6 +91,12 @@ class ImportRowController extends Controller
         }
 
         $record->save();
+
+        // An edit changes what the row is: its old duplicate classification no longer applies.
+        if ($edits !== [] || (isset($data['status']) && $data['status'] === 'draft')) {
+            $this->detector->detect($batch, reclassify: true);
+            $record->refresh();
+        }
 
         return new ImportRowResource($record);
     }

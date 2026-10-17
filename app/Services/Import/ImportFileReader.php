@@ -3,7 +3,7 @@
 namespace App\Services\Import;
 
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
-use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\IReadFilter;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
@@ -15,14 +15,26 @@ use ZipArchive;
  *
  * Nothing in the file is ever executed or followed: CSV is text, and in XLSX a formula cell is kept
  * as its formula text (never calculated), external links are not resolved and only the first sheet
- * is read. Every limit is checked before the content is staged.
+ * is read. Every limit is checked before the content is staged, and content beyond a limit is
+ * rejected rather than silently dropped.
  */
 class ImportFileReader
 {
+    public const DELIMITERS = ['comma' => ',', 'semicolon' => ';', 'tab' => "\t", 'pipe' => '|'];
+
+    /** Blank rows/columns tolerated around the data before the content counts as out of bounds. */
+    private const BLANK_ROW_SLACK = 50;
+    private const BLANK_COLUMN_SLACK = 10;
+    private const DELIMITER_SAMPLE_RECORDS = 25;
+    private const DELIMITER_CONSISTENCY = 0.9;
+
     /**
-     * @return array{format: string, rows: list<list<string>>}
+     * @param string|null $delimiter one of DELIMITERS' keys; null detects it from the record structure
+     * @return array{format: string, rows: list<list<string>>, numeric: list<list<int>>}
+     *         `numeric` lists, per row, the columns that held a real XLSX number (never text), so a
+     *         configured decimal/thousands separator is not applied to a value that is already numeric.
      */
-    public function read(string $path, string $extension): array
+    public function read(string $path, string $extension, ?string $delimiter = null): array
     {
         $extension = strtolower($extension);
 
@@ -39,19 +51,19 @@ class ImportFileReader
 
         return match ($extension) {
             'xlsx' => $isZip
-                ? ['format' => 'xlsx', 'rows' => $this->readXlsx($path)]
+                ? ['format' => 'xlsx', ...$this->readXlsx($path)]
                 : throw new ImportFileException('The file is not a valid XLSX workbook.'),
             'csv' => $isZip
                 ? throw new ImportFileException('The file content does not match a CSV file.')
-                : ['format' => 'csv', 'rows' => $this->readCsv($path)],
+                : ['format' => 'csv', ...$this->readCsv($path, $delimiter)],
             default => throw new ImportFileException('Only CSV and XLSX files can be imported.'),
         };
     }
 
     /**
-     * @return list<list<string>>
+     * @return array{rows: list<list<string>>, numeric: list<list<int>>}
      */
-    private function readCsv(string $path): array
+    private function readCsv(string $path, ?string $delimiterName): array
     {
         $content = (string) file_get_contents($path);
 
@@ -68,10 +80,8 @@ class ImportFileReader
             $content = mb_convert_encoding($content, 'UTF-8', 'Windows-1252');
         }
 
-        $delimiter = $this->detectDelimiter($content);
-        $stream = fopen('php://temp', 'r+');
-        fwrite($stream, $content);
-        rewind($stream);
+        $delimiter = $this->resolveDelimiter($content, $delimiterName);
+        $stream = $this->stream($content);
 
         $rows = [];
 
@@ -90,67 +100,113 @@ class ImportFileReader
 
         fclose($stream);
 
-        return $this->finish($rows);
-    }
+        $rows = $this->finish($rows);
 
-    private function detectDelimiter(string $content): string
-    {
-        $sample = implode("\n", array_slice(preg_split('/\r\n|\n|\r/', $content) ?: [], 0, 5));
-        $best = ',';
-        $bestCount = -1;
-
-        foreach ([',', ';', "\t", '|'] as $candidate) {
-            $count = substr_count($sample, $candidate);
-
-            if ($count > $bestCount) {
-                $best = $candidate;
-                $bestCount = $count;
-            }
-        }
-
-        return $best;
+        return ['rows' => $rows, 'numeric' => array_fill(0, count($rows), [])];
     }
 
     /**
-     * @return list<list<string>>
+     * The delimiter is the one under which the records of the file split into the same number of
+     * columns (quotes respected), not the most frequent character: commas inside numbers and
+     * descriptions must not decide it. Two candidates that both fit are ambiguous and are never guessed.
+     */
+    private function resolveDelimiter(string $content, ?string $name): string
+    {
+        if ($name !== null) {
+            return self::DELIMITERS[$name] ?? throw new ImportFileException('Unknown delimiter.');
+        }
+
+        $fitting = [];
+
+        foreach (self::DELIMITERS as $character) {
+            $counts = $this->columnCounts($content, $character);
+
+            if ($counts === []) {
+                continue;
+            }
+
+            $frequency = array_count_values($counts);
+            arsort($frequency);
+            $modal = (int) array_key_first($frequency);
+
+            if ($modal >= 2 && ($frequency[$modal] / count($counts)) >= self::DELIMITER_CONSISTENCY) {
+                $fitting[$character] = $modal;
+            }
+        }
+
+        if (count($fitting) > 1) {
+            throw new ImportFileException('The delimiter is ambiguous; choose it explicitly (comma, semicolon, tab or pipe).');
+        }
+
+        // A single column (no candidate splits it consistently) reads the same with any delimiter.
+        return array_key_first($fitting) ?? ',';
+    }
+
+    /**
+     * @return list<int> number of columns of the first records under a candidate delimiter
+     */
+    private function columnCounts(string $content, string $delimiter): array
+    {
+        $stream = $this->stream($content);
+        $counts = [];
+
+        while (count($counts) < self::DELIMITER_SAMPLE_RECORDS && ($cells = fgetcsv($stream, 0, $delimiter, '"', '')) !== false) {
+            if ($cells !== [null]) {
+                $counts[] = count($cells);
+            }
+        }
+
+        fclose($stream);
+
+        return $counts;
+    }
+
+    /** @return resource */
+    private function stream(string $content)
+    {
+        $stream = fopen('php://temp', 'r+');
+        fwrite($stream, $content);
+        rewind($stream);
+
+        return $stream;
+    }
+
+    /**
+     * @return array{rows: list<list<string>>, numeric: list<list<int>>}
      */
     private function readXlsx(string $path): array
     {
         $this->assertSafeArchive($path);
 
-        $maxRows = (int) config('import.max_rows');
-        $maxColumns = (int) config('import.max_columns');
+        $rowBound = (int) config('import.max_rows') + 1 + self::BLANK_ROW_SLACK;
+        $columnBound = (int) config('import.max_columns') + self::BLANK_COLUMN_SLACK;
 
-        $filter = new class($maxRows + 2, $maxColumns + 1) implements IReadFilter
-        {
-            public function __construct(private int $rows, private int $columns) {}
+        $filter = new XlsxBoundsFilter($rowBound, $columnBound, inside: true);
+        $sheet = $this->loadSheet($path, $filter);
 
-            public function readCell($columnAddress, $row, $worksheetName = ''): bool
-            {
-                return $row <= $this->rows
-                    && Coordinate::columnIndexFromString($columnAddress) <= $this->columns;
-            }
-        };
-
-        try {
-            $reader = IOFactory::createReader('Xlsx');
-            $reader->setReadDataOnly(false); // styles are needed to tell dates from plain numbers
-            $reader->setReadFilter($filter);
-            $reader->setLoadSheetsOnly([$reader->listWorksheetNames($path)[0] ?? '']);
-            $sheet = $reader->load($path)->getSheet(0);
-        } catch (Throwable) {
-            throw new ImportFileException('The workbook could not be read.');
+        // Cells outside the window were skipped, not read. Look at them separately so content past a
+        // limit is rejected instead of silently disappearing (an empty row in between must not hide it).
+        if ($filter->skipped) {
+            $this->assertNothingOutside($path, $rowBound, $columnBound);
         }
 
         $rows = [];
+        $numericColumns = [];
 
         foreach ($sheet->getRowIterator() as $row) {
             $cells = [];
+            $numeric = [];
             $iterator = $row->getCellIterator();
             $iterator->setIterateOnlyExistingCells(false);
 
             foreach ($iterator as $cell) {
-                $cells[] = $this->cellToString($cell);
+                [$text, $isNumber] = $this->cellToString($cell);
+
+                if ($isNumber) {
+                    $numeric[] = count($cells);
+                }
+
+                $cells[] = $text;
             }
 
             while ($cells !== [] && end($cells) === '') {
@@ -162,29 +218,66 @@ class ImportFileReader
             }
 
             $rows[] = $this->cleanRow($cells, count($rows) + 1);
+            $numericColumns[] = array_values(array_filter($numeric, fn (int $position) => $position < count($cells)));
         }
 
-        return $this->finish($rows);
+        // Every kept row is non-empty, so `finish` removes nothing and the two lists stay aligned.
+        return ['rows' => $this->finish($rows), 'numeric' => $numericColumns];
     }
 
-    private function cellToString(Cell $cell): string
+    private function assertNothingOutside(string $path, int $rowBound, int $columnBound): void
+    {
+        $outside = $this->loadSheet($path, new XlsxBoundsFilter($rowBound, $columnBound, inside: false));
+
+        foreach ($outside->getCellCollection()->getCoordinates() as $coordinate) {
+            $value = $outside->getCell($coordinate)->getValue();
+
+            if ($value !== null && trim((string) $value) !== '') {
+                throw new ImportFileException('The workbook has content beyond the supported number of rows or columns.');
+            }
+        }
+    }
+
+    /**
+     * @return \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet
+     */
+    private function loadSheet(string $path, IReadFilter $filter)
+    {
+        try {
+            $reader = IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(false); // styles are needed to tell dates from plain numbers
+            $reader->setReadFilter($filter);
+            $reader->setLoadSheetsOnly([$reader->listWorksheetNames($path)[0] ?? '']);
+
+            return $reader->load($path)->getSheet(0);
+        } catch (Throwable) {
+            throw new ImportFileException('The workbook could not be read.');
+        }
+    }
+
+    /**
+     * @return array{0: string, 1: bool} the cell text and whether it was a real number
+     */
+    private function cellToString(Cell $cell): array
     {
         $value = $cell->getValue();
 
         if ($value === null) {
-            return '';
+            return ['', false];
         }
 
         // The cached/typed value only: getCalculatedValue() would evaluate the formula.
-        if (is_numeric($value) && Date::isDateTime($cell)) {
-            return Date::excelToDateTimeObject((float) $value)->format('Y-m-d');
+        if (is_numeric($value) && $cell->getDataType() === DataType::TYPE_NUMERIC) {
+            if (Date::isDateTime($cell)) {
+                return [Date::excelToDateTimeObject((float) $value)->format('Y-m-d'), false];
+            }
+
+            $text = is_float($value) ? rtrim(rtrim(number_format($value, 10, '.', ''), '0'), '.') : (string) $value;
+
+            return [$text, true];
         }
 
-        if (is_float($value)) {
-            return rtrim(rtrim(number_format($value, 10, '.', ''), '0'), '.');
-        }
-
-        return trim((string) $value);
+        return [trim((string) $value), false];
     }
 
     private function assertSafeArchive(string $path): void

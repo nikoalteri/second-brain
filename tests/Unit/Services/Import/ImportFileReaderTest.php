@@ -192,4 +192,113 @@ class ImportFileReaderTest extends TestCase
         $this->expectException(ImportFileException::class);
         $this->read($path, 'xlsx');
     }
+
+    // ─── review fixes ───────────────────────────────────────────────────────────────────────
+
+    public function test_xlsx_numeric_cells_are_reported_so_text_separators_never_apply_to_them(): void
+    {
+        $path = $this->xlsx(function ($sheet) {
+            $sheet->fromArray([['Date', 'Amount', 'Text amount']], null, 'A1');
+            $sheet->setCellValue('A2', '2026-10-01');
+            $sheet->setCellValue('B2', -12.5);
+            $sheet->setCellValueExplicit('C2', '1.234,56', \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        });
+
+        $result = $this->read($path, 'xlsx');
+
+        $this->assertSame([1], $result['numeric'][1], 'only the real number is flagged numeric');
+        $this->assertSame('-12.5', $result['rows'][1][1]);
+        $this->assertSame('1.234,56', $result['rows'][1][2]);
+        $this->assertSame([[], [1]], array_slice($result['numeric'], 0, 2));
+    }
+
+    public function test_xlsx_content_past_the_row_limit_is_rejected_even_behind_an_empty_row(): void
+    {
+        config(['import.max_rows' => 3]);
+        $path = $this->xlsx(function ($sheet) {
+            $sheet->setCellValue('A1', 'Header');
+            foreach ([2, 3, 4] as $row) {
+                $sheet->setCellValue("A{$row}", "r{$row}");
+            }
+            $sheet->setCellValue('A6', 'hidden fourth data row'); // A5 left empty on purpose
+        });
+
+        $this->expectException(ImportFileException::class);
+        $this->read($path, 'xlsx');
+    }
+
+    public function test_xlsx_content_far_past_the_filter_is_detected_not_silently_dropped(): void
+    {
+        config(['import.max_rows' => 3]);
+        $path = $this->xlsx(function ($sheet) {
+            $sheet->setCellValue('A1', 'Header');
+            $sheet->setCellValue('A2', 'one');
+            $sheet->setCellValue('A500', 'far away');
+        });
+
+        $this->expectException(ImportFileException::class);
+        $this->read($path, 'xlsx');
+    }
+
+    public function test_xlsx_content_in_columns_past_the_limit_is_rejected(): void
+    {
+        config(['import.max_columns' => 3]);
+        $path = $this->xlsx(function ($sheet) {
+            $sheet->fromArray([['a', 'b', 'c']], null, 'A1');
+            $sheet->setCellValue('Z1', 'sparse far column');
+        });
+
+        $this->expectException(ImportFileException::class);
+        $this->read($path, 'xlsx');
+    }
+
+    public function test_xlsx_blank_rows_inside_the_data_do_not_cause_a_false_rejection(): void
+    {
+        config(['import.max_rows' => 3]);
+        $path = $this->xlsx(function ($sheet) {
+            $sheet->setCellValue('A1', 'Header');
+            $sheet->setCellValue('A2', 'one');
+            $sheet->setCellValue('A5', 'two'); // two blank rows between data
+            $sheet->setCellValue('A6', 'three');
+        });
+
+        $this->assertCount(4, $this->read($path, 'xlsx')['rows']);
+    }
+
+    public function test_csv_delimiter_comes_from_the_record_structure_not_from_character_counts(): void
+    {
+        $result = $this->read($this->file("Date;Amount;Description\n2026-10-01;-12,50;\"Shop, Rome, Italy, card, memo\"\n2026-10-02;-3,00;Tea, Milan, extra, words, here\n"));
+
+        $this->assertSame(['Date', 'Amount', 'Description'], $result['rows'][0]);
+        $this->assertCount(3, $result['rows'][1]);
+        $this->assertCount(3, $result['rows'][2], 'unquoted commas in a semicolon file stay inside the description');
+        $this->assertSame('Tea, Milan, extra, words, here', $result['rows'][2][2]);
+    }
+
+    public function test_an_ambiguous_csv_asks_for_an_explicit_delimiter_and_honours_it(): void
+    {
+        // Every line splits consistently on both ';' (3 columns) and ',' (2 columns).
+        $content = "2026-10-01;-12,50;Coffee\n2026-10-02;-3,00;Tea\n2026-10-03;-4,00;Milk\n";
+        $path = $this->file($content);
+
+        try {
+            $this->read($path);
+            $this->fail('An ambiguous delimiter must not be guessed.');
+        } catch (ImportFileException $e) {
+            $this->assertStringContainsString('delimiter', $e->getMessage());
+        }
+
+        $semicolon = app(ImportFileReader::class)->read($path, 'csv', 'semicolon');
+        $this->assertSame(['2026-10-01', '-12,50', 'Coffee'], $semicolon['rows'][0]);
+
+        $comma = app(ImportFileReader::class)->read($path, 'csv', 'comma');
+        $this->assertSame(['2026-10-01;-12', '50;Coffee'], $comma['rows'][0]);
+    }
+
+    public function test_single_column_files_and_tab_or_pipe_delimiters_still_work(): void
+    {
+        $this->assertSame([['h'], ['1']], $this->read($this->file("h\n1\n"))['rows']);
+        $this->assertSame(['a', 'b', 'c'], $this->read($this->file("a\tb\tc\n1\t2\t3\n"))['rows'][0]);
+        $this->assertSame(['a', 'b', 'c'], $this->read($this->file("a|b|c\n1|2|3\n"))['rows'][0]);
+    }
 }

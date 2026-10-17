@@ -29,6 +29,59 @@ class ImportRowPromotionService
         'possible_transfer', 'possible_card_payment', 'matches_generated_renewal',
     ];
 
+    public function __construct(private readonly ImportDuplicateDetector $detector) {}
+
+    /**
+     * Confirms rows against the ledger as it is NOW: the stored classification may be hours old, so
+     * the duplicate matching is re-run first. `$rowIds === null` means "all ready" (only rows with no
+     * duplicate or review flag); an explicit row the owner saw as clean but that has meanwhile become a
+     * duplicate is held back once, so the owner decides with the new information.
+     *
+     * @param list<int>|null $rowIds
+     * @return list<array{row_id: int, outcome: string, reason: ?string}>
+     */
+    public function confirm(ImportBatch $batch, ?array $rowIds): array
+    {
+        $before = $batch->rows()->where('status', ImportRowStatus::DRAFT->value)->get(['id', 'duplicate_class', 'flags'])
+            ->mapWithKeys(fn (ImportRow $row) => [$row->id => self::needsDecision($row)])->all();
+
+        $this->detector->detect($batch, reclassify: true);
+
+        $current = $batch->rows()->where('status', ImportRowStatus::DRAFT->value)->orderBy('row_number')->get()->keyBy('id');
+
+        $ids = $rowIds ?? $current
+            ->filter(fn (ImportRow $row) => $row->normalized !== null && $row->error === null && ! self::needsDecision($row))
+            ->keys()->map(fn ($id) => (int) $id)->all();
+
+        $outcomes = [];
+
+        foreach ($ids as $id) {
+            $row = $current->get($id);
+
+            if ($rowIds !== null && $row && self::needsDecision($row) && ! ($before[$id] ?? false)) {
+                $outcomes[] = $this->result($id, 'skipped', 'This row now matches an existing entry; review it again.');
+
+                continue;
+            }
+
+            $outcomes[] = $this->promote($batch, $id);
+        }
+
+        $this->completeIfDone($batch);
+
+        return $outcomes;
+    }
+
+    /** A row "needs a decision" when it is a duplicate of the ledger or carries a review flag. */
+    public static function needsDecision(ImportRow $row): bool
+    {
+        if (in_array($row->duplicate_class, ['exact', 'probable'], true)) {
+            return true;
+        }
+
+        return array_intersect(self::REVIEW_FLAGS, $row->flags['codes'] ?? []) !== [];
+    }
+
     /**
      * @return array{row_id: int, outcome: 'confirmed'|'skipped'|'failed', reason: ?string}
      */
@@ -36,6 +89,14 @@ class ImportRowPromotionService
     {
         try {
             return DB::transaction(function () use ($batch, $rowId) {
+                // Batch first, then row, everywhere: a concurrent delete of the batch and this promotion
+                // exclude each other, so a posted movement can never lose the batch that explains it.
+                $openBatch = ImportBatch::query()->whereKey($batch->id)->lockForUpdate()->first();
+
+                if ($openBatch === null || $openBatch->status !== ImportBatchStatus::MAPPED) {
+                    return $this->result($rowId, 'skipped', 'This import is no longer open.');
+                }
+
                 // The row lock plus the status check make a repeated or concurrent confirmation a no-op.
                 $row = ImportRow::query()
                     ->where('import_batch_id', $batch->id)
@@ -52,6 +113,13 @@ class ImportRowPromotionService
 
                 if ($row->normalized === null || $row->error !== null) {
                     return $this->result($rowId, 'skipped', 'The row has no valid data; fix the mapping or discard it.');
+                }
+
+                // No conversion exists, so a row in another currency is never posted, chosen or not.
+                $rowCurrency = $row->normalized['currency'] ?? null;
+
+                if ($rowCurrency !== null && $rowCurrency !== $batch->currency) {
+                    return $this->result($rowId, 'skipped', "The row is in {$rowCurrency} but the target uses {$batch->currency}; no currency conversion is done. Discard it or fix the file.");
                 }
 
                 $created = $batch->account_id
@@ -107,6 +175,10 @@ class ImportRowPromotionService
             return 'The target account is no longer available.';
         }
 
+        if (strtoupper(trim((string) $account->currency)) !== $batch->currency) {
+            return 'The target account currency changed since the file was uploaded; import it again.';
+        }
+
         if ($n['amount_minor'] === 0) {
             return 'A zero amount cannot be posted.';
         }
@@ -143,6 +215,12 @@ class ImportRowPromotionService
 
         if ($card === null) {
             return 'The target credit card is no longer available.';
+        }
+
+        $settlement = Account::query()->withoutUserScope()->where('user_id', $batch->user_id)->find($card->account_id);
+
+        if (strtoupper(trim((string) $settlement?->currency)) !== $batch->currency) {
+            return 'The card settlement account currency changed since the file was uploaded; import it again.';
         }
 
         // Refunds and payments on a card statement change the debt differently from a charge; they are

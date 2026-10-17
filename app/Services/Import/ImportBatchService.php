@@ -23,7 +23,7 @@ class ImportBatchService
     public function __construct(private readonly ImportFileReader $reader) {}
 
     /**
-     * @param array{account_id?: ?int, credit_card_id?: ?int, statement_ending_balance?: mixed, period_start?: ?string, period_end?: ?string} $attributes
+     * @param array{account_id?: ?int, credit_card_id?: ?int, delimiter?: ?string, statement_ending_balance?: mixed, period_start?: ?string, period_end?: ?string} $attributes
      */
     public function stage(User $owner, UploadedFile $file, array $attributes): ImportBatch
     {
@@ -36,7 +36,7 @@ class ImportBatchService
         }
 
         try {
-            $parsed = $this->reader->read($file->getRealPath(), (string) $file->getClientOriginalExtension());
+            $parsed = $this->reader->read($file->getRealPath(), (string) $file->getClientOriginalExtension(), $attributes['delimiter'] ?? null);
         } catch (ImportFileException $e) {
             throw ValidationException::withMessages(['file' => $e->getMessage()]);
         }
@@ -67,6 +67,8 @@ class ImportBatchService
                         'row_number' => $index + 1,
                         // Same encoding as the model's encrypted:array cast, but one bulk insert per chunk.
                         'raw_cells' => Crypt::encryptString(json_encode($cells, JSON_THROW_ON_ERROR)),
+                        // Which cells were real XLSX numbers: not sensitive, and never subject to text separators.
+                        'numeric_columns' => json_encode($parsed['numeric'][$index] ?? []),
                         'status' => ImportRowStatus::DRAFT->value,
                         'created_at' => $now,
                         'updated_at' => $now,

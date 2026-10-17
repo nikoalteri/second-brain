@@ -10,7 +10,7 @@ class ImportRow extends Model
 {
     protected $fillable = [
         'import_batch_id', 'row_number', 'raw_cells', 'status', 'normalized', 'error', 'fingerprint', 'duplicate_class', 'flags',
-        'transaction_id', 'credit_card_expense_id', 'failure_reason',
+        'transaction_id', 'credit_card_expense_id', 'failure_reason', 'numeric_columns',
     ];
 
     protected $casts = [
@@ -18,6 +18,7 @@ class ImportRow extends Model
         'raw_cells' => 'encrypted:array',
         'normalized' => 'encrypted:array',
         'flags' => 'array',
+        'numeric_columns' => 'array',
     ];
 
     public function batch(): BelongsTo

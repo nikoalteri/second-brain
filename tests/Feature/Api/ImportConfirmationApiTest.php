@@ -322,4 +322,104 @@ class ImportConfirmationApiTest extends TestCase
             'decimal_separator' => '.', 'thousands_separator' => ',', 'description_column' => 2,
         ])->assertStatus(409);
     }
+
+    // ─── review fixes ───────────────────────────────────────────────────────────────────────
+
+    public function test_a_row_in_another_currency_is_never_posted_even_when_chosen_explicitly(): void
+    {
+        $id = $this->post(self::URL, ['account_id' => $this->account->id, 'file' => UploadedFile::fake()->createWithContent('s.csv', "Date,Amount,Description,Cur\n2026-10-01,-100.00,Foreign,USD\n2026-10-02,-5.00,Local,EUR\n")], ['Accept' => 'application/json'])->json('data.id');
+        $this->putJson(self::URL . "/{$id}/mapping", [
+            'header_row' => 1, 'date_column' => 0, 'date_format' => 'Y-m-d', 'amount_mode' => 'single', 'amount_column' => 1,
+            'decimal_separator' => '.', 'thousands_separator' => ',', 'description_column' => 2, 'currency_column' => 3,
+        ])->assertOk();
+
+        $response = $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id, $this->row($id, 3)->id]])->assertOk();
+
+        $this->assertSame(['skipped', 'confirmed'], array_column($response->json('data.outcomes'), 'outcome'));
+        $this->assertStringContainsString('currency', (string) $response->json('data.outcomes.0.reason'));
+        $this->assertSame(1, Transaction::withoutGlobalScopes()->count());
+        $this->assertEquals(-5.0, Transaction::withoutGlobalScopes()->firstOrFail()->amount);
+    }
+
+    public function test_a_target_whose_currency_changed_after_mapping_is_not_posted_to(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n");
+        $this->account->update(['currency' => 'USD']);
+
+        $response = $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id]])->assertOk();
+
+        $response->assertJsonPath('data.skipped', 1);
+        $this->assertStringContainsString('currency', (string) $response->json('data.outcomes.0.reason'));
+        $this->assertSame(0, Transaction::withoutGlobalScopes()->count());
+    }
+
+    public function test_all_ready_reclassifies_so_a_movement_added_after_mapping_is_not_duplicated(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n2026-10-02,-9.00,Other\n");
+        $this->assertSame('none', $this->row($id, 2)->duplicate_class);
+
+        // The identical movement shows up in the ledger between mapping and confirmation.
+        $type = TransactionType::query()->firstOrCreate(['name' => 'Expense'], ['is_income' => false]);
+        Transaction::create(['user_id' => $this->user->id, 'account_id' => $this->account->id, 'transaction_type_id' => $type->id, 'amount' => -5.00, 'date' => '2026-10-01', 'description' => 'Coffee']);
+
+        $this->confirm($id, ['all_ready' => true])->assertOk()->assertJsonPath('data.confirmed', 1);
+
+        $this->assertSame(2, Transaction::withoutGlobalScopes()->count(), 'the ledger has its own coffee plus the new "Other"');
+        $this->assertSame(ImportRowStatus::DRAFT, $this->row($id, 2)->status);
+        $this->assertSame('exact', $this->row($id, 2)->duplicate_class);
+    }
+
+    public function test_an_explicit_choice_of_a_row_that_became_a_duplicate_is_held_back_for_review(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-5.00,Coffee\n");
+        $type = TransactionType::query()->firstOrCreate(['name' => 'Expense'], ['is_income' => false]);
+        Transaction::create(['user_id' => $this->user->id, 'account_id' => $this->account->id, 'transaction_type_id' => $type->id, 'amount' => -5.00, 'date' => '2026-10-01', 'description' => 'Coffee']);
+
+        $response = $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id]])->assertOk();
+
+        $response->assertJsonPath('data.skipped', 1);
+        $this->assertStringContainsString('review it again', (string) $response->json('data.outcomes.0.reason'));
+        $this->assertSame(1, Transaction::withoutGlobalScopes()->count());
+
+        // Once the owner has seen it flagged, choosing it again is a conscious decision.
+        $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id]])->assertOk()->assertJsonPath('data.confirmed', 1);
+        $this->assertSame(2, Transaction::withoutGlobalScopes()->count());
+    }
+
+    public function test_confirming_all_ready_keeps_two_identical_legitimate_charges_importable(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-05,-3.00,Bus\n2026-10-05,-3.00,Bus\n");
+
+        $this->confirm($id, ['all_ready' => true])->assertOk()->assertJsonPath('data.confirmed', 2);
+        $this->assertSame(2, Transaction::withoutGlobalScopes()->count());
+    }
+
+    public function test_a_partially_confirmed_batch_can_neither_be_deleted_nor_purged(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n2026-10-02,-2.00,b\n");
+        $this->confirm($id, ['row_ids' => [$this->row($id, 2)->id]])->assertOk()->assertJsonPath('data.status', 'mapped');
+
+        $this->deleteJson(self::URL . "/{$id}")->assertStatus(409);
+        $this->assertModelExists(ImportBatch::findOrFail($id));
+
+        DB::table('import_batches')->where('id', $id)->update(['created_at' => Carbon::now()->subDays(60)]);
+        $this->artisan('imports:purge-abandoned')->assertSuccessful();
+
+        $this->assertModelExists(ImportBatch::findOrFail($id));
+        $this->assertSame(3, ImportRow::where('import_batch_id', $id)->count(), 'header + two data lines');
+        $this->assertNotNull($this->row($id, 2)->transaction_id, 'the provenance of the posted movement is intact');
+    }
+
+    public function test_an_unconfirmed_batch_can_still_be_deleted_and_purged(): void
+    {
+        $id = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n");
+        $this->deleteJson(self::URL . "/{$id}")->assertNoContent();
+
+        $old = $this->mapped("Date,Amount,Description\n2026-10-01,-1.00,a\n");
+        DB::table('import_batches')->where('id', $old)->update(['created_at' => Carbon::now()->subDays(60)]);
+        $this->artisan('imports:purge-abandoned')->assertSuccessful();
+
+        $this->assertModelMissing(new ImportBatch(['id' => $old]));
+        $this->assertSame(0, ImportBatch::count());
+    }
 }

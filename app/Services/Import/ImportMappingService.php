@@ -58,7 +58,7 @@ class ImportMappingService
                     $row->status = ImportRowStatus::DRAFT;
 
                     try {
-                        $normalized = $this->normalizer->normalize($row->raw_cells, $mapping, $locked->file_format);
+                        $normalized = $this->normalizer->normalize($row->raw_cells, $mapping, $locked->file_format, $row->numeric_columns ?? []);
                         $normalized['category_id'] = $normalized['category'] !== null
                             ? $categories->get(mb_strtolower($normalized['category']))
                             : null;

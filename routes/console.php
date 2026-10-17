@@ -4,6 +4,7 @@ use App\Enums\CreditCardCycleStatus;
 use App\Enums\CreditCardPaymentStatus;
 use App\Enums\CreditCardStatus;
 use App\Enums\ImportBatchStatus;
+use App\Enums\ImportRowStatus;
 use App\Models\CreditCard;
 use App\Models\ImportBatch;
 use App\Models\Loan;
@@ -16,6 +17,7 @@ use Illuminate\Console\Command;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 
@@ -193,15 +195,24 @@ Artisan::command('imports:purge-abandoned {--days=}', function () {
     $purged = 0;
     $failed = 0;
 
-    // Draft batches nobody confirmed hold statement data for no reason. A completed batch is ledger
-    // history and is never touched. One batch failing must not stop the rest of the run.
+    // Draft batches nobody confirmed hold statement data for no reason. A batch that posted even one
+    // row is the provenance of ledger movements and is never touched, nor is a completed one. Each
+    // batch is locked and re-checked, so a confirmation racing the purge wins. One failing batch must
+    // not stop the rest of the run.
     ImportBatch::query()
         ->whereIn('status', [ImportBatchStatus::UPLOADED, ImportBatchStatus::MAPPED])
         ->where('created_at', '<', $cutoff)
+        ->whereDoesntHave('rows', fn ($rows) => $rows->where('status', ImportRowStatus::CONFIRMED->value))
         ->each(function (ImportBatch $batch) use (&$purged, &$failed) {
             try {
-                $batch->delete();
-                $purged++;
+                DB::transaction(function () use ($batch, &$purged) {
+                    $locked = ImportBatch::query()->whereKey($batch->id)->lockForUpdate()->first();
+
+                    if ($locked && ! $locked->rows()->where('status', ImportRowStatus::CONFIRMED->value)->exists()) {
+                        $locked->delete();
+                        $purged++;
+                    }
+                });
             } catch (\Throwable $e) {
                 $failed++;
                 Log::error("imports:purge-abandoned failed for batch {$batch->id}", ['exception' => $e]);
