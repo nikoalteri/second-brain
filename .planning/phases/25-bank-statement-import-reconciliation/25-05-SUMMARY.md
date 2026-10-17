@@ -34,3 +34,12 @@ Seen working: the ambiguous-delimiter error and the delimiter select, mapping gu
 - Writes done outside Eloquent bypass the hook; the unique promotion indexes remain the last defence for a retry.
 - The SPA keeps the current import in memory only: leaving the page loses the way back to an unfinished import (the purge closes it eventually); there is no list of past imports.
 - Real bank files, XLSX through the UI, the light theme and widths below 500px remain unchecked.
+
+## Review fix: consent is bound to the request (PR #76, 14:04)
+
+`promote()` used to skip the live re-check whenever the stored row was already flagged, so a flag written by *another* request (a concurrent reclassification) could be read as the owner's consent to post a duplicate in an `all_ready` run. Now `promote($batch, $rowId, $allowFlagged, $reviewedSignature)` judges the decision under the lock against what this request was allowed to do:
+
+- **`all_ready`** (`allowFlagged: false`): a row that is, or has become, a duplicate or carries a review flag is always held back, whoever flagged it.
+- **Explicit rows** (`allowFlagged: true`): consent is bound to the classification signature (class, review flags, matched ledger entry) stored at the START of the request, before the pre-pass refreshes it. A row whose signature differs under the lock is held back; a row reviewed as clean is re-checked against the live ledger; a row reviewed as flagged and unchanged proceeds (conscious duplicate). Direct `promote()` calls keep the previous behaviour.
+
+Evidence: 3 SQLite tests (a hook on `ImportBatch::retrieved` reproduces "after selection, before the lock") and 2 MySQL tests through the public `confirm(..., null)` and `confirm(..., [ids])` with a worker frozen after row selection while the movement is committed and the draft reclassified. With the old inference all of them fail; the full default suite is 769 tests and the MySQL suite 10 tests, all green.
