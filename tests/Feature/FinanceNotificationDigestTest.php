@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Services\BudgetService;
 use App\Services\Notifications\FinanceNotificationDigest;
 use App\Services\Notifications\FinanceNotificationEvaluator;
+use App\Services\SubscriptionService;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Console\Scheduling\Schedule;
@@ -269,13 +270,31 @@ class FinanceNotificationDigestTest extends TestCase
         $this->assertCount(1, $this->notificationsFor($this->user, 'subscription_renewal'));
     }
 
+    public function test_non_monthly_renewal_reminder_states_the_amount_actually_charged(): void
+    {
+        $annual = $this->subscription($this->user, '2026-10-18');
+        $monthly = $this->subscription($this->user, '2026-10-19');
+        // Pin costs directly: model mutators rederive them from the frequency on save.
+        DB::table('subscriptions')->where('id', $annual->id)->update([
+            'subscription_frequency_id' => SubscriptionFrequency::query()->where('slug', 'annual')->firstOrFail()->id,
+            'monthly_cost' => 10, 'annual_cost' => 120,
+        ]);
+        DB::table('subscriptions')->where('id', $monthly->id)->update(['monthly_cost' => 10, 'annual_cost' => 120]);
+
+        $this->digest();
+
+        $messages = $this->notificationsFor($this->user, 'subscription_renewal')->keyBy('related_id');
+        $this->assertStringContainsString('(120.00)', $messages[$annual->id]->message);
+        $this->assertStringContainsString('(10.00)', $messages[$monthly->id]->message);
+    }
+
     public function test_a_failing_owner_does_not_stop_others_and_keeps_its_conditions(): void
     {
         $this->subscription($this->user, '2026-10-18');
         $this->subscription($this->other, '2026-10-18');
         $this->digest();
 
-        $this->app->bind(FinanceNotificationEvaluator::class, fn () => new class(app(BudgetService::class)) extends FinanceNotificationEvaluator
+        $this->app->bind(FinanceNotificationEvaluator::class, fn () => new class(app(BudgetService::class), app(SubscriptionService::class)) extends FinanceNotificationEvaluator
         {
             public function evaluate(int $userId, CarbonInterface $date): array
             {

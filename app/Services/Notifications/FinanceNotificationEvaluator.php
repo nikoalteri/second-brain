@@ -13,6 +13,7 @@ use App\Models\CreditCardPayment;
 use App\Models\LoanPayment;
 use App\Models\Subscription;
 use App\Services\BudgetService;
+use App\Services\SubscriptionService;
 use Carbon\CarbonInterface;
 
 /**
@@ -43,7 +44,10 @@ class FinanceNotificationEvaluator
 
     private const LOOKAHEAD_DAYS = 3;
 
-    public function __construct(private readonly BudgetService $budgets) {}
+    public function __construct(
+        private readonly BudgetService $budgets,
+        private readonly SubscriptionService $subscriptions,
+    ) {}
 
     /**
      * @return list<ConditionSpec>
@@ -85,12 +89,12 @@ class FinanceNotificationEvaluator
                 $severity,
                 'Budget alert: '.$category['name'],
                 sprintf(
-                    '%s has used %.0f%% of its %s budget (%.2f of %.2f).',
+                    '%s has used %.0f%% of its %s budget (%s of %s).',
                     $category['name'],
                     ($category['usage_ratio'] ?? 0) * 100,
                     $period,
-                    $category['spent_amount'],
-                    $category['budget_amount'],
+                    $this->money($category['spent_amount']),
+                    $this->money($category['budget_amount']),
                 ),
                 '/home',
             );
@@ -121,11 +125,11 @@ class FinanceNotificationEvaluator
                 NotificationSeverity::WARNING,
                 'Credit limit alert: '.$card->name,
                 sprintf(
-                    '%s is at %.0f%% of its credit limit (%.2f of %.2f).',
+                    '%s is at %.0f%% of its credit limit (%s of %s).',
                     $card->name,
                     (float) $card->current_balance / (float) $card->credit_limit * 100,
-                    $card->current_balance,
-                    $card->credit_limit,
+                    $this->money($card->current_balance),
+                    $this->money($card->credit_limit),
                 ),
                 '/credit-cards/'.$card->id,
             ))
@@ -159,8 +163,8 @@ class FinanceNotificationEvaluator
                 $overdue ? NotificationSeverity::CRITICAL : NotificationSeverity::WARNING,
                 ($overdue ? 'Overdue card payment: ' : 'Card payment due today: ').$payment->creditCard->name,
                 sprintf(
-                    'A payment of %.2f for %s %s %s.',
-                    $payment->total_amount,
+                    'A payment of %s for %s %s %s.',
+                    $this->money($payment->total_amount),
                     $payment->creditCard->name,
                     $overdue ? 'was due on' : 'is due on',
                     $payment->due_date->toDateString(),
@@ -196,8 +200,8 @@ class FinanceNotificationEvaluator
                 $overdue ? NotificationSeverity::CRITICAL : NotificationSeverity::WARNING,
                 ($overdue ? 'Overdue loan installment: ' : 'Loan installment due soon: ').$payment->loan->name,
                 sprintf(
-                    'An installment of %.2f for %s %s %s.',
-                    $payment->amount,
+                    'An installment of %s for %s %s %s.',
+                    $this->money($payment->amount),
                     $payment->loan->name,
                     $overdue ? 'was due on' : 'is due on',
                     $payment->due_date->toDateString(),
@@ -210,6 +214,12 @@ class FinanceNotificationEvaluator
     /**
      * @return list<ConditionSpec>
      */
+    private function money(float|string|null $amount): string
+    {
+        // number_format is locale-independent, unlike sprintf's %f (which follows the process locale).
+        return number_format((float) $amount, 2, '.', '');
+    }
+
     private function subscriptionConditions(int $userId, CarbonInterface $today): array
     {
         $subscriptions = Subscription::query()
@@ -228,10 +238,10 @@ class FinanceNotificationEvaluator
             NotificationSeverity::WARNING,
             'Subscription renewal: '.$subscription->name,
             sprintf(
-                '%s renews on %s (%.2f).',
+                '%s renews on %s (%s).',
                 $subscription->name,
                 $subscription->next_renewal_date->toDateString(),
-                $subscription->monthly_cost,
+                $this->money($this->subscriptions->getBillingAmount($subscription)),
             ),
             '/subscriptions',
         ))->values()->all();
