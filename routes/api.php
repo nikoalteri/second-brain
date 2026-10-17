@@ -68,6 +68,7 @@ Route::prefix('v1')->group(function () {
         Route::get('accounts/{account}', [AccountController::class, 'show']);
         Route::get('dashboard/charts', [DashboardController::class, 'charts']);
         Route::get('dashboard/upcoming-payments', [DashboardController::class, 'upcomingPayments']);
+        Route::get('dashboard/cash-flow-forecast', [DashboardController::class, 'cashFlowForecast']);
 
         Route::get('transactions', [TransactionController::class, 'index']);
         Route::get('transactions/{transaction}', [TransactionController::class, 'show']);
