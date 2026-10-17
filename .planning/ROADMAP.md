@@ -279,7 +279,7 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 **Goal:** Detect when a subscription's renewal amount increases relative to its prior charge and surface it through the notification channel built in Phase 22, instead of the increase only being visible by manually comparing past transactions.
 **Requirements**: D-01 through D-05 (from 23-CONTEXT.md)
 **Depends on:** Phase 22 (reuses its notification delivery)
-**Plans:** not started — context gathered, ready for `/gsd-plan-phase 23`
+**Plans:** 23-01 reliable renewal-charge history and UAT posting verification; 23-02 increase detection and in-app notification. Research and plans prepared 2026-10-17; implementation not started.
 **Audit constraints:** proposed additions from the 2026-09-17 audit are recorded in 23-CONTEXT.md, section "Audit-derived requirements".
 
 ### Phase 24: Cash-flow forecast ("safe to spend")
