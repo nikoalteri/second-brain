@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\CreditCardSensitiveVaultController;
 use App\Http\Controllers\Api\V1\CreditCardVaultController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\ImportBatchController;
+use App\Http\Controllers\Api\V1\ImportRowController;
 use App\Http\Controllers\Api\V1\FinanceReportController;
 use App\Http\Controllers\Api\V1\LoanController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -73,6 +74,7 @@ Route::prefix('v1')->group(function () {
 
         Route::get('import-batches', [ImportBatchController::class, 'index']);
         Route::get('import-batches/{importBatch}', [ImportBatchController::class, 'show'])->whereNumber('importBatch');
+        Route::get('import-batches/{importBatch}/rows', [ImportRowController::class, 'index'])->whereNumber('importBatch');
 
         Route::get('transactions', [TransactionController::class, 'index']);
         Route::get('transactions/{transaction}', [TransactionController::class, 'show']);
@@ -107,6 +109,8 @@ Route::prefix('v1')->group(function () {
         Route::delete('accounts/{account}', [AccountController::class, 'destroy']);
 
         Route::post('import-batches', [ImportBatchController::class, 'store']);
+        Route::post('import-batches/{importBatch}/confirm', [ImportBatchController::class, 'confirm'])->whereNumber('importBatch');
+        Route::patch('import-batches/{importBatch}/rows/{row}', [ImportRowController::class, 'update'])->whereNumber(['importBatch', 'row']);
         Route::put('import-batches/{importBatch}/mapping', [ImportBatchController::class, 'mapping'])->whereNumber('importBatch');
         Route::delete('import-batches/{importBatch}', [ImportBatchController::class, 'destroy'])->whereNumber('importBatch');
 

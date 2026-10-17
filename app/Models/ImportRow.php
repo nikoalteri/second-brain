@@ -10,6 +10,7 @@ class ImportRow extends Model
 {
     protected $fillable = [
         'import_batch_id', 'row_number', 'raw_cells', 'status', 'normalized', 'error', 'fingerprint', 'duplicate_class', 'flags',
+        'transaction_id', 'credit_card_expense_id', 'failure_reason',
     ];
 
     protected $casts = [

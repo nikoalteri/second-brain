@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\ImportBatchStatus;
 use App\Http\Controllers\Controller;
+use App\Enums\ImportRowStatus;
+use App\Http\Requests\Api\ConfirmImportBatchRequest;
 use App\Http\Requests\Api\MapImportBatchRequest;
 use App\Http\Requests\Api\StoreImportBatchRequest;
 use App\Http\Resources\Api\ImportBatchResource;
 use App\Models\ImportBatch;
 use App\Models\ImportMapping;
 use App\Services\Import\ImportMappingService;
+use App\Services\Import\ImportRowPromotionService;
 use App\Services\Import\ImportBatchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,6 +29,7 @@ class ImportBatchController extends Controller
     public function __construct(
         private readonly ImportBatchService $service,
         private readonly ImportMappingService $mappings,
+        private readonly ImportRowPromotionService $promotion,
     ) {}
 
     /** @group Statement imports @authenticated */
@@ -68,6 +72,39 @@ class ImportBatchController extends Controller
         return $this->respond($batch);
     }
 
+    /**
+     * Post draft rows to the ledger, exactly once each. `row_ids` confirms exactly those rows (the
+     * owner may include flagged ones); `all_ready` only takes rows with no duplicate or review flag.
+     * Each row is its own unit: one failing never blocks the others, and a retry is safe.
+     *
+     * @group Statement imports @authenticated
+     */
+    public function confirm(ConfirmImportBatchRequest $request, int $importBatch): JsonResponse
+    {
+        $batch = $this->owned($request, $importBatch);
+        abort_unless($batch->status === ImportBatchStatus::MAPPED, 409, 'Map the columns before confirming rows.');
+
+        $ids = $request->boolean('all_ready') && ! $request->has('row_ids')
+            ? $this->readyRowIds($batch)
+            : array_map('intval', $request->validated('row_ids'));
+
+        $outcomes = array_map(fn (int $id) => $this->promotion->promote($batch, $id), $ids);
+
+        $this->promotion->completeIfDone($batch);
+        $batch->refresh();
+
+        return response()->json([
+            'data' => [
+                'status' => $batch->status->value,
+                'outcomes' => $outcomes,
+                'confirmed' => count(array_filter($outcomes, fn ($o) => $o['outcome'] === 'confirmed')),
+                'skipped' => count(array_filter($outcomes, fn ($o) => $o['outcome'] === 'skipped')),
+                'failed' => count(array_filter($outcomes, fn ($o) => $o['outcome'] === 'failed')),
+            ],
+            'summary' => $this->mappings->summary($batch),
+        ]);
+    }
+
     /** @group Statement imports @authenticated */
     public function destroy(Request $request, int $importBatch): Response
     {
@@ -85,6 +122,24 @@ class ImportBatchController extends Controller
     private function owned(Request $request, int $id): ImportBatch
     {
         return ImportBatch::query()->where('user_id', $request->user()->id)->findOrFail($id);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function readyRowIds(ImportBatch $batch): array
+    {
+        return $batch->rows()
+            ->where('status', ImportRowStatus::DRAFT->value)
+            ->whereNotNull('normalized')
+            ->whereNull('error')
+            ->where('duplicate_class', 'none')
+            ->orderBy('row_number')
+            ->get(['id', 'flags'])
+            ->reject(fn ($row) => array_intersect(ImportRowPromotionService::REVIEW_FLAGS, $row->flags['codes'] ?? []) !== [])
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     private function respond(ImportBatch $batch): ImportBatchResource
