@@ -15,3 +15,7 @@
 
 - A real bank file (only synthetic ones), XLSX through the UI, a credit card import through the UI (covered by API tests), the light theme, widths below 500px, large files, and two real database connections confirming at once (SQLite ignores row locks).
 - Category selection per row in the review (a category column in the file is matched server-side; the API supports changing it but the screen only edits description and amount).
+
+## After the review (see 25-05-SUMMARY.md)
+
+The upload form offers a CSV delimiter; the form resets after each upload; "Finish import (discard the rest)" ends a partially confirmed import; the review handles discarding the last waiting row; theme-aware colours for the alert and finished blocks. Frontend: 30 tests pass.
