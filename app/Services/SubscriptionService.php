@@ -230,11 +230,16 @@ class SubscriptionService
             Subscription::withoutGlobalScopes()->whereKey($subscription->getKey())->lockForUpdate()->first();
 
             if ($subscription->credit_card_id) {
-                $this->upsertCreditCardExpense($subscription, $renewalDate);
+                $created = $this->upsertCreditCardExpense($subscription, $renewalDate);
             } elseif ($subscription->account_id) {
-                $this->upsertTransaction($subscription, $renewalDate);
+                $created = $this->upsertTransaction($subscription, $renewalDate);
             } else {
                 return false;
+            }
+
+            // A publisher failure propagates and rolls back the charge and the date advance together.
+            if ($created) {
+                app(SubscriptionPriceHikeDetector::class)->detect($subscription, Carbon::parse($renewalDate));
             }
 
             $subscription->updateQuietly([
