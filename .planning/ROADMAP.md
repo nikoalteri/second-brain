@@ -287,7 +287,7 @@ Ad hoc UX round (2026-09-20, PRs #36-#48): Transactions/Categories UX and list s
 **Goal:** Project known subscription renewals, loan installments and credit-card cycle payments against active, non-goal-linked account balances for the next 30 days. Reuse the existing upcoming-payment sources while adding the posting, recurrence, source-account and currency classification needed for a trustworthy estimate.
 **Requirements**: D-01 through D-04 (from 24-CONTEXT.md)
 **Depends on:** Phase 21
-**Plans:** 24-01 obligation classification and recurrence; 24-02 per-currency forecast service and API; 24-03 Dashboard presentation and verification. Research and plans prepared 2026-10-17; implementation not started.
+**Plans:** 24-01 obligation classification and recurrence; 24-02 per-currency forecast service and API; 24-03 Dashboard presentation and verification. Implemented and merged to `uat` 2026-10-17 (PR #72); see the three SUMMARY files.
 **Audit constraints:** 24-RESEARCH.md settles the audit-derived coverage and currency issues from 24-CONTEXT.md. The figure is an estimate with explicit gaps, not a guaranteed spendable balance.
 
 ### Phase 25: Bank statement import & reconciliation
@@ -337,4 +337,4 @@ During this brainstorm the user asked for a simpler, non-monthly per-category an
 
 ## Direct Next Command
 
-Phase 24 is planned; execute 24-01, then 24-02 and 24-03. Phase 26's Dashboard work should use the resulting API/component boundaries. Phase 25 should be planned before Phases 27 and 28, which depend on its staging data model. Phase 22's MySQL concurrency proof and `/hub/notifications` visual check remain follow-ups; Phase 23's UAT renewal observation remains separate. Phase 21's manual `php artisan credit-cards:balance-audit` in production/uat is also outstanding (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).
+Phase 24 is done. Phase 26's Dashboard work should use its API/component boundaries (`/api/v1/dashboard/cash-flow-forecast`, `CashFlowForecastCard`). Phase 25 should be planned before Phases 27 and 28, which depend on its staging data model. Phase 22's MySQL concurrency proof and `/hub/notifications` visual check remain follow-ups; Phase 23's UAT renewal observation remains separate. Phase 21's manual `php artisan credit-cards:balance-audit` in production/uat is also outstanding (the broader `php artisan data:audit` already ran clean on UAT). The ad-hoc dark-mode fix (`feat/hub-dark-mode`) is merged (PR #4).
