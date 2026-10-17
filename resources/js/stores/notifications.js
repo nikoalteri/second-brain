@@ -15,6 +15,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
     const unreadCount = ref(0);
     const loading = ref(false);
     const error = ref(false);
+    // Bumped on reset(): responses that began under an earlier session are discarded.
+    let session = 0;
 
     const hasUnread = computed(() => unreadCount.value > 0);
 
@@ -28,6 +30,7 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
 
     async function fetchNotifications() {
+        const startedIn = session;
         loading.value = true;
         error.value = false;
 
@@ -39,12 +42,21 @@ export const useNotificationsStore = defineStore('notifications', () => {
             }
 
             const body = await response.json();
+
+            if (startedIn !== session) {
+                return;
+            }
+
             items.value = body.data ?? [];
             unreadCount.value = body.unread_count ?? 0;
         } catch {
-            error.value = true;
+            if (startedIn === session) {
+                error.value = true;
+            }
         } finally {
-            loading.value = false;
+            if (startedIn === session) {
+                loading.value = false;
+            }
         }
     }
 
@@ -52,6 +64,8 @@ export const useNotificationsStore = defineStore('notifications', () => {
         if (notification.read_at) {
             return;
         }
+
+        const startedIn = session;
 
         try {
             const response = await fetch(`/api/v1/notifications/${notification.id}/read`, {
@@ -64,6 +78,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
             }
 
             const body = await response.json();
+
+            if (startedIn !== session) {
+                return;
+            }
+
             const index = items.value.findIndex((item) => item.id === notification.id);
 
             if (index !== -1) {
@@ -77,8 +96,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
 
     function reset() {
+        session += 1;
         items.value = [];
         unreadCount.value = 0;
+        loading.value = false;
         error.value = false;
     }
 
