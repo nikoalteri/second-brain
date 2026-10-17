@@ -158,6 +158,41 @@ class NotificationConditionPublisherTest extends TestCase
         $this->assertSame([1, 2], Notification::query()->withoutUserScope()->orderBy('episode')->pluck('episode')->all());
     }
 
+    public function test_stale_evaluation_does_not_resolve_a_condition_published_in_the_meantime(): void
+    {
+        $this->publisher->reconcile($this->user->id, self::TRIGGERS, [$this->spec()]);
+
+        // Run A snapshots and evaluates the condition as false...
+        $snapshot = $this->publisher->snapshot($this->user->id, self::TRIGGERS);
+        // ...while run B evaluates it as true and publishes.
+        $this->publisher->publish($this->user->id, $this->spec());
+
+        $result = $this->publisher->reconcile($this->user->id, self::TRIGGERS, [], $snapshot);
+
+        $this->assertSame(['created' => 0, 'resolved' => 0], $result);
+        $this->assertTrue($this->condition()->active);
+
+        // The next consistent run keeps it open without a duplicate episode or notification.
+        $this->publisher->reconcile($this->user->id, self::TRIGGERS, [$this->spec()]);
+        $this->assertSame(1, $this->condition()->episode);
+        $this->assertSame(1, $this->notificationCount());
+
+        // A genuinely stale-free evaluation still resolves it.
+        $result = $this->publisher->reconcile($this->user->id, self::TRIGGERS, []);
+        $this->assertSame(1, $result['resolved']);
+    }
+
+    public function test_condition_created_after_the_snapshot_is_not_resolved_by_an_older_evaluation(): void
+    {
+        $snapshot = $this->publisher->snapshot($this->user->id, self::TRIGGERS);
+        $this->publisher->publish($this->user->id, $this->spec());
+
+        $result = $this->publisher->reconcile($this->user->id, self::TRIGGERS, [], $snapshot);
+
+        $this->assertSame(['created' => 0, 'resolved' => 0], $result);
+        $this->assertTrue($this->condition()->active);
+    }
+
     public function test_reconcile_does_not_resolve_conditions_of_other_triggers(): void
     {
         $other = new ConditionSpec('loan', 'loan_payment', 5, '2026-10-20', NotificationSeverity::WARNING, 'Loan', 'Due soon', '/loans');

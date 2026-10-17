@@ -28,9 +28,12 @@ class FinanceNotificationDigest
      */
     public function runForUser(int $userId, CarbonInterface $date): array
     {
+        // Snapshot before evaluating: a concurrent run that publishes a condition while
+        // this evaluation is in flight must not have it resolved from stale data.
+        $snapshot = $this->publisher->snapshot($userId, FinanceNotificationEvaluator::TRIGGERS);
         $specs = $this->evaluator->evaluate($userId, $date);
 
-        return $this->publisher->reconcile($userId, FinanceNotificationEvaluator::TRIGGERS, $specs);
+        return $this->publisher->reconcile($userId, FinanceNotificationEvaluator::TRIGGERS, $specs, $snapshot);
     }
 
     /**

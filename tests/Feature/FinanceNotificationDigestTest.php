@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Services\BudgetService;
 use App\Services\Notifications\FinanceNotificationDigest;
 use App\Services\Notifications\FinanceNotificationEvaluator;
+use App\Services\Notifications\NotificationConditionPublisher;
 use App\Services\SubscriptionService;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -312,6 +313,37 @@ class FinanceNotificationDigestTest extends TestCase
 
         $this->assertTrue(NotificationCondition::query()->where('user_id', $this->user->id)->firstOrFail()->active);
         $this->assertFalse(NotificationCondition::query()->where('user_id', $this->other->id)->firstOrFail()->active);
+    }
+
+    public function test_digest_does_not_resolve_a_condition_another_run_publishes_during_evaluation(): void
+    {
+        $this->subscription($this->user, '2026-10-18');
+        $this->digest();
+        $condition = NotificationCondition::query()->where('user_id', $this->user->id)->firstOrFail();
+        $spec = app(FinanceNotificationEvaluator::class)->evaluate($this->user->id, Carbon::parse('2026-10-17'))[0];
+
+        // This run evaluates to "no conditions" while a concurrent run re-publishes it.
+        $this->app->bind(FinanceNotificationEvaluator::class, fn () => new class(app(BudgetService::class), app(SubscriptionService::class), $spec) extends FinanceNotificationEvaluator
+        {
+            public function __construct(BudgetService $budgets, SubscriptionService $subscriptions, private $spec)
+            {
+                parent::__construct($budgets, $subscriptions);
+            }
+
+            public function evaluate(int $userId, CarbonInterface $date): array
+            {
+                app(NotificationConditionPublisher::class)->publish($userId, $this->spec);
+
+                return [];
+            }
+        });
+
+        $this->digest();
+
+        $condition->refresh();
+        $this->assertTrue($condition->active);
+        $this->assertSame(1, $condition->episode);
+        $this->assertCount(1, $this->notificationsFor($this->user));
     }
 
     public function test_inactive_users_are_skipped(): void
