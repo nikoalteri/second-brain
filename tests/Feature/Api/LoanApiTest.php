@@ -199,4 +199,98 @@ class LoanApiTest extends TestCase
 
         $this->assertCount(3, $loan->fresh()->payments);
     }
+
+    // ─── marking an installment as paid ──────────────────────────────────────────────────────
+
+    private function loanWithInstallment(User $user, string $due, float $balance = 1000.0): array
+    {
+        $account = Account::factory()->create(['user_id' => $user->id, 'balance' => $balance]);
+        $loan = Loan::factory()->create([
+            'user_id' => $user->id, 'account_id' => $account->id, 'start_date' => '2026-01-01',
+            'withdrawal_day' => 1, 'total_installments' => 4, 'monthly_payment' => 100, 'total_amount' => 400,
+        ]);
+        $payment = $loan->payments()->create(['due_date' => $due, 'amount' => 100, 'status' => 'pending']);
+
+        return [$loan, $payment, $account];
+    }
+
+    public function test_an_overdue_installment_can_be_marked_paid_without_posting_it_twice(): void
+    {
+        $user = User::factory()->create();
+        // Due in the past: the account movement already exists, only the status is still pending.
+        [$loan, $payment, $account] = $this->loanWithInstallment($user, now()->subDays(3)->toDateString());
+        $this->assertSame(1, \App\Models\Transaction::withoutGlobalScopes()->where('loan_payment_id', $payment->id)->count());
+        $balanceBefore = (float) $account->fresh()->balance;
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson("/api/v1/loans/{$loan->id}/payments/{$payment->id}/mark-paid")->assertOk();
+
+        $paid = collect($response->json('data.payments'))->firstWhere('id', $payment->id);
+        $this->assertSame('paid', $paid['status']);
+        $this->assertSame(now()->toDateString(), $paid['actual_date']);
+        $response->assertJsonPath('data.paid_installments', 1);
+        $this->assertSame(1, \App\Models\Transaction::withoutGlobalScopes()->where('loan_payment_id', $payment->id)->count(), 'still one movement');
+        $this->assertEquals($balanceBefore, (float) $account->fresh()->balance, 'the balance had already moved when it fell due');
+    }
+
+    public function test_a_future_installment_can_be_paid_early_and_is_posted_once(): void
+    {
+        $user = User::factory()->create();
+        [$loan, $payment, $account] = $this->loanWithInstallment($user, now()->addDays(20)->toDateString());
+        $this->assertSame(0, \App\Models\Transaction::withoutGlobalScopes()->where('loan_payment_id', $payment->id)->count());
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/loans/{$loan->id}/payments/{$payment->id}/mark-paid", ['actual_date' => now()->subDay()->toDateString()])->assertOk();
+
+        $this->assertSame(1, \App\Models\Transaction::withoutGlobalScopes()->where('loan_payment_id', $payment->id)->count());
+        $this->assertEquals(900.0, (float) $account->fresh()->balance);
+        $this->assertSame(now()->subDay()->toDateString(), $payment->fresh()->actual_date->toDateString());
+    }
+
+    public function test_marking_an_installment_paid_updates_the_loan_progress_and_is_idempotent(): void
+    {
+        $user = User::factory()->create();
+        [$loan, $payment, $account] = $this->loanWithInstallment($user, now()->subDay()->toDateString());
+        $loan->payments()->create(['due_date' => now()->addMonth()->toDateString(), 'amount' => 100, 'status' => 'pending']);
+        Sanctum::actingAs($user);
+        $remainingBefore = (float) $loan->fresh()->remaining_amount;
+
+        $this->postJson("/api/v1/loans/{$loan->id}/payments/{$payment->id}/mark-paid")->assertOk()->assertJsonPath('data.paid_installments', 1);
+        $firstDate = $payment->fresh()->actual_date->toDateString();
+        $this->assertLessThan($remainingBefore, (float) $loan->fresh()->remaining_amount);
+
+        // A second call changes nothing, even with another date.
+        $this->postJson("/api/v1/loans/{$loan->id}/payments/{$payment->id}/mark-paid", ['actual_date' => now()->subDays(10)->toDateString()])->assertOk()->assertJsonPath('data.paid_installments', 1);
+        $this->assertSame($firstDate, $payment->fresh()->actual_date->toDateString());
+        $this->assertSame(1, \App\Models\Transaction::withoutGlobalScopes()->where('loan_payment_id', $payment->id)->count());
+    }
+
+    public function test_a_future_payment_date_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        [$loan, $payment] = $this->loanWithInstallment($user, now()->subDay()->toDateString());
+        Sanctum::actingAs($user);
+
+        $this->postJson("/api/v1/loans/{$loan->id}/payments/{$payment->id}/mark-paid", ['actual_date' => now()->addDay()->toDateString()])->assertUnprocessable();
+        $this->assertSame('pending', $payment->fresh()->status->value);
+    }
+
+    public function test_only_the_owner_can_mark_an_installment_paid_and_it_must_belong_to_the_loan(): void
+    {
+        $owner = User::factory()->create();
+        $stranger = User::factory()->create();
+        [$loan, $payment] = $this->loanWithInstallment($owner, now()->subDay()->toDateString());
+        [$otherLoan, $otherPayment] = $this->loanWithInstallment($owner, now()->subDay()->toDateString());
+
+        $this->postJson("/api/v1/loans/{$loan->id}/payments/{$payment->id}/mark-paid")->assertUnauthorized();
+
+        // Loans are scoped to their owner, so a stranger does not even learn that it exists.
+        Sanctum::actingAs($stranger);
+        $this->postJson("/api/v1/loans/{$loan->id}/payments/{$payment->id}/mark-paid")->assertNotFound();
+
+        Sanctum::actingAs($owner);
+        $this->postJson("/api/v1/loans/{$loan->id}/payments/{$otherPayment->id}/mark-paid")->assertNotFound();
+        $this->assertSame('pending', $payment->fresh()->status->value);
+        $this->assertSame('pending', $otherPayment->fresh()->status->value);
+    }
 }

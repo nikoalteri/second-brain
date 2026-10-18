@@ -15,6 +15,7 @@ const { addToast } = useToast();
 const auth = useAuthStore();
 const loading = ref(false);
 const generatingSchedule = ref(false);
+const markingPaymentId = ref(null);
 const loan = ref(null);
 const payments = computed(() => loan.value?.payments ?? []);
 
@@ -69,6 +70,33 @@ async function handleGenerateSchedule() {
         addToast('Could not generate the payment schedule. Please try again.', 'error');
     } finally {
         generatingSchedule.value = false;
+    }
+}
+
+// Installments are posted to the account when they fall due but stay pending until the owner confirms them.
+async function markPaid(payment) {
+    markingPaymentId.value = payment.id;
+
+    try {
+        const response = await fetch(`/api/v1/loans/${route.params.id}/payments/${payment.id}/mark-paid`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${auth.accessToken}`,
+                Accept: 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to mark the installment as paid.');
+        }
+
+        const data = await response.json();
+        loan.value = data.data ?? loan.value;
+        addToast('Installment marked as paid.', 'success');
+    } catch {
+        addToast('Could not mark the installment as paid. Please try again.', 'error');
+    } finally {
+        markingPaymentId.value = null;
     }
 }
 
@@ -169,7 +197,8 @@ onMounted(() => {
                             <th class="pb-3 pr-4 text-left text-sm font-normal uppercase tracking-wide text-gray-500">Due Date</th>
                             <th class="pb-3 pr-4 text-left text-sm font-normal uppercase tracking-wide text-gray-500">Paid Date</th>
                             <th class="pb-3 pr-4 text-right text-sm font-normal uppercase tracking-wide text-gray-500">Amount</th>
-                            <th class="pb-3 text-left text-sm font-normal uppercase tracking-wide text-gray-500">Status</th>
+                            <th class="pb-3 pr-4 text-left text-sm font-normal uppercase tracking-wide text-gray-500">Status</th>
+                            <th class="pb-3 text-right text-sm font-normal uppercase tracking-wide text-gray-500"><span class="sr-only">Actions</span></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-700/50">
@@ -178,11 +207,23 @@ onMounted(() => {
                             <td class="py-3 pr-4 text-sm text-gray-900">{{ payment.due_date ?? '—' }}</td>
                             <td class="py-3 pr-4 text-sm text-gray-500">{{ payment.actual_date ?? '—' }}</td>
                             <td class="py-3 pr-4 text-right font-mono text-sm text-amber-400">{{ formatCurrency(payment.amount) }}</td>
-                            <td class="py-3">
+                            <td class="py-3 pr-4">
                                 <span :class="paymentStatusClass(payment.status)" class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-sm capitalize">
                                     <component :is="paymentStatusIcons[payment.status]" class="h-3.5 w-3.5" />
                                     {{ payment.status }}
                                 </span>
+                            </td>
+                            <td class="py-3 text-right">
+                                <button
+                                    v-if="payment.status === 'pending'"
+                                    type="button"
+                                    class="rounded-lg border border-emerald-200 px-3 py-1 text-sm font-medium text-emerald-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                    :disabled="markingPaymentId !== null"
+                                    :aria-label="`Mark installment ${index + 1} as paid`"
+                                    @click="markPaid(payment)"
+                                >
+                                    {{ markingPaymentId === payment.id ? 'Saving…' : 'Mark paid' }}
+                                </button>
                             </td>
                         </tr>
                     </tbody>
@@ -206,6 +247,16 @@ onMounted(() => {
                                 <component :is="paymentStatusIcons[payment.status]" class="h-3.5 w-3.5" />
                                 {{ payment.status }}
                             </span>
+                            <button
+                                v-if="payment.status === 'pending'"
+                                type="button"
+                                class="mt-2 block rounded-lg border border-emerald-200 px-3 py-1 text-sm font-medium text-emerald-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                                :disabled="markingPaymentId !== null"
+                                :aria-label="`Mark installment ${index + 1} as paid`"
+                                @click="markPaid(payment)"
+                            >
+                                {{ markingPaymentId === payment.id ? 'Saving…' : 'Mark paid' }}
+                            </button>
                         </div>
                     </div>
                 </div>
