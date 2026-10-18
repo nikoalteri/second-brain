@@ -122,6 +122,7 @@ Route::prefix('v1')->group(function () {
 
         Route::post('loans', [LoanController::class, 'store']);
         Route::post('loans/{loan}/generate-schedule', [LoanController::class, 'generateSchedule']);
+        Route::post('loans/{loan}/payments/{payment}/mark-paid', [LoanController::class, 'markPaymentPaid'])->whereNumber(['loan', 'payment']);
         Route::put('loans/{loan}', [LoanController::class, 'update']);
         Route::patch('loans/{loan}', [LoanController::class, 'update']);
         Route::delete('loans/{loan}', [LoanController::class, 'destroy']);

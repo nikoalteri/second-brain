@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreLoanRequest;
 use App\Http\Requests\Api\UpdateLoanRequest;
 use App\Http\Resources\Api\LoanResource;
+use App\Enums\LoanPaymentStatus;
 use App\Models\Loan;
+use App\Models\LoanPayment;
 use App\Services\LoanScheduleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -113,6 +115,37 @@ class LoanController extends Controller
         $loanScheduleService->generate($loan, onlyMissing: true);
 
         $loan->load('payments');
+
+        return new LoanResource($loan);
+    }
+
+    /**
+     * Mark an installment as paid. Installments whose due date has passed are posted to the account
+     * automatically but stay "pending" until the owner confirms the payment; this is that confirmation.
+     * Idempotent: an installment that is already paid is returned untouched.
+     *
+     * @group Loans @authenticated
+     */
+    public function markPaymentPaid(Request $request, Loan $loan, LoanPayment $payment): LoanResource
+    {
+        $this->authorize('update', $loan);
+        abort_unless((int) $payment->loan_id === (int) $loan->id, 404);
+
+        $validated = $request->validate([
+            // The day the money actually left; defaults to today, never in the future.
+            'actual_date' => ['nullable', 'date', 'before_or_equal:today'],
+        ]);
+
+        if ($payment->status !== LoanPaymentStatus::PAID) {
+            // The observer posts/updates the account movement and re-syncs the loan's paid count and
+            // remaining amount: keep them in one transaction.
+            DB::transaction(fn () => $payment->update([
+                'status' => LoanPaymentStatus::PAID,
+                'actual_date' => $validated['actual_date'] ?? now()->toDateString(),
+            ]));
+        }
+
+        $loan->refresh()->load('payments');
 
         return new LoanResource($loan);
     }
