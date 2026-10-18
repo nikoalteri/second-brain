@@ -100,7 +100,7 @@ onBeforeUnmount(() => {
 
 <template>
     <nav class="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 shadow-sm lg:px-8">
-        <span class="text-xl font-semibold text-gray-900">Fluxa</span>
+        <router-link to="/home" class="text-xl font-semibold text-gray-900 hover:text-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500" aria-label="Fluxa home">Fluxa</router-link>
 
         <div class="hidden items-center gap-1 md:flex">
             <router-link
